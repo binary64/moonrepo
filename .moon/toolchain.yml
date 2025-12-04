@@ -1,0 +1,11 @@
+# .moon/toolchain.yml
+node:
+  version: '22'
+  packageManager: 'bun'
+  bun:
+    version: '1.3.3'
+
+typescript:
+  createMissingConfig: true
+  root: true
+  routeOutDirToCache: true
