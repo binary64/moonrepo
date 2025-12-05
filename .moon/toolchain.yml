@@ -1,11 +1,11 @@
-# .moon/toolchain.yml
+bun:
+
 node:
-  version: '22'
   packageManager: 'bun'
-  bun:
-    version: '1.3.3'
+  syncProjectWorkspaceDependencies: true
 
 typescript:
   createMissingConfig: true
   root: true
   routeOutDirToCache: true
+  syncProjectReferences: true

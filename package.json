@@ -1,0 +1,17 @@
+{
+  "name": "moonrepo",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "moon run :dev",
+    "build": "moon run :build",
+    "lint": "moon run :lint",
+    "type-check": "moon run :type-check"
+  },
+  "engines": {
+    "node": "~22"
+  }
+}
