@@ -1,0 +1,6 @@
+[install]
+workspace = true
+peer-dependencies = true
+
+[install.cache]
+dir = ".bun-cache"

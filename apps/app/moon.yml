@@ -1,0 +1,8 @@
+# https://moonrepo.dev/docs/config/workspace
+$schema: "../../.moon/cache/schemas/workspace.json"
+
+language: 'node'
+type: 'application'
+
+tags:
+  - next

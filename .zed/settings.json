@@ -1,0 +1,6 @@
+{
+  "file_types": {
+    "Plain Text": ["bun.lock"],
+    "YAML": [".moon/**/*.yml"]
+  }
+}

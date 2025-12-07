@@ -1,7 +1,8 @@
-bun:
+# https://moonrepo.dev/docs/config/toolchain
+$schema: "./cache/schemas/toolchain.json"
 
 node:
-  packageManager: 'bun'
+  packageManager: "bun"
   syncProjectWorkspaceDependencies: true
 
 typescript:
