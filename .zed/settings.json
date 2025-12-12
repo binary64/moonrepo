@@ -2,5 +2,23 @@
   "file_types": {
     "Plain Text": ["bun.lock"],
     "YAML": [".moon/**/*.yml"]
+  },
+  "lsp": {
+    "yaml-language-server": {
+      "settings": {
+        "yaml": {
+          "schemas": {
+            "kubernetes": ["infra/**/*.yaml", "infra/**/*.yml"],
+            "https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/argoproj.io/application_v1alpha1.json": [
+              "/*application*.yaml",
+              "/*app.yaml"
+            ],
+            "https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/argoproj.io/appproject_v1alpha1.json": [
+              "/*project.yaml"
+            ]
+          }
+        }
+      }
+    }
   }
 }

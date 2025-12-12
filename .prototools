@@ -1,1 +1,4 @@
 moon = "1.41.7"
+
+[plugins.tools]
+k3d = "https://raw.githubusercontent.com/appthrust/proto-toml-plugins/main/k3d/plugin.toml"
