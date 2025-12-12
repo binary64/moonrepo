@@ -7,6 +7,5 @@ node:
 
 typescript:
   createMissingConfig: true
-  root: true
   routeOutDirToCache: true
   syncProjectReferences: true
