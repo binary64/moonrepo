@@ -1,0 +1,24 @@
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: moonrepo-dev
+servers: 1
+agents: 0
+image: rancher/k3s:v1.28.5-k3s1
+ports:
+  - port: 8888:30080
+    nodeFilters:
+      - server:*
+# volumes:
+#   - volume: ${PWD}:/workspace
+#     nodeFilters:
+#       - all
+options:
+  k3d:
+    wait: true
+    timeout: "60s"
+  k3s:
+    extraArgs:
+      - arg: --disable=traefik
+        nodeFilters:
+          - server:*
