@@ -4,11 +4,11 @@ metadata:
   name: moonrepo-dev
 servers: 1
 agents: 0
-image: rancher/k3s:v1.28.5-k3s1
+image: rancher/k3s:v1.32.10-k3s1
 ports:
-  - port: 8888:30080
+  - port: 8888:80
     nodeFilters:
-      - server:*
+      - loadbalancer
 # volumes:
 #   - volume: ${PWD}:/workspace
 #     nodeFilters:

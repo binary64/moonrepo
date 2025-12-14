@@ -1,4 +1,10 @@
 moon = "1.41.7"
+yq = "4.49.2"
+shfmt = "3.12.0"
+k9s = "0.50.16"
 
 [plugins.tools]
 k3d = "https://raw.githubusercontent.com/appthrust/proto-toml-plugins/main/k3d/plugin.toml"
+yq = "https://raw.githubusercontent.com/appthrust/proto-toml-plugins/main/yq/plugin.toml"
+shfmt = "https://raw.githubusercontent.com/Phault/proto-toml-plugins/main/shfmt/plugin.toml"
+k9s = "https://raw.githubusercontent.com/appthrust/proto-toml-plugins/main/k9s/plugin.toml"

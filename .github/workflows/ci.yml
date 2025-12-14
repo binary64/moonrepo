@@ -20,3 +20,4 @@ jobs:
         with:
           auto-install: true
       - run: moon ci
+      - run: bash run.sh
