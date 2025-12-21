@@ -72,23 +72,32 @@ spec:
 EOF
 
 cat <<EOF >/var/lib/rancher/rke2/server/manifests/20-infra-root.yaml
-apiVersion: argoproj.io/v1alpha1
-kind: Application
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
 metadata:
   name: infra-root
-  namespace: argocd
+  namespace: kube-system
 spec:
-  source:
-    repoURL: https://github.com/binary64/moonrepo.git
-    targetRevision: main
-    path: infra/app-of-apps
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: argocd
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
+  chart: argocd-apps
+  repo: https://argoproj.github.io/argo-helm
+  version: 2.0.2
+  targetNamespace: argocd
+  valuesContent: |
+    applications:
+      infra-root:
+        namespace: argocd
+        project: default
+        source:
+          repoURL: https://github.com/binary64/moonrepo.git
+          targetRevision: master
+          path: infra/app-of-apps
+        destination:
+          server: https://kubernetes.default.svc
+          namespace: argocd
+        syncPolicy:
+          automated:
+            prune: true
+            selfHeal: true
 EOF
 
 curl -sfL https://get.rke2.io | sh -
