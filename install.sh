@@ -91,6 +91,8 @@ spec:
           repoURL: https://github.com/binary64/moonrepo.git
           targetRevision: master
           path: infra/app-of-apps
+          directory:
+            recurse: true
         destination:
           server: https://kubernetes.default.svc
           namespace: argocd
