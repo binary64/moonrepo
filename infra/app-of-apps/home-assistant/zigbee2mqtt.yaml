@@ -1,0 +1,36 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: zigbee2mqtt
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://zigbee2mqtt.io/helm/
+    targetRevision: "2.7.1"
+    chart: zigbee2mqtt
+    helm:
+      releaseName: zigbee2mqtt
+      values: |
+        service:
+          type: ClusterIP
+          port: 80
+
+        ingress:
+          enabled: false
+          external: true
+          className: istio
+          annotations:
+            kubernetes.io/ingress.class: istio
+          hosts:
+            - host: zigbee2mqtt.localhost
+              paths:
+                - path: /
+                  pathType: Prefix
+
+        persistence:
+          enabled: true
+          accessMode: ReadWriteOnce
+          size: 10Gi
+          
+        extra

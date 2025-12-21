@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: authentik
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://charts.goauthentik.io
+    targetRevision: "2025.10.3"
+    chart: authentik
+    helm:
+      releaseName: authentik
+      values: |
+        authentik:
+          secret_key: ""
+
+
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: authentik
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

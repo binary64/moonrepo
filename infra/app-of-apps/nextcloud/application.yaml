@@ -1,0 +1,56 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nextcloud
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://nextcloud.github.io/helm/
+    targetRevision: "8.7.0"
+    chart: nextcloud
+    helm:
+      releaseName: nextcloud
+      values: |
+        service:
+          type: ClusterIP
+          port: 80
+
+        ingress:
+          enabled: false
+          external: true
+          className: istio
+          annotations:
+            kubernetes.io/ingress.class: istio
+          hosts:
+            - host: nextcloud.localhost
+              paths:
+                - path: /
+                  pathType: Prefix
+
+        persistence:
+          enabled: true
+          accessMode: ReadWriteOnce
+          size: 10Gi
+
+        nextcloud:
+          existingSecret:
+            name: nextcloud-secret
+            
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: nextcloud
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

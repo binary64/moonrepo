@@ -106,15 +106,22 @@ for file in "${FILES[@]}"; do
 			REPO_NAME="repo-$REPO_ID"
 
 			# Suppress output unless error, to keep logs clean
-			helm repo add "$REPO_NAME" "$REPO_URL" >/dev/null 2>&1 || true
+			# Try to add repo. If it fails, report and skip.
+			if ! helm repo add "$REPO_NAME" "$REPO_URL" 2>/dev/null; then
+				# Try force update in case it's just a dirty state
+				if ! helm repo add "$REPO_NAME" "$REPO_URL" --force-update >/dev/null 2>&1; then
+					echo "Error: Failed to add helm repo $REPO_NAME ($REPO_URL)"
+					continue
+				fi
+			fi
 			helm repo update "$REPO_NAME"
 
 			# Construct command arguments
 			ARGS=()
 			ARGS+=("--namespace" "$NAMESPACE")
 			ARGS+=("--create-namespace")
-			ARGS+=("--debug")
-			ARGS+=("--wait")
+			# ARGS+=("--debug")
+			# ARGS+=("--wait")
 
 			if [ "$VERSION" != "null" ] && [ -n "$VERSION" ]; then
 				ARGS+=("--version" "$VERSION")
