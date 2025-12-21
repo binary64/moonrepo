@@ -35,7 +35,7 @@ EOF
 
 sysctl --system
 
-mkdir -p /var/lib/rancher/rke2/server/manifests
+mkdir -p /etc/rancher/rke2
 
 cat <<EOF >/etc/rancher/rke2/config.yaml
 write-kubeconfig-mode: "0600"
@@ -45,6 +45,8 @@ cni: canal
 disable:
   - rke2-ingress-nginx
 EOF
+
+mkdir -p /var/lib/rancher/rke2/server/manifests
 
 cat <<EOF >/var/lib/rancher/rke2/server/manifests/10-argocd.yaml
 apiVersion: helm.cattle.io/v1
