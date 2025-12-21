@@ -41,7 +41,7 @@ cat <<EOF >/etc/rancher/rke2/config.yaml
 write-kubeconfig-mode: "0600"
 tls-san:
   - $(hostname -f)
-cni: ${RKE2_CNI}
+cni: canal
 disable:
   - rke2-ingress-nginx
 EOF
