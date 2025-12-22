@@ -51,6 +51,9 @@ EOF
 
 sudo mkdir -p /var/lib/rancher/rke2/server/manifests
 
+# Gateway API (Experimental)
+sudo curl -Lo /var/lib/rancher/rke2/server/manifests/05-gateway-api.yaml https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.0/experimental-install.yaml
+
 cat <<EOF | sudo tee /var/lib/rancher/rke2/server/manifests/10-argocd.yaml >/dev/null
 apiVersion: helm.cattle.io/v1
 kind: HelmChart
