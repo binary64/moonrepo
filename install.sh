@@ -106,4 +106,11 @@ curl -sfL https://get.rke2.io | sh -
 
 systemctl enable rke2-server
 
+# Setup kubectl
+ln -s /var/lib/rancher/rke2/bin/kubectl /usr/local/bin/kubectl
+cat <<EOF >>~/.bashrc
+export KUBECONFIG=/etc/rancher/rke2/rke2.yaml
+alias k=kubectl
+EOF
+
 echo "*** Installed. Now apt upgrade and reboot."
