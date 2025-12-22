@@ -1,10 +1,16 @@
 #!/bin/bash
 set -euo pipefail
 
+# If we are root, bail
+if [ "$(id -u)" = "0" ]; then
+	echo "Please run as a non-root user."
+	exit 1
+fi
+
 export DEBIAN_FRONTEND=noninteractive
 
-apt-get update
-apt-get install -y \
+sudo apt-get update
+sudo apt-get install -y \
 	curl \
 	ca-certificates \
 	gnupg \
@@ -14,30 +20,27 @@ apt-get install -y \
 	git
 
 # Disable swap (required)
-swapoff -a
-sed -i '/ swap / s/^/#/' /etc/fstab
+sudo swapoff -a
+sudo sed -i '/ swap / s/^/#/' /etc/fstab
 
 # Required kernel modules
-cat <<EOF >/etc/modules-load.d/rke2.conf
+cat <<EOF | sudo tee /etc/modules-load.d/rke2.conf >/dev/null
 overlay
 br_netfilter
 EOF
 
-modprobe overlay
-modprobe br_netfilter
-
 # Required sysctls
-cat <<EOF >/etc/sysctl.d/99-rke2.conf
+cat <<EOF | sudo tee /etc/sysctl.d/99-rke2.conf >/dev/null
 net.bridge.bridge-nf-call-iptables  = 1
 net.bridge.bridge-nf-call-ip6tables = 1
 net.ipv4.ip_forward                 = 1
 EOF
 
-sysctl --system
+sudo sysctl --system
 
-mkdir -p /etc/rancher/rke2
+sudo mkdir -p /etc/rancher/rke2
 
-cat <<EOF >/etc/rancher/rke2/config.yaml
+cat <<EOF | sudo tee /etc/rancher/rke2/config.yaml >/dev/null
 write-kubeconfig-mode: "0600"
 tls-san:
   - $(hostname -f)
@@ -46,9 +49,9 @@ disable:
   - rke2-ingress-nginx
 EOF
 
-mkdir -p /var/lib/rancher/rke2/server/manifests
+sudo mkdir -p /var/lib/rancher/rke2/server/manifests
 
-cat <<EOF >/var/lib/rancher/rke2/server/manifests/10-argocd.yaml
+cat <<EOF | sudo tee /var/lib/rancher/rke2/server/manifests/10-argocd.yaml >/dev/null
 apiVersion: helm.cattle.io/v1
 kind: HelmChart
 metadata:
@@ -71,7 +74,7 @@ spec:
       enabled: true
 EOF
 
-cat <<EOF >/var/lib/rancher/rke2/server/manifests/20-infra-root.yaml
+cat <<EOF | sudo tee /var/lib/rancher/rke2/server/manifests/20-infra-root.yaml >/dev/null
 apiVersion: helm.cattle.io/v1
 kind: HelmChart
 metadata:
@@ -102,12 +105,12 @@ spec:
             selfHeal: true
 EOF
 
-curl -sfL https://get.rke2.io | sh -
+curl -sfL https://get.rke2.io | sudo sh -
 
-systemctl enable rke2-server
+sudo systemctl enable rke2-server
 
 # Setup kubectl
-ln -s /var/lib/rancher/rke2/bin/kubectl /usr/local/bin/kubectl
+sudo ln -s /var/lib/rancher/rke2/bin/kubectl /usr/local/bin/kubectl
 cat <<EOF >>~/.bashrc
 export KUBECONFIG=/etc/rancher/rke2/rke2.yaml
 alias k=kubectl
