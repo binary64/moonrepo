@@ -41,7 +41,7 @@ sudo sysctl --system
 sudo mkdir -p /etc/rancher/rke2
 
 cat <<EOF | sudo tee /etc/rancher/rke2/config.yaml >/dev/null
-write-kubeconfig-mode: "0600"
+write-kubeconfig-mode: "0644"
 tls-san:
   - $(hostname -f)
 cni: canal
@@ -103,6 +103,12 @@ spec:
           automated:
             prune: true
             selfHeal: true
+        retry:
+          limit: 15
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 15m
 EOF
 
 curl -sfL https://get.rke2.io | sudo sh -
@@ -116,4 +122,5 @@ export KUBECONFIG=/etc/rancher/rke2/rke2.yaml
 alias k=kubectl
 EOF
 
-echo "*** Installed. Now apt upgrade and reboot."
+sudo apt upgrade -y
+sudo reboot now
