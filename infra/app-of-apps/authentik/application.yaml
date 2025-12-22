@@ -13,9 +13,7 @@ spec:
       releaseName: authentik
       values: |
         authentik:
-          secret_key: ""
-
-
+          secret_key: "1234567890"
 
   destination:
     server: https://kubernetes.default.svc
