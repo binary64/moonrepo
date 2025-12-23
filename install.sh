@@ -38,6 +38,14 @@ EOF
 
 sudo sysctl --system
 
+# Configure NetworkManager to ignore CNI interfaces
+if [ -d /etc/NetworkManager/conf.d ]; then
+	cat <<EOF | sudo tee /etc/NetworkManager/conf.d/rke2-canal.conf >/dev/null
+[keyfile]
+unmanaged-devices=interface-name:cali*;interface-name:flannel*
+EOF
+fi
+
 sudo mkdir -p /etc/rancher/rke2
 
 cat <<EOF | sudo tee /etc/rancher/rke2/config.yaml >/dev/null
