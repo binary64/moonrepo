@@ -18,6 +18,9 @@ spec:
         global:
           istioNamespace: istio-system
           logAsJson: true
+          proxy:
+            privileged: false
+            enableCoreDump: false
 
   destination:
     server: https://kubernetes.default.svc
