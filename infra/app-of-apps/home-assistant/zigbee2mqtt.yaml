@@ -15,7 +15,7 @@ spec:
         zigbee2mqtt:
           serial:
             adapter: ember
-            port: /dev/serial/by-id/usb-SMLIGHT_SMLIGHT_SLZB-07Mg24_fa2c7763f172ed118d9e75773dbf42d5-if00-port0
+            port: /dev/ttyUSB0
 
           advanced:
             network_key:
@@ -58,12 +58,11 @@ spec:
         volumes:
           - name: zigbee-usb
             hostPath:
-              path: /dev/serial/by-id
-              type: Directory
+              path: /dev/serial/by-id/usb-SMLIGHT_SMLIGHT_SLZB-07Mg24_fa2c7763f172ed118d9e75773dbf42d5-if00-port0
 
         volumeMounts:
           - name: zigbee-usb
-            mountPath: /dev/serial/by-id
+            mountPath: /dev/ttyUSB0
 
   destination:
     server: https://kubernetes.default.svc
