@@ -32,6 +32,22 @@ spec:
           enabled: true
           accessMode: ReadWriteOnce
           size: 10Gi
+        
+        securityContext:
+          privileged: true
+
+        volumes:
+          - name: slzb-07
+            hostPath:
+              path: /dev/serial/by-id/usb-SMLIGHT_SMLIGHT_SLZB-07Mg24_fa2c7763f172ed118d9e75773dbf42d5-if00-port0
+        
+        volumeMounts:
+          - name: slzb-07
+            mountPath: /dev/ttyUSB0
+
+        zigbee2mqtt:
+          serial:
+            port: /dev/ttyUSB0
 
   destination:
     server: https://kubernetes.default.svc
