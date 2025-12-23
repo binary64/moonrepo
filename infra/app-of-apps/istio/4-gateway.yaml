@@ -4,8 +4,6 @@ kind: Gateway
 metadata:
   name: gateway
   namespace: istio-system
-  annotations:
-    argocd.argoproj.io/sync-wave: "-1"
 spec:
   gatewayClassName: istio
   listeners:

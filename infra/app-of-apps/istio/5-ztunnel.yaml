@@ -4,19 +4,19 @@ kind: Application
 metadata:
   name: ztunnel
   namespace: argocd
-  annotations:
-    argocd.argoproj.io/sync-wave: "-3"
 spec:
   project: default
   source:
     repoURL: https://istio-release.storage.googleapis.com/charts
-    targetRevision: 1.28.1
+    targetRevision: 1.28.2
     chart: ztunnel
     helm:
       releaseName: ztunnel
+
   destination:
     server: https://kubernetes.default.svc
     namespace: istio-system
+
   syncPolicy:
     automated:
       prune: true

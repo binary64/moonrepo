@@ -4,21 +4,17 @@ kind: Application
 metadata:
   name: istio-cni
   namespace: argocd
-  annotations:
-    argocd.argoproj.io/sync-wave: "-4"
 spec:
   project: default
   source:
     repoURL: https://istio-release.storage.googleapis.com/charts
-    targetRevision: 1.28.1
+    targetRevision: 1.28.2
     chart: cni
     helm:
       releaseName: istio-cni
       values: |
-        cni:
-          cniBinDir: /var/lib/rancher/rke2/bin
-          cniConfDir: /var/lib/rancher/rke2/agent/etc/cni/net.d
-        profile: ambient
+        cniBinDir: /var/lib/rancher/rke2/bin
+        cniConfDir: /var/lib/rancher/rke2/agent/etc/cni/net.d
 
   destination:
     server: https://kubernetes.default.svc
