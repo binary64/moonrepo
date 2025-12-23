@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mosquitto
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://bluerange-io.github.io/bluerange-kubernetes/
+    chart: bluerange-mosquitto
+    targetRevision: "1.0.3-1"
+    helm:
+      releaseName: mosquitto
+      values: |
+        service:
+          type: ClusterIP
+          port: 1883
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: home-assistant
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

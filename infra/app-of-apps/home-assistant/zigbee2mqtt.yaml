@@ -13,6 +13,8 @@ spec:
       releaseName: zigbee2mqtt
       values: |
         zigbee2mqtt:
+          mqtt:
+            server: 'mqtt://mosquitto:1883'
           serial:
             adapter: ember
             port: /dev/ttyUSB0
