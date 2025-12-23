@@ -13,7 +13,7 @@ spec:
       releaseName: zigbee2mqtt
       values: |
         serial:
-          adapter: zstack
+          adapter: ember
           port: /dev/ttyUSB0
         advanced:
           network_key:
