@@ -13,6 +13,7 @@ spec:
     helm:
       releaseName: istio-cni
       values: |
+        profile: ambient
         cniBinDir: /var/lib/rancher/rke2/bin
         cniConfDir: /var/lib/rancher/rke2/agent/etc/cni/net.d
 
