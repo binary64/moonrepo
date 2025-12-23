@@ -13,9 +13,10 @@ spec:
     targetRevision: 0.5.0
     helm:
       values: |
-        instances: 1
-        storage:
-          size: 1Gi
+        cluster:
+          instances: 1
+          storage:
+            size: 8Gi
   
   destination:
     server: https://kubernetes.default.svc

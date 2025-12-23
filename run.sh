@@ -1,5 +1,5 @@
 #!/bin/bash
-set -xeuo pipefail
+set -euo pipefail
 
 # Constants
 CLUSTER_NAME="moonrepo-dev"
