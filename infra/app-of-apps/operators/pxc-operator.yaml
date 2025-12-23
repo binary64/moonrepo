@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: pxc-operator
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://percona.github.io/percona-helm-charts/
+    targetRevision: "1.18.0"
+    chart: pxc-operator
+    helm:
+      releaseName: pxc-operator
+      values: |
+        pxc:
+          size: 1
+        haproxy:
+          size: 1
+        resources:
+          requests:
+            cpu: 50m
+          limits:
+            memory: 128Mi
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: pxc-operator
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
