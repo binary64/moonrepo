@@ -12,6 +12,31 @@ spec:
     helm:
       releaseName: zigbee2mqtt
       values: |
+        serial:
+          adapter: zstack
+          port: /dev/ttyUSB0
+        advanced:
+          network_key:
+            - 231
+            - 8
+            - 97
+            - 166
+            - 138
+            - 38
+            - 9
+            - 36
+            - 36
+            - 155
+            - 111
+            - 54
+            - 190
+            - 230
+            - 21
+            - 14
+          pan_id: 31237
+          log_level: debug
+          channel: 25
+
         service:
           type: ClusterIP
           port: 80
