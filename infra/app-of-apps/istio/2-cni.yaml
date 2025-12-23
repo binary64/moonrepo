@@ -15,8 +15,9 @@ spec:
     helm:
       releaseName: istio-cni
       values: |
-        global:
-          platform: k3s
+        cni:
+          cniBinDir: /var/lib/rancher/rke2/bin
+          cniConfDir: /var/lib/rancher/rke2/agent/etc/cni/net.d
         profile: ambient
 
   destination:
