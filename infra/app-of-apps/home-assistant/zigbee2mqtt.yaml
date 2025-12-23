@@ -12,67 +12,58 @@ spec:
     helm:
       releaseName: zigbee2mqtt
       values: |
-        serial:
-          adapter: ember
-          port: /dev/ttyUSB0
-        advanced:
-          network_key:
-            - 231
-            - 8
-            - 97
-            - 166
-            - 138
-            - 38
-            - 9
-            - 36
-            - 36
-            - 155
-            - 111
-            - 54
-            - 190
-            - 230
-            - 21
-            - 14
-          pan_id: 31237
-          log_level: debug
-          channel: 25
+        zigbee2mqtt:
+          serial:
+            adapter: ember
+            port: /dev/serial/by-id/usb-SMLIGHT_SMLIGHT_SLZB-07Mg24_fa2c7763f172ed118d9e75773dbf42d5-if00-port0
+
+          advanced:
+            network_key:
+              - 231
+              - 8
+              - 97
+              - 166
+              - 138
+              - 38
+              - 9
+              - 36
+              - 36
+              - 155
+              - 111
+              - 51
+              - 190
+              - 211
+              - 211
+              - 14
+            pan_id: 31237
+            channel: 25
+            log_level: debug
 
         service:
           type: ClusterIP
-          port: 80
-
-        ingress:
-          enabled: false
-          external: true
-          className: istio
-          annotations:
-            kubernetes.io/ingress.class: istio
-          hosts:
-            - host: zigbee2mqtt.localhost
-              paths:
-                - path: /
-                  pathType: Prefix
+          port: 8080
 
         persistence:
           enabled: true
           accessMode: ReadWriteOnce
           size: 10Gi
-        
+
+        podSecurityContext:
+          runAsUser: 0
+          runAsGroup: 0
+
         securityContext:
           privileged: true
 
         volumes:
-          - name: slzb-07
+          - name: zigbee-usb
             hostPath:
-              path: /dev/serial/by-id/usb-SMLIGHT_SMLIGHT_SLZB-07Mg24_fa2c7763f172ed118d9e75773dbf42d5-if00-port0
-        
-        volumeMounts:
-          - name: slzb-07
-            mountPath: /dev/ttyUSB0
+              path: /dev/serial/by-id
+              type: Directory
 
-        zigbee2mqtt:
-          serial:
-            port: /dev/ttyUSB0
+        volumeMounts:
+          - name: zigbee-usb
+            mountPath: /dev/serial/by-id
 
   destination:
     server: https://kubernetes.default.svc
@@ -84,6 +75,7 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+      - ServerSideApply=true
     retry:
       limit: 5
       backoff:
