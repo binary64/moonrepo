@@ -30,5 +30,7 @@ data:
       replicas: 1
       template:
         spec:
+          hostNetwork: true
+          dnsPolicy: ClusterFirstWithHostNet
           containers:
           - name: istio-proxy
