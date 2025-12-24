@@ -8,16 +8,19 @@ metadata:
     cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   gatewayClassName: istio
+  type: NodePort
   listeners:
   - name: default
     port: 80
     protocol: HTTP
+    nodePort: 30080
     allowedRoutes:
       namespaces:
         from: All
   - name: https
     port: 443
     protocol: HTTPS
+    nodePort: 30443
     hostname: home.brandwhisper.cloud
     tls:
       mode: Terminate
