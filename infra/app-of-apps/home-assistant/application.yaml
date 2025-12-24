@@ -53,7 +53,7 @@ spec:
           annotations:
             kubernetes.io/ingress.class: istio
           hosts:
-            - host: home-assistant.localhost
+            - host: home.brandwhisper.cloud
               paths:
                 - path: /
                   pathType: Prefix
