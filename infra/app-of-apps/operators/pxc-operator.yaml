@@ -3,14 +3,16 @@ kind: Application
 metadata:
   name: pxc-operator
   namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
   annotations:
     argocd.argoproj.io/sync-wave: "-5"
 spec:
   project: default
   source:
     repoURL: https://percona.github.io/percona-helm-charts/
-    targetRevision: "1.18.0"
     chart: pxc-operator
+    targetRevision: "1.18.0"
     helm:
       releaseName: pxc-operator
       values: |
