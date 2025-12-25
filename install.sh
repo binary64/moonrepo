@@ -114,6 +114,10 @@ spec:
           automated:
             prune: true
             selfHeal: true
+          syncOptions:
+            - CreateNamespace=true
+            - SkipDryRunOnMissingResource=true
+            - ServerSideApply=true
         retry:
           limit: 15
           backoff:
