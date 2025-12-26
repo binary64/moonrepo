@@ -16,6 +16,10 @@ spec:
     helm:
       releaseName: nextcloud-db
       values: |
+        unsafeFlags:
+          pxcSize: true
+          proxySize: true
+
         # Single node deployment for low-resource environments
         pxc:
           size: 1
