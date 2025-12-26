@@ -3,6 +3,8 @@ kind: Application
 metadata:
   name: nextcloud
   namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
@@ -36,6 +38,23 @@ spec:
         nextcloud:
           existingSecret:
             name: nextcloud-secret
+
+        # Disable internal database (using external Percona XtraDB Cluster)
+        internalDatabase:
+          enabled: false
+
+        # External database configuration (Percona XtraDB Cluster via HAProxy)
+        externalDatabase:
+          enabled: true
+          type: mysql
+          host: nextcloud-db-pxc-db-haproxy.nextcloud.svc.cluster.local
+          port: 3306
+          database: nextcloud
+          existingSecret:
+            enabled: true
+            secretName: nextcloud-db-secret
+            usernameKey: db-username
+            passwordKey: db-password
             
 
   destination:

@@ -16,10 +16,7 @@ spec:
     helm:
       releaseName: pxc-operator
       values: |
-        pxc:
-          size: 1
-        haproxy:
-          size: 1
+        watchAllNamespaces: true
         resources:
           requests:
             cpu: 50m
@@ -36,8 +33,11 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true
     retry:
-      limit: 5
+      limit: -1
       backoff:
         duration: 5s
         factor: 2

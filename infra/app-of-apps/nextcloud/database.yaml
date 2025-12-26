@@ -1,0 +1,89 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nextcloud-db
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
+spec:
+  project: default
+  source:
+    repoURL: https://percona.github.io/percona-helm-charts/
+    chart: pxc-db
+    targetRevision: "1.18.0"
+    helm:
+      releaseName: nextcloud-db
+      values: |
+        # Single node deployment for low-resource environments
+        pxc:
+          size: 1
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 200m
+            limits:
+              memory: 1Gi
+              cpu: 500m
+          persistence:
+            enabled: true
+            size: 10Gi
+          # Disable anti-affinity for single-node clusters
+          affinity:
+            antiAffinityTopologyKey: "none"
+
+        # HAProxy for MySQL access
+        haproxy:
+          enabled: true
+          size: 1
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 100m
+            limits:
+              memory: 256Mi
+              cpu: 200m
+          affinity:
+            antiAffinityTopologyKey: "none"
+
+        # Disable ProxySQL (using HAProxy instead)
+        proxysql:
+          enabled: false
+
+        # Disable PMM monitoring
+        pmm:
+          enabled: false
+
+        # Disable backups by default
+        backup:
+          enabled: false
+
+        # Database secrets - creates users automatically
+        # You can reference the secret: nextcloud-db-pxc-db-secrets
+        secrets:
+          passwords:
+            root: "changeme-root-password"
+            xtrabackup: "changeme-xtrabackup-password"
+            monitor: "changeme-monitor-password"
+            clustercheck: "changeme-clustercheck-password"
+            proxyadmin: "changeme-proxyadmin-password"
+            operator: "changeme-operator-password"
+            replication: "changeme-replication-password"
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: nextcloud
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
