@@ -12,9 +12,6 @@ spec:
     helm:
       releaseName: cert-manager
       values: |
-        crds:
-          enabled: true
-          keep: false
         extraObjects:
           - |
             apiVersion: cert-manager.io/v1
