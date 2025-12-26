@@ -12,6 +12,7 @@ spec:
     helm:
       releaseName: mosquitto
       values: |
+        fullnameOverride: mosquitto
         service:
           type: ClusterIP
           port: 1883
