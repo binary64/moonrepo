@@ -28,7 +28,7 @@ spec:
       - ServerSideApply=true
       - RespectIgnoreDifferences=true
     retry:
-      limit: 5
+      limit: -1
       backoff:
         duration: 5s
         factor: 2
@@ -36,6 +36,5 @@ spec:
   ignoreDifferences:
     - group: admissionregistration.k8s.io
       kind: ValidatingWebhookConfiguration
-      name: victoria-metrics-k8s-stack-victoria-metrics-operator-admission
       jqPathExpressions:
       - '.webhooks[]?.clientConfig.caBundle'
