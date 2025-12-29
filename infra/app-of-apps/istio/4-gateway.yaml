@@ -5,7 +5,7 @@ metadata:
   namespace: istio-system
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
-    networking.istio.io/service-type: NodePort
+    networking.istio.io/service-type: LoadBalancer
 spec:
   gatewayClassName: istio
   listeners:
