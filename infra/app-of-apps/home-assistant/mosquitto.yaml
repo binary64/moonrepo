@@ -6,16 +6,13 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://bluerange-io.github.io/bluerange-kubernetes/
-    chart: bluerange-mosquitto
-    targetRevision: "1.0.3-1"
+    repoURL: https://naps.github.io/helm-charts/
+    chart: mosquitto
+    targetRevision: "1.0.4"
     helm:
       releaseName: mosquitto
       values: |
         fullnameOverride: mosquitto
-        service:
-          type: ClusterIP
-          port: 1883
   
   destination:
     server: https://kubernetes.default.svc
@@ -27,9 +24,11 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+      - RespectIgnoreDifferences=true
+      - SkipDryRunOnMissingResource=true
       - ServerSideApply=true
     retry:
-      limit: 5
+      limit: -1
       backoff:
         duration: 5s
         factor: 2
