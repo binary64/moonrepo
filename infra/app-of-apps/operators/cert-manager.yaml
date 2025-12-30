@@ -12,6 +12,8 @@ spec:
     helm:
       releaseName: cert-manager
       values: |
+        config:
+          enableGatewayAPI: true
         extraObjects:
           - |
             apiVersion: cert-manager.io/v1
@@ -49,4 +51,3 @@ spec:
         duration: 5s
         factor: 2
         maxDuration: 3m
-    
