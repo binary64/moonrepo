@@ -15,6 +15,14 @@ spec:
       releaseName: mosquitto
       values: |
         fullnameOverride: mosquitto
+        auth:
+          username: mqtt
+          password: mqtt
+        mosquitto:
+          config: |
+            username: mqtt
+            password: mqtt
+            
   
   destination:
     server: https://kubernetes.default.svc

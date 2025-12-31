@@ -15,6 +15,9 @@ spec:
         zigbee2mqtt:
           mqtt:
             server: 'mqtt://mosquitto:1883'
+            username: mqtt
+            password: mqtt
+
           serial:
             adapter: ember
             port: /dev/ttyUSB0
@@ -39,7 +42,7 @@ spec:
               - 14
             pan_id: 31237
             channel: 25
-            log_level: debug
+            log_level: info
 
         service:
           type: ClusterIP
