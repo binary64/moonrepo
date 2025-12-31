@@ -3,6 +3,8 @@ kind: Application
 metadata:
   name: cert-manager
   namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
@@ -45,8 +47,9 @@ spec:
       - CreateNamespace=true
       - ServerSideApply=true
       - SkipDryRunOnMissingResource=true
+      - RespectIgnoreDifferences=true
     retry:
-      limit: 5
+      limit: -1
       backoff:
         duration: 5s
         factor: 2
