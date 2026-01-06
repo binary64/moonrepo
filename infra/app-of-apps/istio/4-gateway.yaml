@@ -18,11 +18,11 @@ spec:
   - name: https
     port: 443
     protocol: HTTPS
-    hostname: home.brandwhisper.cloud
+    hostname: "*.brandwhisper.cloud"
     tls:
       mode: Terminate
       certificateRefs:
-      - name: home-tls
+      - name: wildcard-brandwhisper-tls
     allowedRoutes:
       namespaces:
         from: All

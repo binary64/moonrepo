@@ -29,11 +29,11 @@ spec:
                 privateKeySecretRef:
                   name: letsencrypt-prod-account-key
                 solvers:
-                  - http01:
-                      gatewayHTTPRoute:
-                        parentRefs:
-                          - name: gateway
-                            namespace: istio-system
+                  - dns01:
+                      cloudflare:
+                        apiTokenSecretRef:
+                          name: cloudflare-api-token
+                          key: api-token
           
   destination:
     server: https://kubernetes.default.svc

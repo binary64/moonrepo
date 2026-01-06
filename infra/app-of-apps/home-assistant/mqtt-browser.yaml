@@ -1,0 +1,56 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mqttui
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: "https://github.com/terdia/mqttui"
+    targetRevision: HEAD
+    path: "k8s" # if you add a k8s directory with manifests in that repo, or use a fork
+
+    # If the repo does not contain a k8s directory with manifests, you can embed
+    # the Helm chart or Kubernetes manifests using inline kustomize/helm values below.
+
+    helm:
+      # A minimal “pseudo” Helm chart — you can also create your own Helm chart in your org.
+      releaseName: mqttui
+      values: |
+        replicaCount: 1
+        image:
+          repository: terdia07/mqttui
+          tag: latest
+          pullPolicy: IfNotPresent
+
+        # MQTT Broker connection setup (WebSocket + standard MQTT)
+        env:
+          MQTT_BROKER: "tcp://your-mqtt-broker:1883"
+          MQTT_PORT: "1883"
+
+        service:
+          type: ClusterIP
+          port: 5000
+
+        ingress:
+          enabled: true
+          annotations:
+            kubernetes.io/ingress.class: nginx
+          hosts:
+            - host: mqtt-ui.example.com
+              paths:
+                - path: /
+                  pathType: Prefix
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: iot-tools
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

@@ -63,18 +63,6 @@ spec:
         backup:
           enabled: false
 
-        # Database secrets - creates users automatically
-        # You can reference the secret: nextcloud-db-pxc-db-secrets
-        secrets:
-          passwords:
-            root: "changeme-root-password"
-            xtrabackup: "changeme-xtrabackup-password"
-            monitor: "changeme-monitor-password"
-            clustercheck: "changeme-clustercheck-password"
-            proxyadmin: "changeme-proxyadmin-password"
-            operator: "changeme-operator-password"
-            replication: "changeme-replication-password"
-
   destination:
     server: https://kubernetes.default.svc
     namespace: nextcloud
@@ -85,8 +73,11 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true
     retry:
-      limit: 5
+      limit: -1
       backoff:
         duration: 5s
         factor: 2

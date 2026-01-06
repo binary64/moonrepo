@@ -1,0 +1,99 @@
+# https://artifacthub.io/packages/helm/newrelic/nri-bundle
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: newrelic
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://helm-charts.newrelic.com
+    chart: nri-bundle
+    targetRevision: 6.0.32
+    helm:
+      releaseName: newrelic
+      values: |
+        global:
+          cluster: binary64
+          licenseKeySecret: newrelic-secret
+          lowDataMode: true
+
+        # --------------------------------
+        # Infrastructure Agent (DaemonSet)
+        # --------------------------------
+        newrelic-infrastructure:
+          enabled: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+
+        # --------------------------------
+        # Kubernetes Integration
+        # --------------------------------
+        newrelic-kubernetes:
+          enabled: true
+
+          clusterAgent:
+            enabled: true
+            replicas: 1
+            resources:
+              requests:
+                cpu: 50m
+                memory: 128Mi
+              limits:
+                cpu: 300m
+                memory: 384Mi
+
+          # kube-state-metrics (enabled)
+          kubeStateMetrics:
+            enabled: true
+
+          # Kubernetes events (enabled)
+          eventCollection:
+            enabled: true
+
+          # Prometheus scraping (enabled)
+          prometheus:
+            enabled: true
+
+        # --------------------------------
+        # Logging (enabled)
+        # --------------------------------
+        newrelic-logging:
+          enabled: true
+          resources:
+            requests:
+              cpu: 30m
+              memory: 96Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+
+        # --------------------------------
+        # Metadata Injection (enabled)
+        # --------------------------------
+        webhook:
+          enabled: true
+
+        # --------------------------------
+        # Pixie (explicitly disabled)
+        # --------------------------------
+        pixie:
+          enabled: false
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: newrelic
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
