@@ -17,12 +17,9 @@ spec:
           enabled: true
           configuration.yaml: |
             mqtt:
-              broker: mosquitto:1883
-              username: mqtt
-              password: mqtt
-              # Optional settings:
+              broker: mosquitto
+              port: 1883
               client_id: home-assistant
-              keepalive: 60
               discovery: true
               discovery_prefix: homeassistant
           forceInit: false
