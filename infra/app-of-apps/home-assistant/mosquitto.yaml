@@ -18,7 +18,6 @@ spec:
         mosquitto:
           config: |
             allow_anonymous true
-            listener 1883
   
   destination:
     server: https://kubernetes.default.svc
