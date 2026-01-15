@@ -15,14 +15,10 @@ spec:
       releaseName: mosquitto
       values: |
         fullnameOverride: mosquitto
-        auth:
-          username: mqtt
-          password: mqtt
         mosquitto:
           config: |
+            allow_anonymous true
             listener 1883
-            allow_anonymous false
-            password_file /mosquitto/config/passwordfile
   
   destination:
     server: https://kubernetes.default.svc

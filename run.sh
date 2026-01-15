@@ -71,6 +71,11 @@ while true; do
 	for file in "${FILES[@]}"; do
 		DOC_COUNT=$(yq eval 'document_index' "$file" | wc -l)
 		for ((i = 0; i < DOC_COUNT; i++)); do
+			# Check for skip-local annotation
+			SKIP_LOCAL=$(yq eval -r "select(document_index == $i) | .metadata.annotations[\"moonrepo.dev/skip-local\"] // \"false\"" "$file")
+			if [ "$SKIP_LOCAL" == "true" ]; then
+				continue
+			fi
 			KIND=$(yq eval -r "select(document_index == $i) | .kind" "$file")
 			if [ "$KIND" == "Application" ]; then
 				REPO_URL=$(yq eval -r "select(document_index == $i) | .spec.source.repoURL" "$file")
@@ -150,8 +155,6 @@ while true; do
 
 	# 2. Process Files
 	for file in "${FILES[@]}"; do
-		# echo "Scanning $file..."
-
 		DOC_COUNT=$(yq eval 'document_index' "$file" | wc -l)
 
 		if [ "$DOC_COUNT" -eq 0 ]; then
@@ -159,6 +162,14 @@ while true; do
 		fi
 
 		for ((i = 0; i < DOC_COUNT; i++)); do
+			# Check for skip-local annotation
+			SKIP_LOCAL=$(yq eval -r "select(document_index == $i) | .metadata.annotations[\"moonrepo.dev/skip-local\"] // \"false\"" "$file")
+			if [ "$SKIP_LOCAL" == "true" ]; then
+				NAME=$(yq eval -r "select(document_index == $i) | .metadata.name" "$file")
+				echo "Skipping $NAME (moonrepo.dev/skip-local: true)"
+				continue
+			fi
+
 			# Unique ID for tracking success
 			TRACK_ID="${file}:${i}"
 

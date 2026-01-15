@@ -5,6 +5,7 @@ metadata:
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "-10"
+    moonrepo.dev/skip-local: "true"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
