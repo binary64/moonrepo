@@ -20,9 +20,9 @@ spec:
           password: mqtt
         mosquitto:
           config: |
-            username: mqtt
-            password: mqtt
-            
+            listener 1883
+            allow_anonymous false
+            password_file /mosquitto/config/passwordfile
   
   destination:
     server: https://kubernetes.default.svc
