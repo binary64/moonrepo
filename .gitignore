@@ -4,3 +4,7 @@
 # moon
 .moon/cache
 .moon/docker
+
+# Local config
+.envrc.local
+kubeconfig.yaml
