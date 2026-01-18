@@ -22,7 +22,7 @@ spec:
     tls:
       mode: Terminate
       certificateRefs:
-      - name: wildcard-brandwhisper-tls
+      - name: home-tls
     allowedRoutes:
       namespaces:
         from: All
