@@ -1,0 +1,6 @@
+name: moonrepo-cloudflare
+runtime:
+  name: nodejs
+  options:
+    packagemanager: bun
+description: Cloudflare resources for moonrepo infrastructure

@@ -1,0 +1,12 @@
+{
+  "name": "moonrepo-cloudflare",
+  "main": "index.ts",
+  "devDependencies": {
+    "@types/node": "^20"
+  },
+  "dependencies": {
+    "@pulumi/pulumi": "^3",
+    "@pulumi/cloudflare": "^5",
+    "@pulumi/kubernetes": "^4"
+  }
+}

@@ -4,6 +4,8 @@ $schema: "./cache/schemas/workspace.json"
 projects:
   - "apps/*"
   - "packages/*"
+  - "infra/pulumi"
+  - "infra/pulumi-bootstrap"
 
 vcs:
   manager: "git"

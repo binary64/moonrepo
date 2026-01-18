@@ -1,0 +1,11 @@
+{
+  "name": "moonrepo-pulumi-bootstrap",
+  "main": "index.ts",
+  "devDependencies": {
+    "@types/node": "^20"
+  },
+  "dependencies": {
+    "@pulumi/pulumi": "^3",
+    "@pulumi/aws": "^6"
+  }
+}

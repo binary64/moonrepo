@@ -1,0 +1,6 @@
+name: moonrepo-pulumi-bootstrap
+runtime:
+  name: nodejs
+  options:
+    packagemanager: bun
+description: Bootstrap AWS resources for Pulumi state storage (KMS, S3, IAM)

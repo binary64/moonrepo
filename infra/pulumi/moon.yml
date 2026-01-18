@@ -1,0 +1,17 @@
+$schema: "../../.moon/cache/schemas/project.json"
+
+language: "typescript"
+type: "tool"
+
+tasks:
+  preview:
+    command: "pulumi preview"
+    local: true
+
+  up:
+    command: "pulumi up"
+    local: true
+
+  destroy:
+    command: "pulumi destroy"
+    local: true
