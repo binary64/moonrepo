@@ -1,0 +1,15 @@
+{
+   "image": "mcr.microsoft.com/devcontainers/typescript-node:1-22",
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    //opencode:
+    "ghcr.io/anomalyco/opencode:latest": {}
+  },
+  "mounts": [
+    "source=${localEnv:HOME}/.ssh,target=/root/.ssh,type=bind,readonly"
+  ],
+  "workspaceFolder": "/code",
+  "runArgs": ["--add-host=host.docker.internal:host-gateway"],
+  "postCreateCommand": "git config --global --add safe.directory /code"
+}
