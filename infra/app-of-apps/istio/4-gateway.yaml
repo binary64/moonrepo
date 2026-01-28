@@ -18,7 +18,18 @@ spec:
   - name: https
     port: 443
     protocol: HTTPS
-    hostname: "*.brandwhisper.cloud"
+    hostname: "*.home.brandwhisper.cloud"
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - name: home-tls
+    allowedRoutes:
+      namespaces:
+        from: All
+  - name: https-home
+    port: 443
+    protocol: HTTPS
+    hostname: "home.brandwhisper.cloud"
     tls:
       mode: Terminate
       certificateRefs:
