@@ -21,7 +21,7 @@ spec:
         prometheus:
           enabled: false
         webhook:
-          replicaCount: 0
+          enabled: false
         cainjector:
           enabled: false
           
