@@ -35,9 +35,13 @@ const certManagerToken = new cloudflare.ApiToken("cert-manager-dns-token", {
 });
 
 // Create K8s provider for the prod cluster
-const k8sProvider = new k8s.Provider("prod", {
-  context: "prod",
-});
+// When running in-cluster (via Pulumi operator), context is not needed
+// When running locally, use "prod" context
+const k8sProvider = new k8s.Provider("prod",
+  process.env.KUBERNETES_SERVICE_HOST
+    ? {} // Running in-cluster, use default in-cluster config
+    : { context: "prod" } // Running locally, use prod context
+);
 
 // Create the secret in cert-manager namespace for DNS-01 solver
 const certManagerSecret = new k8s.core.v1.Secret(

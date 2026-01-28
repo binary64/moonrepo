@@ -4,7 +4,7 @@ metadata:
   name: moonrepo-cloudflare-prod
   namespace: pulumi-operator-system
 spec:
-  stack: binary64/moonrepo-cloudflare/prod
+  stack: user/moonrepo-cloudflare/prod
   projectRepo: https://github.com/binary64/moonrepo
   repoDir: infra/pulumi
   branch: refs/heads/master
@@ -16,8 +16,8 @@ spec:
     CLOUDFLARE_API_TOKEN:
       type: Secret
       secret:
-        name: cloudflare-api-token
+        name: cloudflare-api-token-pulumi
         key: token
-  secretsRef:
-    - name: pulumi-access-token
-      key: accessToken
+  accessTokenSecret:
+    name: pulumi-access-token
+    key: accessToken
