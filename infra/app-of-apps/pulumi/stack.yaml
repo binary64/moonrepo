@@ -1,0 +1,23 @@
+apiVersion: pulumi.com/v1
+kind: Stack
+metadata:
+  name: moonrepo-cloudflare-prod
+  namespace: pulumi-operator-system
+spec:
+  stack: binary64/moonrepo-cloudflare/prod
+  projectRepo: https://github.com/binary64/moonrepo
+  repoDir: infra/pulumi
+  branch: refs/heads/master
+  destroyOnFinalize: false
+  refresh: true
+  continueResyncOnCommitMatch: true
+  resyncFrequencySeconds: 300
+  envRefs:
+    CLOUDFLARE_API_TOKEN:
+      type: Secret
+      secret:
+        name: cloudflare-api-token
+        key: token
+  secretsRef:
+    - name: pulumi-access-token
+      key: accessToken
