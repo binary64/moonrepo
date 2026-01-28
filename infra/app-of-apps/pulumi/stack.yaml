@@ -13,7 +13,7 @@ spec:
   continueResyncOnCommitMatch: true
   resyncFrequencySeconds: 300
   # Use S3 backend (configured via bootstrap stack)
-  backend: s3://moonrepo-pulumi-state-ACCOUNT_ID?region=eu-west-2
+  backend: s3://moonrepo-pulumi-state-077327148137?region=eu-west-2
   envRefs:
     CLOUDFLARE_API_TOKEN:
       type: Secret
