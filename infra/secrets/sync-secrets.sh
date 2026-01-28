@@ -19,15 +19,18 @@ mkdir -p unsealed
 # Fetch secrets from AWS Secrets Manager
 echo "1. Fetching secrets from AWS..."
 
-PULUMI_TOKEN=$(aws secretsmanager get-secret-value \
-  --secret-id "${PREFIX}/pulumi-access-token" \
-  --query SecretString \
-  --output text)
-
 CLOUDFLARE_TOKEN=$(aws secretsmanager get-secret-value \
   --secret-id "${PREFIX}/cloudflare-api-token-pulumi" \
   --query SecretString \
   --output text)
+
+AWS_CREDENTIALS=$(aws secretsmanager get-secret-value \
+  --secret-id "${PREFIX}/pulumi-aws-credentials" \
+  --query SecretString \
+  --output text)
+
+AWS_ACCESS_KEY_ID=$(echo "$AWS_CREDENTIALS" | jq -r '.["access-key-id"]')
+AWS_SECRET_ACCESS_KEY=$(echo "$AWS_CREDENTIALS" | jq -r '.["secret-access-key"]')
 
 echo "✓ Secrets fetched from AWS"
 
@@ -40,20 +43,21 @@ cat > unsealed/pulumi-secrets.unsealed.yaml <<EOF
 apiVersion: v1
 kind: Secret
 metadata:
-  name: pulumi-access-token
-  namespace: ${PULUMI_OPERATOR_NAMESPACE}
-type: Opaque
-stringData:
-  accessToken: "${PULUMI_TOKEN}"
----
-apiVersion: v1
-kind: Secret
-metadata:
   name: cloudflare-api-token-pulumi
   namespace: ${PULUMI_OPERATOR_NAMESPACE}
 type: Opaque
 stringData:
   token: "${CLOUDFLARE_TOKEN}"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: pulumi-aws-credentials
+  namespace: ${PULUMI_OPERATOR_NAMESPACE}
+type: Opaque
+stringData:
+  access-key-id: "${AWS_ACCESS_KEY_ID}"
+  secret-access-key: "${AWS_SECRET_ACCESS_KEY}"
 EOF
 
 echo "✓ Unsealed secrets generated in unsealed/"

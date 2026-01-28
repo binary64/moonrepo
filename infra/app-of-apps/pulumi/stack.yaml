@@ -4,7 +4,7 @@ metadata:
   name: moonrepo-cloudflare-prod
   namespace: pulumi-operator-system
 spec:
-  stack: user/moonrepo-cloudflare/prod
+  stack: prod
   projectRepo: https://github.com/binary64/moonrepo
   repoDir: infra/pulumi
   branch: refs/heads/master
@@ -12,12 +12,26 @@ spec:
   refresh: true
   continueResyncOnCommitMatch: true
   resyncFrequencySeconds: 300
+  # Use S3 backend (configured via bootstrap stack)
+  backend: s3://moonrepo-pulumi-state-ACCOUNT_ID?region=eu-west-2
   envRefs:
     CLOUDFLARE_API_TOKEN:
       type: Secret
       secret:
         name: cloudflare-api-token-pulumi
         key: token
-  accessTokenSecret:
-    name: pulumi-access-token
-    key: accessToken
+    # AWS credentials for S3 backend access
+    AWS_ACCESS_KEY_ID:
+      type: Secret
+      secret:
+        name: pulumi-aws-credentials
+        key: access-key-id
+    AWS_SECRET_ACCESS_KEY:
+      type: Secret
+      secret:
+        name: pulumi-aws-credentials
+        key: secret-access-key
+    AWS_REGION:
+      type: Literal
+      literal:
+        value: eu-west-2

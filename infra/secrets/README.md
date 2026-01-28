@@ -12,6 +12,11 @@ Local unsealed K8s Secrets (gitignored)
 SealedSecrets (committed to git)
     ↓ (ArgoCD syncs)
 K8s Secrets in cluster
+    ↓
+Pulumi Operator uses secrets
+    ↓
+Pulumi stack accesses S3 backend (via AWS creds)
+Pulumi creates Cloudflare tokens for cert-manager
 ```
 
 ## Directory Structure
@@ -19,7 +24,7 @@ K8s Secrets in cluster
 ```
 infra/secrets/
 ├── README.md                           # This file
-├── set-secret.sh                       # Update secrets in AWS
+├── set-secret.sh                       # Update Cloudflare token in AWS
 ├── sync-secrets.sh                     # Fetch from AWS + seal
 ├── .gitignore                          # Ignore unsealed secrets
 ├── unsealed/                           # Local unsealed secrets (gitignored)
@@ -32,9 +37,10 @@ infra/secrets/
 
 1. AWS credentials configured with access to Secrets Manager
 2. `aws` CLI installed
-3. `kubeseal` CLI installed
-4. `kubectl` configured with prod cluster context
-5. Secrets created in AWS (via pulumi-bootstrap)
+3. `jq` installed (for parsing JSON)
+4. `kubeseal` CLI installed
+5. `kubectl` configured with prod cluster context
+6. Secrets created in AWS (via pulumi-bootstrap)
 
 ## Workflow
 
@@ -46,11 +52,16 @@ infra/secrets/
    pulumi up
    ```
 
-2. Set your secret values in AWS Secrets Manager:
+   This creates:
+   - KMS key for encryption
+   - S3 bucket for Pulumi state
+   - IAM user with access keys (stored in AWS Secrets Manager automatically)
+   - AWS Secrets Manager secret for Cloudflare token (empty, you'll populate next)
+
+2. Set your Cloudflare API token in AWS Secrets Manager:
    ```bash
    cd infra/secrets
-   ./set-secret.sh pulumi-access-token "pul-xxxxx"
-   ./set-secret.sh cloudflare-api-token-pulumi "your-cloudflare-token"
+   ./set-secret.sh "your-cloudflare-token"
    ```
 
 3. Sync secrets to cluster:
@@ -65,13 +76,13 @@ infra/secrets/
    git push
    ```
 
-### Updating a Secret
+### Updating the Cloudflare Token
 
-When you need to rotate or update a secret:
+When you need to rotate the Cloudflare API token:
 
 1. Update the value in AWS Secrets Manager:
    ```bash
-   ./set-secret.sh cloudflare-api-token-pulumi "new-token-value"
+   ./set-secret.sh "new-cloudflare-token"
    ```
 
 2. Sync to generate new SealedSecrets:
@@ -86,18 +97,12 @@ When you need to rotate or update a secret:
    git push
    ```
 
-4. ArgoCD will automatically sync the new sealed secrets to the cluster
+4. ArgoCD automatically syncs the new sealed secrets to the cluster
 
 ## Secrets Reference
 
-### pulumi-access-token
-- **Purpose**: Authentication for Pulumi operator to manage state
-- **Get from**: https://app.pulumi.com/account/tokens
-- **Namespace**: `pulumi-operator-system`
-- **Key**: `accessToken`
-
 ### cloudflare-api-token-pulumi
-- **Purpose**: High-privilege token for Pulumi to CREATE restricted tokens
+- **Purpose**: High-privilege token for Pulumi to CREATE restricted tokens for cert-manager
 - **Get from**: https://dash.cloudflare.com/profile/api-tokens
 - **Permissions needed**:
   - Account.Account Settings:Read
@@ -105,6 +110,54 @@ When you need to rotate or update a secret:
   - User.API Tokens:Edit
 - **Namespace**: `pulumi-operator-system`
 - **Key**: `token`
+- **Set via**: `./set-secret.sh "your-token"`
+
+### pulumi-aws-credentials
+- **Purpose**: AWS credentials for Pulumi operator to access S3 state backend
+- **Source**: Auto-generated from IAM user created by pulumi-bootstrap
+- **Namespace**: `pulumi-operator-system`
+- **Keys**: `access-key-id`, `secret-access-key`
+- **Set via**: Automatically populated by pulumi-bootstrap (no manual action needed)
+
+## How It Works
+
+### S3 Backend (No Pulumi Cloud)
+
+Unlike typical Pulumi setups, we use **S3 as the backend** instead of Pulumi Cloud:
+
+1. **pulumi-bootstrap** creates:
+   - S3 bucket: `moonrepo-pulumi-state-{account-id}`
+   - IAM user: `pulumi-deployer` with S3 access
+   - Access keys stored in AWS Secrets Manager
+
+2. **Pulumi operator** configured to use S3:
+   ```yaml
+   spec:
+     backend: s3://moonrepo-pulumi-state-{account-id}?region=eu-west-2
+     envRefs:
+       AWS_ACCESS_KEY_ID: ...    # From sealed secret
+       AWS_SECRET_ACCESS_KEY: ...  # From sealed secret
+   ```
+
+3. **No Pulumi access token needed** - State managed in your own S3 bucket
+
+### Token Hierarchy
+
+1. **Cloudflare Master Token** (AWS Secrets Manager)
+   - High privileges
+   - Used BY Pulumi to create other tokens
+   - Stored manually via `set-secret.sh`
+
+2. **AWS IAM Access Keys** (AWS Secrets Manager)
+   - Created automatically by pulumi-bootstrap
+   - Used BY Pulumi operator to access S3 backend
+   - Synced automatically via `sync-secrets.sh`
+
+3. **Cloudflare DNS Token** (Created by Pulumi)
+   - Restricted to DNS only
+   - Created BY Pulumi stack
+   - Injected into cert-manager namespace
+   - Used BY cert-manager for DNS-01 challenges
 
 ## Security Notes
 
@@ -113,7 +166,9 @@ When you need to rotate or update a secret:
 - ✅ Only sealed secrets are committed to git
 - ✅ SealedSecrets can only be decrypted by the cluster's sealed-secrets controller
 - ✅ AWS credentials required to read secrets from Secrets Manager
+- ✅ No Pulumi Cloud dependency - state managed in your own S3 bucket
 - ⚠️ Keep the sealed-secrets controller's private key backed up!
+- ⚠️ Keep AWS credentials for Secrets Manager access secure
 
 ## Troubleshooting
 
@@ -128,3 +183,9 @@ The sealed-secrets controller may not be running. Check: `kubectl get pods -n se
 
 ### "Failed to seal secret"
 Ensure you have the correct kubectl context: `kubectl config current-context`
+
+### Pulumi operator can't access S3
+Check that:
+1. AWS credentials secret exists: `kubectl get secret pulumi-aws-credentials -n pulumi-operator-system`
+2. S3 bucket exists: `aws s3 ls | grep moonrepo-pulumi-state`
+3. IAM user has proper permissions: Check pulumi-bootstrap outputs

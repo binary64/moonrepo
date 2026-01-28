@@ -142,16 +142,6 @@ const pulumiAccessKey = new aws.iam.AccessKey("pulumi-deployer-access-key", {
 // Secrets Manager for storing sensitive values
 // These will be encrypted with the KMS key and synced to K8s via SealedSecrets
 
-const pulumiAccessTokenSecret = new aws.secretsmanager.Secret(
-  "pulumi-access-token",
-  {
-    name: `${prefix}/pulumi-access-token`,
-    description: "Pulumi access token for operator state management",
-    kmsKeyId: kmsKey.id,
-    recoveryWindowInDays: 30,
-  }
-);
-
 const cloudflareApiTokenSecret = new aws.secretsmanager.Secret(
   "cloudflare-api-token-pulumi",
   {
@@ -162,8 +152,30 @@ const cloudflareApiTokenSecret = new aws.secretsmanager.Secret(
   }
 );
 
-// Note: Secret values are not set here - use the set-secret.sh script to populate them
-// aws secretsmanager put-secret-value --secret-id moonrepo/pulumi-access-token --secret-string "pul-xxx"
+// AWS credentials secret for Pulumi operator to access S3 backend
+const awsCredentialsSecret = new aws.secretsmanager.Secret(
+  "pulumi-aws-credentials",
+  {
+    name: `${prefix}/pulumi-aws-credentials`,
+    description: "AWS credentials for Pulumi operator to access S3 state backend",
+    kmsKeyId: kmsKey.id,
+    recoveryWindowInDays: 30,
+  }
+);
+
+// Store the pulumi-deployer access keys in Secrets Manager
+const awsCredentialsSecretVersion = new aws.secretsmanager.SecretVersion(
+  "pulumi-aws-credentials-version",
+  {
+    secretId: awsCredentialsSecret.id,
+    secretString: pulumi.jsonStringify({
+      "access-key-id": pulumiAccessKey.id,
+      "secret-access-key": pulumiAccessKey.secret,
+    }),
+  }
+);
+
+// Note: Cloudflare token must be set manually using set-secret.sh script
 // aws secretsmanager put-secret-value --secret-id moonrepo/cloudflare-api-token-pulumi --secret-string "xxx"
 
 // IAM policy for secrets access (can be used by CI/CD or operators)
@@ -171,8 +183,8 @@ const secretsAccessPolicy = new aws.iam.Policy("secrets-access-policy", {
   name: "moonrepo-secrets-access-policy",
   description: "Policy for accessing moonrepo secrets in Secrets Manager",
   policy: pulumi
-    .all([pulumiAccessTokenSecret.arn, cloudflareApiTokenSecret.arn, kmsKey.arn])
-    .apply(([pulumiSecretArn, cloudflareSecretArn, kmsArn]) =>
+    .all([cloudflareApiTokenSecret.arn, awsCredentialsSecret.arn, kmsKey.arn])
+    .apply(([cloudflareSecretArn, awsCredsSecretArn, kmsArn]) =>
       JSON.stringify({
         Version: "2012-10-17",
         Statement: [
@@ -183,7 +195,7 @@ const secretsAccessPolicy = new aws.iam.Policy("secrets-access-policy", {
               "secretsmanager:GetSecretValue",
               "secretsmanager:DescribeSecret",
             ],
-            Resource: [pulumiSecretArn, cloudflareSecretArn],
+            Resource: [cloudflareSecretArn, awsCredsSecretArn],
           },
           {
             Sid: "DecryptSecrets",
@@ -213,7 +225,7 @@ export const stateBucketArn = stateBucket.arn;
 export const pulumiUserArn = pulumiUser.arn;
 export const pulumiAccessKeyId = pulumiAccessKey.id;
 export const pulumiSecretAccessKey = pulumi.secret(pulumiAccessKey.secret);
-export const pulumiAccessTokenSecretArn = pulumiAccessTokenSecret.arn;
+export const awsCredentialsSecretArn = awsCredentialsSecret.arn;
 export const cloudflareApiTokenSecretArn = cloudflareApiTokenSecret.arn;
 
 // Convenience output for pulumi login command
