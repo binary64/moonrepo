@@ -139,6 +139,72 @@ const pulumiAccessKey = new aws.iam.AccessKey("pulumi-deployer-access-key", {
   user: pulumiUser.name,
 });
 
+// Secrets Manager for storing sensitive values
+// These will be encrypted with the KMS key and synced to K8s via SealedSecrets
+
+const pulumiAccessTokenSecret = new aws.secretsmanager.Secret(
+  "pulumi-access-token",
+  {
+    name: `${prefix}/pulumi-access-token`,
+    description: "Pulumi access token for operator state management",
+    kmsKeyId: kmsKey.id,
+    recoveryWindowInDays: 30,
+  }
+);
+
+const cloudflareApiTokenSecret = new aws.secretsmanager.Secret(
+  "cloudflare-api-token-pulumi",
+  {
+    name: `${prefix}/cloudflare-api-token-pulumi`,
+    description: "Cloudflare API token for Pulumi to create restricted tokens",
+    kmsKeyId: kmsKey.id,
+    recoveryWindowInDays: 30,
+  }
+);
+
+// Note: Secret values are not set here - use the set-secret.sh script to populate them
+// aws secretsmanager put-secret-value --secret-id moonrepo/pulumi-access-token --secret-string "pul-xxx"
+// aws secretsmanager put-secret-value --secret-id moonrepo/cloudflare-api-token-pulumi --secret-string "xxx"
+
+// IAM policy for secrets access (can be used by CI/CD or operators)
+const secretsAccessPolicy = new aws.iam.Policy("secrets-access-policy", {
+  name: "moonrepo-secrets-access-policy",
+  description: "Policy for accessing moonrepo secrets in Secrets Manager",
+  policy: pulumi
+    .all([pulumiAccessTokenSecret.arn, cloudflareApiTokenSecret.arn, kmsKey.arn])
+    .apply(([pulumiSecretArn, cloudflareSecretArn, kmsArn]) =>
+      JSON.stringify({
+        Version: "2012-10-17",
+        Statement: [
+          {
+            Sid: "ReadSecrets",
+            Effect: "Allow",
+            Action: [
+              "secretsmanager:GetSecretValue",
+              "secretsmanager:DescribeSecret",
+            ],
+            Resource: [pulumiSecretArn, cloudflareSecretArn],
+          },
+          {
+            Sid: "DecryptSecrets",
+            Effect: "Allow",
+            Action: ["kms:Decrypt", "kms:DescribeKey"],
+            Resource: [kmsArn],
+          },
+        ],
+      })
+    ),
+});
+
+// Attach secrets policy to pulumi user (so they can read secrets for sealing)
+const pulumiUserSecretsAttachment = new aws.iam.UserPolicyAttachment(
+  "pulumi-deployer-secrets-attachment",
+  {
+    user: pulumiUser.name,
+    policyArn: secretsAccessPolicy.arn,
+  }
+);
+
 // Outputs
 export const kmsKeyArn = kmsKey.arn;
 export const kmsKeyAliasName = kmsKeyAlias.name;
@@ -147,6 +213,8 @@ export const stateBucketArn = stateBucket.arn;
 export const pulumiUserArn = pulumiUser.arn;
 export const pulumiAccessKeyId = pulumiAccessKey.id;
 export const pulumiSecretAccessKey = pulumi.secret(pulumiAccessKey.secret);
+export const pulumiAccessTokenSecretArn = pulumiAccessTokenSecret.arn;
+export const cloudflareApiTokenSecretArn = cloudflareApiTokenSecret.arn;
 
 // Convenience output for pulumi login command
 export const pulumiLoginCommand = pulumi.interpolate`pulumi login s3://${stateBucket.bucket}?region=eu-west-2`;
