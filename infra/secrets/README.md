@@ -61,7 +61,7 @@ infra/secrets/
 2. Set your Cloudflare API token in AWS Secrets Manager:
    ```bash
    cd infra/secrets
-   ./set-secret.sh "your-cloudflare-token"
+   ./set-secret.sh cloudflare-api-token-pulumi "your-cloudflare-token"
    ```
 
 3. Sync secrets to cluster:
@@ -82,7 +82,7 @@ When you need to rotate the Cloudflare API token:
 
 1. Update the value in AWS Secrets Manager:
    ```bash
-   ./set-secret.sh "new-cloudflare-token"
+   ./set-secret.sh cloudflare-api-token-pulumi "new-cloudflare-token"
    ```
 
 2. Sync to generate new SealedSecrets:
@@ -110,7 +110,7 @@ When you need to rotate the Cloudflare API token:
   - User.API Tokens:Edit
 - **Namespace**: `pulumi-operator-system`
 - **Key**: `token`
-- **Set via**: `./set-secret.sh "your-token"`
+- **Set via**: `./set-secret.sh cloudflare-api-token-pulumi "your-token"`
 
 ### pulumi-aws-credentials
 - **Purpose**: AWS credentials for Pulumi operator to access S3 state backend

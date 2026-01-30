@@ -44,14 +44,18 @@ brew install kubeseal  # or download from releases
 ```
 ├── apps/
 │   └── app/                    # Next.js 16 application
-├── infra/
+├── infra/                      # Infrastructure-as-code (see infra/README.md)
 │   ├── pulumi/                # Cloudflare DNS & K8s secrets (AWS S3 backend)
 │   ├── pulumi-bootstrap/      # AWS backend setup (local state)
 │   ├── app-of-apps/           # ArgoCD Application manifests (Helm charts)
 │   │   ├── bootstrap/         # Bootstrap apps (sealed-secrets)
 │   │   ├── operators/         # Operators (cert-manager, pulumi, argo-rollouts)
 │   │   ├── istio/            # Service mesh components
-│   │   └── ...               # Application-specific manifests
+│   │   ├── home-assistant/   # Home automation stack
+│   │   ├── authentik/        # SSO provider
+│   │   ├── nextcloud/        # File sharing
+│   │   ├── new-relic/        # Monitoring
+│   │   └── pulumi/           # Pulumi operator stack configuration
 │   ├── secrets/              # Secrets management (AWS → SealedSecrets)
 │   │   ├── set-secret.sh     # Update secrets in AWS
 │   │   ├── sync-secrets.sh   # Fetch from AWS and seal
@@ -451,6 +455,10 @@ kubectl get pods -n istio-system
 
 ## 📚 Key Documentation
 
+- [Infrastructure Overview](infra/README.md) - Infrastructure folder structure and components
+- [App-of-Apps Pattern](infra/app-of-apps/README.md) - ArgoCD GitOps deployment strategy
+- [Pulumi Stack](infra/pulumi/README.md) - Cloudflare DNS and Kubernetes secrets management
+- [Pulumi Bootstrap](infra/pulumi-bootstrap/README.md) - AWS backend setup for Pulumi
 - [Secrets Management](infra/secrets/README.md) - AWS Secrets Manager + SealedSecrets workflow
 - [CLAUDE.md](CLAUDE.md) - Instructions for Claude Code
 - [AGENTS.md](AGENTS.md) - Development guidelines for AI agents
