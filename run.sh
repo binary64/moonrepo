@@ -78,9 +78,13 @@ while true; do
 			fi
 			KIND=$(yq eval -r "select(document_index == $i) | .kind" "$file")
 			if [ "$KIND" == "Application" ]; then
-				REPO_URL=$(yq eval -r "select(document_index == $i) | .spec.source.repoURL" "$file")
-				if [ "$REPO_URL" != "null" ]; then
-					REPOS["$REPO_URL"]=1
+				# Only collect Helm repos (those with a chart field), not Git repos
+				CHART=$(yq eval -r "select(document_index == $i) | .spec.source.chart" "$file")
+				if [ "$CHART" != "null" ]; then
+					REPO_URL=$(yq eval -r "select(document_index == $i) | .spec.source.repoURL" "$file")
+					if [ "$REPO_URL" != "null" ]; then
+						REPOS["$REPO_URL"]=1
+					fi
 				fi
 			fi
 		done
