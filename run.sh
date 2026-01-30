@@ -110,7 +110,8 @@ while true; do
 
 			echo "Adding repo $REPO_NAME ($REPO_URL)..."
 			REPO_ADDED=false
-			for ((r = 1; r <= 6; r++)); do
+			BACKOFF=2
+			for ((r = 1; r <= 10; r++)); do
 				if helm repo add "$REPO_NAME" "$REPO_URL" 2>/dev/null; then
 					REPO_ADDED=true
 					break
@@ -118,12 +119,13 @@ while true; do
 					REPO_ADDED=true
 					break
 				fi
-				echo "Warning: Failed to add repo $REPO_NAME, retrying in 1s..."
-				sleep 1
+				echo "Warning: Failed to add repo $REPO_NAME, retrying in ${BACKOFF}s... (attempt $r/10)"
+				sleep $BACKOFF
+				BACKOFF=$((BACKOFF < 30 ? BACKOFF * 2 : 30))
 			done
 
 			if [ "$REPO_ADDED" = false ]; then
-				echo "Error: Could not add repo $REPO_NAME ($REPO_URL) after 6 retries."
+				echo "Error: Could not add repo $REPO_NAME ($REPO_URL) after 10 retries."
 				exit 1
 			fi
 		fi
@@ -135,19 +137,21 @@ while true; do
 		# echo "Updating repo $REPO_NAME..."
 
 		UPDATED=false
-		for ((r = 1; r <= 6; r++)); do
+		BACKOFF=2
+		for ((r = 1; r <= 10; r++)); do
 			if helm repo update "$REPO_NAME" 2>/dev/null; then
 				UPDATED=true
 				break
 			fi
-			# echo "Warning: Failed to update repo $REPO_NAME, retrying in 1s..."
-			sleep 1
+			echo "Warning: Failed to update repo $REPO_NAME, retrying in ${BACKOFF}s... (attempt $r/10)"
+			sleep $BACKOFF
+			BACKOFF=$((BACKOFF < 30 ? BACKOFF * 2 : 30))
 		done
 
 		# If update fails, we might still proceed as cache might be fresh enough,
 		# but if you want strict failure:
 		if [ "$UPDATED" = false ]; then
-			echo "Error: Could not update repo $REPO_NAME after 6 retries."
+			echo "Error: Could not update repo $REPO_NAME after 10 retries."
 			exit 1
 		fi
 	done
