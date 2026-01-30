@@ -5,6 +5,7 @@ metadata:
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "-2"
+    moonrepo.dev/skip-local: "true"  # Pulumi Helm repo is unreliable
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
