@@ -146,12 +146,12 @@ while true; do
 
 		UPDATED=false
 		BACKOFF=2
-		for ((r = 1; r <= 10; r++)); do
+		for ((r = 1; r <= 6; r++)); do
 			if helm repo update "$REPO_NAME" 2>/dev/null; then
 				UPDATED=true
 				break
 			fi
-			echo "Warning: Failed to update repo $REPO_NAME, retrying in ${BACKOFF}s... (attempt $r/10)"
+			echo "Warning: Failed to update repo $REPO_NAME (attempt $r/6)"
 			sleep $BACKOFF
 			BACKOFF=$((BACKOFF < 30 ? BACKOFF * 2 : 30))
 		done
@@ -159,7 +159,7 @@ while true; do
 		# If update fails, we might still proceed as cache might be fresh enough,
 		# but if you want strict failure:
 		if [ "$UPDATED" = false ]; then
-			echo "Error: Could not update repo $REPO_NAME after 10 retries."
+			echo "Error: Could not update repo $REPO_NAME after 6 retries."
 			exit 1
 		fi
 	done
