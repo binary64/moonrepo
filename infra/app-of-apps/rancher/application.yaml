@@ -3,6 +3,9 @@ kind: Application
 metadata:
   name: rancher
   namespace: argocd
+  annotations:
+    # Requires cert-manager CRDs not available in CI
+    moonrepo.dev/skip-local: "true"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
