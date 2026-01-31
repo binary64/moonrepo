@@ -5,6 +5,9 @@ metadata:
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
+  annotations:
+    # Skip in CI - depends on cert-manager-crds and needs secrets
+    moonrepo.dev/skip-local: "true"
 spec:
   project: default
   source:

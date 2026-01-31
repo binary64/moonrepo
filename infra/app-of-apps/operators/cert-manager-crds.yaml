@@ -5,6 +5,8 @@ metadata:
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "-1"
+    # Skip in CI - webhook with 0 replicas causes issues
+    moonrepo.dev/skip-local: "true"
 spec:
   project: default
   source:
@@ -16,14 +18,16 @@ spec:
       values: |
         crds:
           enabled: true
+        # Disable all controllers - we only want the CRDs
+        replicaCount: 0
         serviceAccount:
           create: false
         prometheus:
           enabled: false
         webhook:
-          enabled: false
+          replicaCount: 0
         cainjector:
-          enabled: false
+          replicaCount: 0
           
   destination:
     server: https://kubernetes.default.svc

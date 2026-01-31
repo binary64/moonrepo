@@ -58,10 +58,14 @@ if [ ${#FILES[@]} -eq 0 ]; then
 fi
 
 ATTEMPT=1
-ATTEMPT=1
+MAX_ATTEMPTS=6
 declare -A INSTALLED_TRACKER
 
 while true; do
+	if [ "$ATTEMPT" -gt "$MAX_ATTEMPTS" ]; then
+		echo "=== FATAL: Exceeded maximum attempts ($MAX_ATTEMPTS). Exiting. ==="
+		exit 1
+	fi
 	echo "=== Attempt $ATTEMPT to apply resources ==="
 	FAILURES=0
 	FAILURES_LIST=()
@@ -78,9 +82,13 @@ while true; do
 			fi
 			KIND=$(yq eval -r "select(document_index == $i) | .kind" "$file")
 			if [ "$KIND" == "Application" ]; then
-				REPO_URL=$(yq eval -r "select(document_index == $i) | .spec.source.repoURL" "$file")
-				if [ "$REPO_URL" != "null" ]; then
-					REPOS["$REPO_URL"]=1
+				# Only collect Helm repos (those with a chart field), not Git repos
+				CHART=$(yq eval -r "select(document_index == $i) | .spec.source.chart" "$file")
+				if [ "$CHART" != "null" ]; then
+					REPO_URL=$(yq eval -r "select(document_index == $i) | .spec.source.repoURL" "$file")
+					if [ "$REPO_URL" != "null" ]; then
+						REPOS["$REPO_URL"]=1
+					fi
 				fi
 			fi
 		done
@@ -110,6 +118,7 @@ while true; do
 
 			echo "Adding repo $REPO_NAME ($REPO_URL)..."
 			REPO_ADDED=false
+			BACKOFF=2
 			for ((r = 1; r <= 6; r++)); do
 				if helm repo add "$REPO_NAME" "$REPO_URL" 2>/dev/null; then
 					REPO_ADDED=true
@@ -118,8 +127,9 @@ while true; do
 					REPO_ADDED=true
 					break
 				fi
-				echo "Warning: Failed to add repo $REPO_NAME, retrying in 1s..."
-				sleep 1
+				echo "Warning: Failed to add repo $REPO_NAME (attempt $r/6)"
+				sleep $BACKOFF
+				BACKOFF=$((BACKOFF < 30 ? BACKOFF * 2 : 30))
 			done
 
 			if [ "$REPO_ADDED" = false ]; then
@@ -135,13 +145,15 @@ while true; do
 		# echo "Updating repo $REPO_NAME..."
 
 		UPDATED=false
+		BACKOFF=2
 		for ((r = 1; r <= 6; r++)); do
 			if helm repo update "$REPO_NAME" 2>/dev/null; then
 				UPDATED=true
 				break
 			fi
-			# echo "Warning: Failed to update repo $REPO_NAME, retrying in 1s..."
-			sleep 1
+			echo "Warning: Failed to update repo $REPO_NAME (attempt $r/6)"
+			sleep $BACKOFF
+			BACKOFF=$((BACKOFF < 30 ? BACKOFF * 2 : 30))
 		done
 
 		# If update fails, we might still proceed as cache might be fresh enough,

@@ -4,6 +4,9 @@ kind: Application
 metadata:
   name: newrelic
   namespace: argocd
+  annotations:
+    # Requires licenseKeySecret which isn't available in CI
+    moonrepo.dev/skip-local: "true"
 spec:
   project: default
 

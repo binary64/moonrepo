@@ -5,6 +5,9 @@ metadata:
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
+  annotations:
+    # Requires CloudNativePG CRDs not available in CI
+    moonrepo.dev/skip-local: "true"
 spec:
   project: default
   source:
