@@ -119,7 +119,7 @@ while true; do
 			echo "Adding repo $REPO_NAME ($REPO_URL)..."
 			REPO_ADDED=false
 			BACKOFF=2
-			for ((r = 1; r <= 10; r++)); do
+			for ((r = 1; r <= 6; r++)); do
 				if helm repo add "$REPO_NAME" "$REPO_URL" 2>/dev/null; then
 					REPO_ADDED=true
 					break
@@ -127,13 +127,13 @@ while true; do
 					REPO_ADDED=true
 					break
 				fi
-				echo "Warning: Failed to add repo $REPO_NAME, retrying in ${BACKOFF}s... (attempt $r/10)"
+				echo "Warning: Failed to add repo $REPO_NAME (attempt $r/6)"
 				sleep $BACKOFF
 				BACKOFF=$((BACKOFF < 30 ? BACKOFF * 2 : 30))
 			done
 
 			if [ "$REPO_ADDED" = false ]; then
-				echo "Error: Could not add repo $REPO_NAME ($REPO_URL) after 10 retries."
+				echo "Error: Could not add repo $REPO_NAME ($REPO_URL) after 6 retries."
 				exit 1
 			fi
 		fi
