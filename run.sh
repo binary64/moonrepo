@@ -40,6 +40,21 @@ fi
 # Switch context just in case
 kubectl config use-context "k3d-$CLUSTER_NAME" 2>/dev/null || echo "Context might already be set."
 
+echo "=== Installing DB Operators (Pre-flight) ==="
+# CloudNativePG
+helm repo add cloudnative-pg https://cloudnative-pg.github.io/charts/ || true
+helm repo update cloudnative-pg
+helm upgrade --install cloudnative-pg cloudnative-pg/cloudnative-pg \
+    --namespace cloudnative-pg --create-namespace \
+    --set crds.create=true --wait
+
+# MariaDB Operator
+helm repo add mariadb-operator https://mariadb-operator.github.io/mariadb-operator || true
+helm repo update mariadb-operator
+helm upgrade --install mariadb-operator mariadb-operator/mariadb-operator \
+    --namespace mariadb-operator --create-namespace \
+    --set ha.enabled=false --wait
+
 echo "=== Parsing Applications in $APP_DIR ==="
 
 if [ ! -d "$APP_DIR" ]; then
