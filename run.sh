@@ -58,10 +58,14 @@ if [ ${#FILES[@]} -eq 0 ]; then
 fi
 
 ATTEMPT=1
-ATTEMPT=1
+MAX_ATTEMPTS=10
 declare -A INSTALLED_TRACKER
 
 while true; do
+	if [ "$ATTEMPT" -gt "$MAX_ATTEMPTS" ]; then
+		echo "=== FATAL: Exceeded maximum attempts ($MAX_ATTEMPTS). Exiting. ==="
+		exit 1
+	fi
 	echo "=== Attempt $ATTEMPT to apply resources ==="
 	FAILURES=0
 	FAILURES_LIST=()
