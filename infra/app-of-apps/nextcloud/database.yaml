@@ -7,6 +7,8 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
   annotations:
     argocd.argoproj.io/sync-wave: "-3"
+    # Requires Percona XtraDB Cluster CRDs not available in CI
+    moonrepo.dev/skip-local: "true"
 spec:
   project: default
   source:

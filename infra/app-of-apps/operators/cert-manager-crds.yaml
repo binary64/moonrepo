@@ -5,6 +5,8 @@ metadata:
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "-1"
+    # Skip in CI - webhook with 0 replicas causes issues
+    moonrepo.dev/skip-local: "true"
 spec:
   project: default
   source:
