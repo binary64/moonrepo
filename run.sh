@@ -58,7 +58,7 @@ if [ ${#FILES[@]} -eq 0 ]; then
 fi
 
 ATTEMPT=1
-MAX_ATTEMPTS=10
+MAX_ATTEMPTS=6
 declare -A INSTALLED_TRACKER
 
 while true; do
