@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rancher
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://releases.rancher.com/server-charts/stable
+    targetRevision: "2.10.1" # Using a recent stable version
+    chart: rancher
+    helm:
+      releaseName: rancher
+      values: |
+        hostname: rancher.local
+        bootstrapPassword: admin
+        replicas: 1
+        ingress:
+          enabled: true
+          # Note: Rancher usually manages its own ingress
+        # Use cert-manager for Rancher's certificates
+        certmanager:
+          version: "1.19.2"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cattle-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
