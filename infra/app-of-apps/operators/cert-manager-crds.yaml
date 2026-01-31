@@ -16,14 +16,16 @@ spec:
       values: |
         crds:
           enabled: true
+        # Disable all controllers - we only want the CRDs
+        replicaCount: 0
         serviceAccount:
           create: false
         prometheus:
           enabled: false
         webhook:
-          enabled: false
+          replicaCount: 0
         cainjector:
-          enabled: false
+          replicaCount: 0
           
   destination:
     server: https://kubernetes.default.svc

@@ -3,6 +3,9 @@ kind: Certificate
 metadata:
   name: home-tls
   namespace: istio-system
+  annotations:
+    # Requires cert-manager CRDs which may not be ready in CI
+    moonrepo.dev/skip-local: "true"
 spec:
   secretName: home-tls
   issuerRef:

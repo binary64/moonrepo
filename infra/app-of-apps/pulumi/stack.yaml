@@ -3,6 +3,9 @@ kind: Stack
 metadata:
   name: moonrepo-cloudflare-prod
   namespace: pulumi-operator-system
+  annotations:
+    # Requires pulumi-operator CRDs and secrets not available in CI
+    moonrepo.dev/skip-local: "true"
 spec:
   stack: prod
   projectRepo: https://github.com/binary64/moonrepo
