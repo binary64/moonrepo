@@ -8,8 +8,8 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://mariadb-operator.github.io/mariadb-operator
-    targetRevision: "0.41.0"
+    repoURL: https://helm.mariadb.com/mariadb-operator
+    targetRevision: "25.10.2"
     chart: mariadb-operator
     helm:
       releaseName: mariadb-operator

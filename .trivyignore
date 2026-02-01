@@ -1,0 +1,13 @@
+# Temporary ignore for next.js vulnerabilities until update
+# GHSA-h25m-26qc-wcjf: Next.js HTTP request deserialization
+GHSA-h25m-26qc-wcjf
+# GHSA-mwv6-3258-q52c: Next.js Denial of Service
+GHSA-mwv6-3258-q52c
+
+# Temporary ignore for tar vulnerabilities until update
+# CVE-2026-23745: node-tar Arbitrary file overwrite
+CVE-2026-23745
+# CVE-2026-23950: node-tar Arbitrary file overwrite
+CVE-2026-23950
+# CVE-2026-24842: node-tar Arbitrary file creation
+CVE-2026-24842

@@ -4,6 +4,12 @@ language: "typescript"
 type: "tool"
 
 tasks:
+  lint:
+    command: "biome check ."
+
+  type-check:
+    command: "tsc --noEmit"
+
   preview:
     command: "pulumi preview"
     local: true

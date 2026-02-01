@@ -41,19 +41,27 @@ fi
 kubectl config use-context "k3d-$CLUSTER_NAME" 2>/dev/null || echo "Context might already be set."
 
 echo "=== Installing DB Operators (Pre-flight) ==="
+
+# Detect CI environment (GitHub Actions sets CI=true)
+HELM_WAIT_FLAG="--wait"
+if [ "${CI:-}" = "true" ]; then
+    echo "Running in CI mode - skipping --wait for DB operators to avoid timeout"
+    HELM_WAIT_FLAG=""
+fi
+
 # CloudNativePG
 helm repo add cloudnative-pg https://cloudnative-pg.github.io/charts/ || true
 helm repo update cloudnative-pg
 helm upgrade --install cloudnative-pg cloudnative-pg/cloudnative-pg \
     --namespace cloudnative-pg --create-namespace \
-    --set crds.create=true --wait --timeout 15m
+    --set crds.create=true $HELM_WAIT_FLAG --timeout 15m
 
 # MariaDB Operator
 helm repo add mariadb-operator https://mariadb-operator.github.io/mariadb-operator || true
 helm repo update mariadb-operator
 helm upgrade --install mariadb-operator mariadb-operator/mariadb-operator \
     --namespace mariadb-operator --create-namespace \
-    --set ha.enabled=false --wait --timeout 15m
+    --set ha.enabled=false $HELM_WAIT_FLAG --timeout 15m
 
 echo "=== Parsing Applications in $APP_DIR ==="
 

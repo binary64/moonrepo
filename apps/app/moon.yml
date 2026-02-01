@@ -6,3 +6,9 @@ type: 'application'
 
 tags:
   - next
+
+tasks:
+  lint:
+    command: "biome check ."
+  type-check:
+    command: "tsc --noEmit"
