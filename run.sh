@@ -47,6 +47,7 @@ helm repo update cloudnative-pg
 helm upgrade --install cloudnative-pg cloudnative-pg/cloudnative-pg \
     --namespace cloudnative-pg --create-namespace \
     --set crds.create=true --wait --timeout 15m
+
 # MariaDB Operator CRDs (must be installed first)
 helm repo add mariadb-operator https://mariadb-operator.github.io/mariadb-operator || true
 helm repo update mariadb-operator
