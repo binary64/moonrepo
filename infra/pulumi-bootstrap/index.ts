@@ -1,5 +1,5 @@
-import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
+import * as pulumi from "@pulumi/pulumi";
 
 const prefix = "moonrepo";
 
@@ -26,7 +26,7 @@ const stateBucket = new aws.s3.BucketV2(`${prefix}-pulumi-state`, {
 });
 
 // Block all public access
-const stateBucketPublicAccessBlock = new aws.s3.BucketPublicAccessBlock(
+const _stateBucketPublicAccessBlock = new aws.s3.BucketPublicAccessBlock(
   `${prefix}-pulumi-state-public-access-block`,
   {
     bucket: stateBucket.id,
@@ -34,39 +34,40 @@ const stateBucketPublicAccessBlock = new aws.s3.BucketPublicAccessBlock(
     blockPublicPolicy: true,
     ignorePublicAcls: true,
     restrictPublicBuckets: true,
-  }
+  },
 );
 
 // Enable versioning for state history
-const stateBucketVersioning = new aws.s3.BucketVersioningV2(
+const _stateBucketVersioning = new aws.s3.BucketVersioningV2(
   `${prefix}-pulumi-state-versioning`,
   {
     bucket: stateBucket.id,
     versioningConfiguration: {
       status: "Enabled",
     },
-  }
+  },
 );
 
 // Server-side encryption with KMS
-const stateBucketEncryption = new aws.s3.BucketServerSideEncryptionConfigurationV2(
-  `${prefix}-pulumi-state-encryption`,
-  {
-    bucket: stateBucket.id,
-    rules: [
-      {
-        applyServerSideEncryptionByDefault: {
-          sseAlgorithm: "aws:kms",
-          kmsMasterKeyId: kmsKey.arn,
+const _stateBucketEncryption =
+  new aws.s3.BucketServerSideEncryptionConfigurationV2(
+    `${prefix}-pulumi-state-encryption`,
+    {
+      bucket: stateBucket.id,
+      rules: [
+        {
+          applyServerSideEncryptionByDefault: {
+            sseAlgorithm: "aws:kms",
+            kmsMasterKeyId: kmsKey.arn,
+          },
+          bucketKeyEnabled: true,
         },
-        bucketKeyEnabled: true,
-      },
-    ],
-  }
-);
+      ],
+    },
+  );
 
 // Lifecycle rule to delete old versions after 90 days
-const stateBucketLifecycle = new aws.s3.BucketLifecycleConfigurationV2(
+const _stateBucketLifecycle = new aws.s3.BucketLifecycleConfigurationV2(
   `${prefix}-pulumi-state-lifecycle`,
   {
     bucket: stateBucket.id,
@@ -79,7 +80,7 @@ const stateBucketLifecycle = new aws.s3.BucketLifecycleConfigurationV2(
         },
       },
     ],
-  }
+  },
 );
 
 // IAM user for Pulumi deployments
@@ -121,17 +122,17 @@ const pulumiPolicy = new aws.iam.Policy("pulumi-deployer-policy", {
             Resource: [kmsArn],
           },
         ],
-      })
+      }),
     ),
 });
 
 // Attach policy to user
-const pulumiUserPolicyAttachment = new aws.iam.UserPolicyAttachment(
+const _pulumiUserPolicyAttachment = new aws.iam.UserPolicyAttachment(
   "pulumi-deployer-policy-attachment",
   {
     user: pulumiUser.name,
     policyArn: pulumiPolicy.arn,
-  }
+  },
 );
 
 // Create access key for the IAM user
@@ -149,7 +150,7 @@ const cloudflareApiTokenSecret = new aws.secretsmanager.Secret(
     description: "Cloudflare API token for Pulumi to create restricted tokens",
     kmsKeyId: kmsKey.id,
     recoveryWindowInDays: 30,
-  }
+  },
 );
 
 // AWS credentials secret for Pulumi operator to access S3 backend
@@ -157,14 +158,15 @@ const awsCredentialsSecret = new aws.secretsmanager.Secret(
   "pulumi-aws-credentials",
   {
     name: `${prefix}/pulumi-aws-credentials`,
-    description: "AWS credentials for Pulumi operator to access S3 state backend",
+    description:
+      "AWS credentials for Pulumi operator to access S3 state backend",
     kmsKeyId: kmsKey.id,
     recoveryWindowInDays: 30,
-  }
+  },
 );
 
 // Store the pulumi-deployer access keys in Secrets Manager
-const awsCredentialsSecretVersion = new aws.secretsmanager.SecretVersion(
+const _awsCredentialsSecretVersion = new aws.secretsmanager.SecretVersion(
   "pulumi-aws-credentials-version",
   {
     secretId: awsCredentialsSecret.id,
@@ -172,7 +174,7 @@ const awsCredentialsSecretVersion = new aws.secretsmanager.SecretVersion(
       "access-key-id": pulumiAccessKey.id,
       "secret-access-key": pulumiAccessKey.secret,
     }),
-  }
+  },
 );
 
 // Note: Cloudflare token must be set manually using set-secret.sh script
@@ -204,17 +206,17 @@ const secretsAccessPolicy = new aws.iam.Policy("secrets-access-policy", {
             Resource: [kmsArn],
           },
         ],
-      })
+      }),
     ),
 });
 
 // Attach secrets policy to pulumi user (so they can read secrets for sealing)
-const pulumiUserSecretsAttachment = new aws.iam.UserPolicyAttachment(
+const _pulumiUserSecretsAttachment = new aws.iam.UserPolicyAttachment(
   "pulumi-deployer-secrets-attachment",
   {
     user: pulumiUser.name,
     policyArn: secretsAccessPolicy.arn,
-  }
+  },
 );
 
 // Outputs
