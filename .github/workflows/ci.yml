@@ -19,5 +19,7 @@ jobs:
       - uses: moonrepo/setup-toolchain@v0
         with:
           auto-install: true
-      - run: $HOME/.moon/bin/moon ci
+      - uses: moonrepo/run-action@v0
+        with:
+          args: ci
       - run: bash run.sh
