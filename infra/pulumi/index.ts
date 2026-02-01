@@ -2,7 +2,6 @@ import * as cloudflare from "@pulumi/cloudflare";
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 
-const _config = new pulumi.Config();
 const domain = "brandwhisper.cloud";
 
 // Look up the Cloudflare zone
