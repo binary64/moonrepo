@@ -53,7 +53,7 @@ helm repo add mariadb-operator https://mariadb-operator.github.io/mariadb-operat
 helm repo update mariadb-operator
 helm upgrade --install mariadb-operator mariadb-operator/mariadb-operator \
     --namespace mariadb-operator --create-namespace \
-    --set ha.enabled=false --wait --timeout 15m
+    --set ha.enabled=false
 
 echo "=== Parsing Applications in $APP_DIR ==="
 
