@@ -161,9 +161,14 @@ while true; do
 						# Verify it's a different URL (not same URL being re-added)
 						if ! echo "$ERROR_MSG" | grep -q "same URL"; then
 							echo "Error: Helm repo conflict detected!"
-							echo "The repo $REPO_URL is already configured elsewhere with a different name."
+							echo "The repo name $REPO_NAME already exists with a different URL."
 							echo "User has already chosen which repo source to use. Aborting."
 							exit 1
+						else
+							# Same URL already exists - this is fine, skip adding
+							echo "Repo $REPO_NAME ($REPO_URL) already configured, skipping."
+							REPO_ADDED=true
+							break
 						fi
 					fi
 
