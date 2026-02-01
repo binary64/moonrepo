@@ -6,6 +6,13 @@ CLUSTER_NAME="moonrepo-dev"
 K3D_CONFIG="k3d-config.yaml"
 APP_DIR="infra/app-of-apps"
 
+# Skip Kubernetes setup in CI environment (GitHub Actions)
+if [ "${CI:-false}" = "true" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
+  echo "=== Skipping Kubernetes setup in CI environment ==="
+  echo "CI runs moon ci for testing; bash run.sh is for local development only."
+  exit 0
+fi
+
 # Checking dependencies
 if ! command -v yq &>/dev/null; then
 	echo "Error: yq is not installed or not in PATH."
