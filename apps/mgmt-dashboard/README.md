@@ -76,12 +76,12 @@ A modern, secure internal business dashboard built with Next.js 16, Tailwind CSS
 5. **Run the development server**
 
    ```bash
-   bun run dev
+   moon run :dev
    ```
 
-   Or with npm:
+   Or from the monorepo root:
    ```bash
-   npm run dev
+   moon run mgmt-dashboard:dev
    ```
 
 6. **Open your browser**
@@ -117,10 +117,15 @@ mgmt-dashboard/
 
 ## Available Scripts
 
-- `bun run dev` - Start development server
-- `bun run build` - Build for production
-- `bun run start` - Start production server
-- `bun run lint` - Run ESLint
+- `moon run :dev` - Start development server
+- `moon run :build` - Build for production
+- `moon run :start` - Start production server
+- `moon run :lint` - Run linter
+
+You can also run these from the monorepo root:
+- `moon run mgmt-dashboard:dev`
+- `moon run mgmt-dashboard:build`
+- `moon run mgmt-dashboard:lint`
 
 ## Authentication
 
@@ -154,6 +159,8 @@ Example:
 ```bash
 bunx shadcn@latest add dialog
 ```
+
+Note: This uses `bunx` directly as shadcn CLI is not integrated with Moon. After adding components, run `moon run :lint` to ensure code style compliance.
 
 ### Styling
 
