@@ -76,12 +76,12 @@ A modern, secure internal business dashboard built with Next.js 16, Tailwind CSS
 5. **Run the development server**
 
    ```bash
-   bun run dev
+   moon run :dev
    ```
 
-   Or with npm:
+   Or with bun:
    ```bash
-   npm run dev
+   bun run dev
    ```
 
 6. **Open your browser**
@@ -117,10 +117,10 @@ mgmt-dashboard/
 
 ## Available Scripts
 
-- `bun run dev` - Start development server
-- `bun run build` - Build for production
-- `bun run start` - Start production server
-- `bun run lint` - Run ESLint
+- `moon run :dev` - Start development server
+- `moon run :build` - Build for production
+- `moon run :start` - Start production server
+- `moon run :lint` - Run ESLint
 
 ## Authentication
 
