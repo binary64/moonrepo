@@ -92,27 +92,33 @@ A modern, secure internal business dashboard built with Next.js 16, Tailwind CSS
 
 ```
 mgmt-dashboard/
-├── app/
-│   ├── (auth)/
-│   │   ├── sign-in/
-│   │   │   └── page.tsx      # Sign-in page with Clerk
-│   │   └── sign-up/
-│   │       └── page.tsx      # Sign-up page with Clerk
-│   ├── (dashboard)/
-│   │   ├── layout.tsx        # Dashboard layout with sidebar
-│   │   ├── page.tsx          # Overview page
-│   │   ├── reports/
-│   │   │   └── page.tsx      # Reports page
-│   │   └── settings/
-│   │       └── page.tsx      # Settings page
-│   ├── layout.tsx            # Root layout with ClerkProvider
-│   └── page.tsx              # Landing page
-├── components/
-│   └── ui/                   # shadcn/ui components
-├── lib/
-│   └── utils.ts              # Utility functions
-├── middleware.ts             # Clerk middleware for route protection
-└── public/                   # Static assets
+├── public/                   # Static assets
+├── src/
+│   ├── app/
+│   │   ├── (auth)/
+│   │   │   ├── sign-in/
+│   │   │   │   └── page.tsx      # Sign-in page with Clerk
+│   │   │   └── sign-up/
+│   │   │       └── page.tsx      # Sign-up page with Clerk
+│   │   ├── (dashboard)/
+│   │   │   ├── layout.tsx        # Dashboard layout with sidebar
+│   │   │   ├── page.tsx          # Overview page
+│   │   │   ├── reports/
+│   │   │   │   └── page.tsx      # Reports page
+│   │   │   └── settings/
+│   │   │       └── page.tsx      # Settings page
+│   │   ├── layout.tsx            # Root layout with ClerkProvider
+│   │   └── page.tsx              # Landing page
+│   ├── components/
+│   │   └── ui/                   # shadcn/ui components
+│   ├── lib/
+│   │   └── utils.ts              # Utility functions
+│   └── middleware.ts             # Clerk middleware for route protection
+├── components.json
+├── moon.yml
+├── next.config.ts
+├── package.json
+└── tsconfig.json
 ```
 
 ## Available Scripts
