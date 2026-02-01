@@ -9,7 +9,7 @@ spec:
   project: default
   source:
     repoURL: https://mariadb-operator.github.io/mariadb-operator
-    targetRevision: "0.41.0"
+    targetRevision: "25.10.4"
     chart: mariadb-operator
     helm:
       releaseName: mariadb-operator
