@@ -11,3 +11,12 @@ CVE-2026-23745
 CVE-2026-23950
 # CVE-2026-24842: node-tar Arbitrary file creation
 CVE-2026-24842
+
+# Ignore Pulumi secrets template
+infra/pulumi/secrets-template.yaml
+
+# Ignore Nextcloud local dev secret
+infra/app-of-apps/nextcloud/db-secret.yaml
+
+# Ignore Home Assistant MQTT password
+infra/app-of-apps/home-assistant/zigbee2mqtt.yaml
