@@ -6,6 +6,13 @@ CLUSTER_NAME="moonrepo-dev"
 K3D_CONFIG="k3d-config.yaml"
 APP_DIR="infra/app-of-apps"
 
+# Skip Kubernetes setup in CI environment (GitHub Actions)
+if [ "${CI:-false}" = "true" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
+  echo "=== Skipping Kubernetes setup in CI environment ==="
+  echo "CI runs moon ci for testing; bash run.sh is for local development only."
+  exit 0
+fi
+
 # Checking dependencies
 if ! command -v yq &>/dev/null; then
 	echo "Error: yq is not installed or not in PATH."
@@ -135,14 +142,32 @@ while true; do
 			REPO_ADDED=false
 			BACKOFF=2
 			for ((r = 1; r <= 6; r++)); do
-				if helm repo add "$REPO_NAME" "$REPO_URL" 2>/dev/null; then
+				if ERROR_MSG=$(helm repo add "$REPO_NAME" "$REPO_URL" 2>&1); then
 					REPO_ADDED=true
 					break
-				elif helm repo add "$REPO_NAME" "$REPO_URL" --force-update >/dev/null 2>&1; then
+				elif ERROR_MSG=$(helm repo add "$REPO_NAME" "$REPO_URL" --force-update 2>&1); then
 					REPO_ADDED=true
 					break
+				else
+					# Check for conflict - repo name exists with different URL
+					if echo "$ERROR_MSG" | grep -q "already exists"; then
+						# Verify it's a different URL (not same URL being re-added)
+						if ! echo "$ERROR_MSG" | grep -q "same URL"; then
+							echo "Error: Helm repo conflict detected!"
+							echo "The repo name $REPO_NAME already exists with a different URL."
+							echo "User has already chosen which repo source to use. Aborting."
+							exit 1
+						else
+							# Same URL already exists - this is fine, skip adding
+							echo "Repo $REPO_NAME ($REPO_URL) already configured, skipping."
+							REPO_ADDED=true
+							break
+						fi
+					fi
+
+					# For transient errors, continue retry loop
+					echo "Warning: Failed to add repo $REPO_NAME (attempt $r/6): $ERROR_MSG"
 				fi
-				echo "Warning: Failed to add repo $REPO_NAME (attempt $r/6)"
 				sleep $BACKOFF
 				BACKOFF=$((BACKOFF < 30 ? BACKOFF * 2 : 30))
 			done
