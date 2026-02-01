@@ -1,0 +1,8 @@
+# Ignore Pulumi secrets template
+infra/pulumi/secrets-template.yaml
+
+# Ignore Nextcloud local dev secret
+infra/app-of-apps/nextcloud/db-secret.yaml
+
+# Ignore Home Assistant MQTT password
+infra/app-of-apps/home-assistant/zigbee2mqtt.yaml
