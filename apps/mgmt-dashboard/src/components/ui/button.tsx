@@ -56,6 +56,7 @@ function Button({
       data-variant={variant}
       data-size={size}
       className={cn(buttonVariants({ variant, size, className }))}
+      type={asChild ? undefined : (props.type || "button")}
       {...props}
     />
   )
