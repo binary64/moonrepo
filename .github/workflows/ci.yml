@@ -19,6 +19,7 @@ jobs:
       - uses: moonrepo/setup-toolchain@v0
         with:
           auto-install: true
-      - run: echo "$HOME/.moon/bin" >> $GITHUB_PATH
-      - run: moon ci
+      - run: |
+          export PATH="$HOME/.moon/bin:$PATH"
+          moon ci
       - run: bash run.sh
