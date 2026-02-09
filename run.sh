@@ -47,14 +47,18 @@ helm repo update cloudnative-pg
 helm upgrade --install cloudnative-pg cloudnative-pg/cloudnative-pg \
     --namespace cloudnative-pg --create-namespace \
     --set crds.create=true --wait --timeout 15m
-
-# MariaDB Operator
+# MariaDB Operator CRDs (must be installed first)
 helm repo add mariadb-operator https://mariadb-operator.github.io/mariadb-operator || true
 helm repo update mariadb-operator
+helm upgrade --install mariadb-operator-crds mariadb-operator/mariadb-operator-crds \
+    --namespace mariadb-operator --create-namespace \
+    --wait --timeout 15m
+
+# MariaDB Operator
 helm upgrade --install mariadb-operator mariadb-operator/mariadb-operator \
     --namespace mariadb-operator --create-namespace \
+    --set crds.enabled=false \
     --set ha.enabled=false --wait --timeout 15m
-
 echo "=== Parsing Applications in $APP_DIR ==="
 
 if [ ! -d "$APP_DIR" ]; then
