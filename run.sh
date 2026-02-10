@@ -67,7 +67,6 @@ helm upgrade --install mariadb-operator-crds mariadb-operator/mariadb-operator-c
 helm upgrade --install mariadb-operator mariadb-operator/mariadb-operator \
     --namespace mariadb-operator --create-namespace \
     --set crds.enabled=false \
-<<<<<<< HEAD
     --set ha.enabled=false --wait --timeout 20m
 echo "=== Parsing Applications in $APP_DIR ==="
 
