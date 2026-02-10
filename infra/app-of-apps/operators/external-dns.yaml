@@ -5,6 +5,8 @@ metadata:
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
+  annotations:
+    moonrepo.dev/skip-local: "true"
 spec:
   project: default
   source:
