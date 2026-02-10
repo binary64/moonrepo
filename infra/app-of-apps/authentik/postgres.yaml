@@ -16,10 +16,29 @@ spec:
     targetRevision: 0.5.0
     helm:
       values: |
+        # CloudNativePG Cluster configuration
+        # See: https://github.com/cloudnative-pg/charts/tree/main/charts/cluster
+        
+        type: postgresql
+        
+        mode: standalone
+        
         cluster:
           instances: 1
+          
+          # PostgreSQL image will be auto-selected based on type
+          imageName: ""
+          
           storage:
             size: 8Gi
+            storageClass: ""
+          
+          walStorage:
+            enabled: false
+        
+        # Backups configuration (disabled for now)
+        backups:
+          enabled: false
   
   destination:
     server: https://kubernetes.default.svc
