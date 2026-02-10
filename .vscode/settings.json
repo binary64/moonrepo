@@ -1,10 +1,8 @@
 {
-    "yamlValidation": [
-        {
-            "fileMatch": [
-                ".moon/toolchain.yml"
-            ],
-            "url": "https://moonrepo.dev/schemas/toolchain.json"
-        }
-    ]
+  "yamlValidation": [
+    {
+      "fileMatch": [".moon/toolchain.yml"],
+      "url": "https://moonrepo.dev/schemas/toolchain.json"
+    }
+  ]
 }

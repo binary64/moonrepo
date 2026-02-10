@@ -5,6 +5,20 @@ set -euo pipefail
 # Usage: ./set-secret.sh <secret-value>
 # Example: ./set-secret.sh "your-cloudflare-api-token"
 
+# Find repo root
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || (cd "$(dirname "$0")/../.." && pwd))
+cd "$REPO_ROOT/infra/secrets"
+
+# Check for required tools
+check_tool() {
+  if ! command -v "$1" &>/dev/null; then
+    echo "Error: $1 is not installed." >&2
+    exit 1
+  fi
+}
+
+check_tool "aws"
+
 if [ $# -ne 1 ]; then
   echo "Usage: $0 <cloudflare-api-token>"
   echo ""
@@ -28,12 +42,15 @@ echo "Setting Cloudflare API token: ${FULL_SECRET_ID}"
 # Check if secret exists
 if aws secretsmanager describe-secret --secret-id "${FULL_SECRET_ID}" &>/dev/null; then
   echo "Secret exists, updating value..."
-  aws secretsmanager put-secret-value \
+  if ! aws secretsmanager put-secret-value \
     --secret-id "${FULL_SECRET_ID}" \
-    --secret-string "${SECRET_VALUE}"
+    --secret-string "${SECRET_VALUE}"; then
+    echo "Error: Failed to update secret in AWS Secrets Manager." >&2
+    exit 1
+  fi
 else
-  echo "Error: Secret ${FULL_SECRET_ID} does not exist."
-  echo "Run 'cd infra/pulumi-bootstrap && pulumi up' to create it first."
+  echo "Error: Secret ${FULL_SECRET_ID} does not exist." >&2
+  echo "Run 'cd infra/pulumi-bootstrap && pulumi up' to create it first." >&2
   exit 1
 fi
 
