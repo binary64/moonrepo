@@ -42,7 +42,7 @@ helm upgrade argocd argo/argo-cd \
 
 If ArgoCD manages itself (app-of-apps pattern):
 
-1. Create an ArgoCD Application manifest:
+1. Create an ArgoCD Application manifest using multi-source:
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -52,13 +52,18 @@ metadata:
   namespace: argocd
 spec:
   project: default
-  source:
-    chart: argo-cd
-    repoURL: https://argoproj.github.io/argo-cd
-    targetRevision: 6.7.12  # Match your current version
-    helm:
-      valueFiles:
-        - ../../infra/argocd-values.yaml
+  sources:
+    # Helm chart from official ArgoCD repo
+    - chart: argo-cd
+      repoURL: https://argoproj.github.io/argo-cd
+      targetRevision: 6.7.12  # Match your current version
+      helm:
+        valueFiles:
+          - $values/infra/argocd-values.yaml
+    # Git repo containing values file
+    - repoURL: https://github.com/binary64/moonrepo.git
+      targetRevision: main
+      ref: values
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
@@ -67,6 +72,12 @@ spec:
       prune: true
       selfHeal: true
 ```
+
+**Key changes for multi-source:**
+- Use `sources:` (plural) instead of `source:`
+- First source is the Helm chart with `$values/` reference
+- Second source is the Git repo with `ref: values` to make it referenceable
+- The `$values/infra/argocd-values.yaml` path resolves to the file in the Git repo
 
 2. Apply and sync the application
 
