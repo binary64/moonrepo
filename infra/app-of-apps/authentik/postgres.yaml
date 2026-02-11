@@ -17,14 +17,16 @@ spec:
     helm:
       values: |
         cluster:
+          name: authentik-postgresql
           instances: 1
           storage:
             size: 8Gi
-  
+        externalClusters: []
+
   destination:
     server: https://kubernetes.default.svc
     namespace: authentik
-  
+
   syncPolicy:
     automated:
       prune: true
@@ -38,4 +40,3 @@ spec:
         duration: 5s
         factor: 2
         maxDuration: 31m
-      
