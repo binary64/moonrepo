@@ -17,11 +17,18 @@ spec:
           enabled: true
           configuration.yaml: |
             mqtt:
-              broker: mosquitto
+              broker: mosquitto.home-assistant.svc.cluster.local
               port: 1883
-              client_id: home-assistant
+              username: mqtt
+              password: mqtt
               discovery: true
               discovery_prefix: homeassistant
+              birth_message:
+                topic: 'hass/status'
+                payload: 'online'
+              will_message:
+                topic: 'hass/status'
+                payload: 'offline'
           forceInit: false
           trusted_proxies:
             - 10.42.0.0/16
