@@ -13,6 +13,10 @@ spec:
     targetRevision: 0.3.35
     helm:
       values: |
+        # Enable host networking for LAN device discovery (TP-Link, mDNS, etc.)
+        hostNetwork: true
+        dnsPolicy: ClusterFirstWithHostNet
+
         configuration:
           enabled: true
           configuration.yaml: |
@@ -34,6 +38,7 @@ spec:
             - 10.42.0.0/16
             - 10.43.0.0/16
             - 127.0.0.0/8
+            - 192.168.1.0/24  # Replace with your LAN CIDR
 
         # initContainers:
         #   - name: init-hacs
