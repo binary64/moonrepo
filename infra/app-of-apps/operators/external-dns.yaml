@@ -32,6 +32,8 @@ spec:
           - gateway-udproute
         domainFilters:
           - brandwhisper.cloud
+        extraArgs:
+          - --cloudflare-proxied=true
         policy: sync
         txtOwnerId: external-dns
 
