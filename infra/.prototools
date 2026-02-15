@@ -1,0 +1,8 @@
+k9s = "0.50.16"
+k3d = "5.8.3"
+argocd = "3.2.3"
+
+[plugins.tools]
+k3d = "https://raw.githubusercontent.com/appthrust/proto-toml-plugins/main/k3d/plugin.toml"
+k9s = "https://raw.githubusercontent.com/appthrust/proto-toml-plugins/main/k9s/plugin.toml"
+argocd = "https://raw.githubusercontent.com/appthrust/proto-toml-plugins/main/argocd/plugin.toml"

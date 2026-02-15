@@ -69,6 +69,8 @@ jobs:
       - uses: moonrepo/setup-toolchain@v0.6.0
         with:
           auto-install: true
+      - name: Install infra tools
+        run: cd infra && proto install
       - run: echo "$HOME/.moon/bin" >> $GITHUB_PATH
       - name: Moon CI
         run: moon ci
