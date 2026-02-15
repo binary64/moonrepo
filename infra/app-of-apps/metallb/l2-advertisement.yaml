@@ -1,0 +1,11 @@
+# L2Advertisement tells MetalLB to use Layer 2 (ARP/NDP) mode to
+# announce LoadBalancer IPs on the local network. This is the simplest
+# mode and works on any Layer 2 network — ideal for home lab clusters.
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: default
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+    - default-pool
