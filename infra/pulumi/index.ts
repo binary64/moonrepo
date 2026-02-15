@@ -75,6 +75,24 @@ const _externalDnsSecret = new k8s.core.v1.Secret(
   { provider: k8sProvider },
 );
 
+// Home Assistant Event Relay Token
+const config = new pulumi.Config();
+const haToken = config.requireSecret("ha-event-relay-token");
+
+const _haEventRelaySecret = new k8s.core.v1.Secret(
+  "ha-event-relay-token",
+  {
+    metadata: {
+      name: "ha-event-relay-token",
+      namespace: "home-assistant",
+    },
+    stringData: {
+      token: haToken,
+    },
+  },
+  { provider: k8sProvider },
+);
+
 // Exports
 export const zoneId = zone.zoneId;
 export const tokenId = certManagerToken.id;
