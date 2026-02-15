@@ -1,0 +1,20 @@
+# MetalLB IP Address Pool for bare-metal LoadBalancer services.
+#
+# This pool provides virtual IPs (VIPs) that MetalLB assigns to
+# LoadBalancer-type services. The range should be in the same subnet
+# as the node but outside DHCP range to avoid conflicts.
+#
+# Adjust the address range to match your network:
+#   - Must be in the same L2 subnet as cluster nodes
+#   - Must not overlap with DHCP or other static assignments
+#   - For single-node clusters, even a single IP (/32) is sufficient
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: default-pool
+  namespace: metallb-system
+spec:
+  addresses:
+    # Reserve a small VIP range in the node's subnet (192.168.1.0/24).
+    # The node itself is at 192.168.1.201; this range avoids conflicts.
+    - 192.168.1.240-192.168.1.250
