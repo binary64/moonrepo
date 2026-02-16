@@ -15,6 +15,9 @@ spec:
       releaseName: zigbee2mqtt
       values: |
         zigbee2mqtt:
+          frontend:
+            auth_token: KGabURkzkattsvLD5u3iDefsBELCGQ5uduqKWYMJ
+
           mqtt:
             server: 'mqtt://mosquitto:1883'
             username: mqtt
