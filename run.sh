@@ -1,10 +1,19 @@
 #!/bin/bash
 set -euo pipefail
 
+# Repo root (where this script lives)
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Constants
 CLUSTER_NAME="moonrepo-dev"
-K3D_CONFIG="k3d-config.yaml"
+K3D_CONFIG="$REPO_ROOT/k3d-config.yaml"
 APP_DIR="infra/app-of-apps"
+
+# k3d is configured as a proto plugin in infra/.prototools (not the repo root).
+# Wrap k3d so the proto shim resolves from the infra/ directory.
+k3d() {
+	(cd "$REPO_ROOT/infra" && command k3d "$@")
+}
 
 # Checking dependencies
 if ! command -v yq &>/dev/null; then
@@ -15,8 +24,8 @@ if ! command -v helm &>/dev/null; then
 	echo "Error: helm is not installed or not in PATH."
 	exit 1
 fi
-if ! command -v k3d &>/dev/null; then
-	echo "Error: k3d is not installed or not in PATH."
+if ! k3d version &>/dev/null; then
+	echo "Error: k3d is not installed or not configured in infra/.prototools."
 	exit 1
 fi
 
