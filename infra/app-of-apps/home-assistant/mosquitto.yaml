@@ -8,21 +8,14 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://naps.github.io/helm-charts/
-    chart: mosquitto
-    targetRevision: "1.0.4"
-    helm:
-      releaseName: mosquitto
-      values: |
-        fullnameOverride: mosquitto
-        mosquitto:
-          config: |
-            allow_anonymous true
-  
+    repoURL: https://github.com/binary64/moonrepo.git
+    targetRevision: master
+    path: infra/app-of-apps/home-assistant/mosquitto-manifests
+
   destination:
     server: https://kubernetes.default.svc
     namespace: home-assistant
-  
+
   syncPolicy:
     automated:
       prune: true
