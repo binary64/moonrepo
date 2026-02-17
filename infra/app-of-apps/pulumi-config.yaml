@@ -1,0 +1,41 @@
+# Pulumi Stack resource for Cloudflare DNS management.
+#
+# The Stack CR requires the Pulumi Operator CRDs which are installed by
+# operators/pulumi-operator.yaml.  Wrapping it in its own Application with
+# SkipDryRunOnMissingResource avoids the "CRD not found" validation error
+# that blocks the entire infra-root sync.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: pulumi-config
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+    moonrepo.dev/skip-local: "true"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/binary64/moonrepo.git
+    targetRevision: master
+    path: infra/manifests/pulumi-config
+    directory:
+      recurse: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: pulumi-operator-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 5m
