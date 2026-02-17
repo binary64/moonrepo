@@ -77,10 +77,10 @@ spec:
                   pathType: Prefix
 
         persistence:
-          config:
-            enabled: true
-            accessMode: ReadWriteOnce
-            size: 10Gi
+          enabled: true
+          accessMode: ReadWriteOnce
+          size: 10Gi
+          # storageClass defaults to cluster default (local-path)
 
         addons:
           codeserver:
