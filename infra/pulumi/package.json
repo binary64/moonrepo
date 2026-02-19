@@ -9,5 +9,8 @@
     "@pulumi/pulumi": "^3",
     "@pulumi/cloudflare": "^5",
     "@pulumi/kubernetes": "^4"
+  },
+  "overrides": {
+    "tar": ">=7.5.8"
   }
 }
