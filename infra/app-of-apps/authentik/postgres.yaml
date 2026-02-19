@@ -24,6 +24,7 @@ spec:
         mode: standalone
         
         cluster:
+          name: authentik-postgresql
           instances: 1
           
           # PostgreSQL image will be auto-selected based on type
@@ -39,11 +40,13 @@ spec:
         # Backups configuration (disabled for now)
         backups:
           enabled: false
+        
+        externalClusters: []
   
   destination:
     server: https://kubernetes.default.svc
     namespace: authentik
-  
+
   syncPolicy:
     automated:
       prune: true
@@ -57,4 +60,3 @@ spec:
         duration: 5s
         factor: 2
         maxDuration: 31m
-      
