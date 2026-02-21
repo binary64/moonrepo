@@ -1,0 +1,68 @@
+# PostSync hook: ensures the HA config PV reclaim policy is always Retain.
+# Runs after every ArgoCD sync to prevent accidental data loss.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pv-retain-hook
+  namespace: home-assistant
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ha-pv-retain-hook
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+rules:
+  - apiGroups: [""]
+    resources: ["persistentvolumes", "persistentvolumeclaims"]
+    verbs: ["get", "list", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ha-pv-retain-hook
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ha-pv-retain-hook
+subjects:
+  - kind: ServiceAccount
+    name: pv-retain-hook
+    namespace: home-assistant
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ha-pv-retain
+  namespace: home-assistant
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      serviceAccountName: pv-retain-hook
+      restartPolicy: OnFailure
+      containers:
+        - name: pv-retain
+          image: bitnami/kubectl:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              PV=$(kubectl get pvc home-assistant-home-assistant-0 -n home-assistant \
+                -o jsonpath='{.spec.volumeName}' 2>/dev/null)
+              if [ -n "$PV" ]; then
+                kubectl patch pv "$PV" -p '{"spec":{"persistentVolumeReclaimPolicy":"Retain"}}'
+                echo "PV $PV set to Retain"
+              else
+                echo "PVC not found, skipping"
+              fi
