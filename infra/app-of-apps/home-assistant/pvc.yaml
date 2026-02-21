@@ -22,5 +22,8 @@ spec:
     requests:
       storage: 10Gi
   storageClassName: local-path
-  # Pin to the current PV so a new empty one is never provisioned
+  # Pin to the current PV so a new empty one is never silently provisioned.
+  # REINSTALL NOTE: if the cluster is wiped, this PV won't exist and the PVC
+  # will sit Pending. Fix: remove volumeName (lets a new PV be provisioned)
+  # or update it to the new PV name after provisioning fresh storage.
   volumeName: pvc-f02d127f-90e3-4389-9883-a895265c4761
