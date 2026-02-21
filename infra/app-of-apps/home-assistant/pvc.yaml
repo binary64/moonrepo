@@ -1,0 +1,26 @@
+# Pre-declared PVC for Home Assistant config data.
+# Named to match the StatefulSet volumeClaimTemplate convention so the
+# StatefulSet adopts this PVC instead of creating a new one.
+#
+# argocd.argoproj.io/sync-options: Prune=false prevents ArgoCD from EVER
+# deleting this PVC, even during prune operations or app deletion.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: home-assistant-home-assistant-0
+  namespace: home-assistant
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+    argocd.argoproj.io/managed-by: home-assistant
+  labels:
+    app.kubernetes.io/instance: home-assistant
+    app.kubernetes.io/name: home-assistant
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: local-path
+  # Pin to the current PV so a new empty one is never provisioned
+  volumeName: pvc-f02d127f-90e3-4389-9883-a895265c4761
