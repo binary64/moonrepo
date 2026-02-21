@@ -18,11 +18,11 @@ spec:
         dnsPolicy: ClusterFirstWithHostNet
 
         # Mount host DBus socket so HA can use Bluetooth (BLE device discovery)
-        extraVolumes:
+        additionalVolumes:
           - name: dbus
             hostPath:
               path: /run/dbus
-        extraVolumeMounts:
+        additionalMounts:
           - name: dbus
             mountPath: /run/dbus
 
