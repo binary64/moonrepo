@@ -17,6 +17,15 @@ spec:
         hostNetwork: true
         dnsPolicy: ClusterFirstWithHostNet
 
+        # Mount host DBus socket so HA can use Bluetooth (BLE device discovery)
+        extraVolumes:
+          - name: dbus
+            hostPath:
+              path: /run/dbus
+        extraVolumeMounts:
+          - name: dbus
+            mountPath: /run/dbus
+
         configuration:
           enabled: true
           configuration.yaml: |
