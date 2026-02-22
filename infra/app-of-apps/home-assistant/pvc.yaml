@@ -12,6 +12,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-options: Prune=false
     argocd.argoproj.io/managed-by: home-assistant
+    moonrepo.dev/skip-local: "true"
   labels:
     app.kubernetes.io/instance: home-assistant
     app.kubernetes.io/name: home-assistant
