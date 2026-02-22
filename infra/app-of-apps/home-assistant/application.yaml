@@ -64,6 +64,7 @@ spec:
               - sh
               - -c
               - |
+                set -e
                 apk add --no-cache wget unzip jq > /dev/null 2>&1
                 # HACS
                 if [ ! -d /config/custom_components/hacs ]; then
