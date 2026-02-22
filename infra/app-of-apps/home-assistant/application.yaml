@@ -17,6 +17,11 @@ spec:
         hostNetwork: true
         dnsPolicy: ClusterFirstWithHostNet
 
+        # Disable AppArmor so HA can access DBus for Bluetooth (BLE discovery).
+        # Without this, AppArmor blocks DBus method calls with AccessDenied.
+        podAnnotations:
+          container.apparmor.security.beta.kubernetes.io/home-assistant: unconfined
+
         # Mount host DBus socket so HA can use Bluetooth (BLE device discovery)
         additionalVolumes:
           - name: dbus
