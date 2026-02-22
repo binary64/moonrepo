@@ -54,13 +54,39 @@ spec:
             - 127.0.0.0/8
             - 192.168.1.0/24  # Replace with your LAN CIDR
 
-        # initContainers:
-        #   - name: init-hacs
-        #     image: 
-        #     command: ["bash", "-c", "cd /config && wget -O - https://get.hacs.xyz | bash -"]
-        #     volumeMounts:
-        #         - mountPath: /config
-        #           name: home-assistant
+        # Install HACS + Bermuda BLE Trilateration into custom_components.
+        # Only downloads on first run — PVC persists across restarts.
+        # Prerequisite: BlueZ must be installed on the host (sudo apt install bluez).
+        initContainers:
+          - name: init-custom-components
+            image: alpine:3.21
+            command:
+              - sh
+              - -c
+              - |
+                set -e
+                apk add --no-cache wget unzip jq > /dev/null 2>&1
+                # HACS
+                if [ ! -d /config/custom_components/hacs ]; then
+                  echo "Installing HACS..."
+                  wget -qO /tmp/hacs.zip https://github.com/hacs/integration/releases/latest/download/hacs.zip
+                  mkdir -p /config/custom_components/hacs
+                  unzip -o /tmp/hacs.zip -d /config/custom_components/hacs
+                  rm /tmp/hacs.zip
+                fi
+                # Bermuda BLE Trilateration
+                if [ ! -d /config/custom_components/bermuda ]; then
+                  echo "Installing Bermuda..."
+                  BERMUDA_VER=$(wget -qO- https://api.github.com/repos/agittins/bermuda/releases/latest | jq -r .tag_name)
+                  wget -qO /tmp/bermuda.zip "https://github.com/agittins/bermuda/releases/download/${BERMUDA_VER}/bermuda.zip"
+                  mkdir -p /config/custom_components/bermuda
+                  unzip -o /tmp/bermuda.zip -d /config/custom_components/bermuda
+                  rm /tmp/bermuda.zip
+                fi
+                echo "Custom components ready."
+            volumeMounts:
+              - mountPath: /config
+                name: home-assistant
     
         service:
           type: ClusterIP
