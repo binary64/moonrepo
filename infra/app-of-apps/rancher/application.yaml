@@ -17,13 +17,15 @@ spec:
     helm:
       releaseName: rancher
       values: |
-        hostname: rancher.local
+        hostname: rancher.home.brandwhisper.cloud
         # bootstrapPassword omitted - Rancher will generate a secure random password
         replicas: 1
         ingress:
           enabled: true
-          # Note: Rancher usually manages its own ingress
-        # Use cert-manager for Rancher's certificates
+          annotations:
+            # External-dns will create the Cloudflare DNS record automatically
+            external-dns.alpha.kubernetes.io/hostname: rancher.home.brandwhisper.cloud
+        # Use cert-manager for Rancher's TLS certificates (dns01 solver via Cloudflare)
         certmanager:
           version: "1.19.2"
   destination:
