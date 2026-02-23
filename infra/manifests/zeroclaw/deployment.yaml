@@ -32,22 +32,18 @@ spec:
               value: "true"
             - name: ZEROCLAW_GATEWAY_PORT
               value: "42617"
-            # Secret-sourced config
+            # LiteLLM proxy — OpenAI-compatible endpoint in-cluster
+            # ZeroClaw's "custom:" prefix routes to any OpenAI-compat API
+            - name: PROVIDER
+              value: "custom:http://litellm.litellm.svc:4000"
+            - name: ZEROCLAW_MODEL
+              value: "gemini-2.5-flash"
+            # LiteLLM master key used as the API key
             - name: API_KEY
               valueFrom:
                 secretKeyRef:
                   name: zeroclaw-env
                   key: API_KEY
-            - name: PROVIDER
-              valueFrom:
-                secretKeyRef:
-                  name: zeroclaw-env
-                  key: PROVIDER
-            - name: ZEROCLAW_MODEL
-              valueFrom:
-                secretKeyRef:
-                  name: zeroclaw-env
-                  key: ZEROCLAW_MODEL
           ports:
             - name: gateway
               containerPort: 42617
