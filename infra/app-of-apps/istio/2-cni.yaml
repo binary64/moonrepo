@@ -16,6 +16,12 @@ spec:
       releaseName: istio-cni
       values: |
         profile: ambient
+
+        resources:
+          requests:
+            cpu: 25m
+            memory: 64Mi
+
         cni:
           chained: true
           repair:

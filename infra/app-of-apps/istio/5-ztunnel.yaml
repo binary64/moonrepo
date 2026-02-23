@@ -12,6 +12,11 @@ spec:
     chart: ztunnel
     helm:
       releaseName: ztunnel
+      values: |
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
 
   destination:
     server: https://kubernetes.default.svc
