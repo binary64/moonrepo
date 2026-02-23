@@ -34,27 +34,42 @@ data:
       max_tokens: 16384
 
     model_list:
-      # ── Anthropic ──
+      # ── Anthropic (direct + OpenRouter fallback) ──
       - model_name: claude-opus-4
         litellm_params:
           model: anthropic/claude-opus-4-20250514
           api_key: os.environ/ANTHROPIC_API_KEY
+
+      - model_name: claude-opus-4
+        litellm_params:
+          model: openrouter/anthropic/claude-opus-4
+          api_key: os.environ/OPENROUTER_API_KEY
 
       - model_name: claude-sonnet-4
         litellm_params:
           model: anthropic/claude-sonnet-4-20250514
           api_key: os.environ/ANTHROPIC_API_KEY
 
+      - model_name: claude-sonnet-4
+        litellm_params:
+          model: openrouter/anthropic/claude-sonnet-4
+          api_key: os.environ/OPENROUTER_API_KEY
+
       - model_name: claude-haiku
         litellm_params:
           model: anthropic/claude-3-5-haiku-20241022
           api_key: os.environ/ANTHROPIC_API_KEY
 
-      # ── OpenAI ──
+      # ── OpenAI (direct + OpenRouter fallback) ──
       - model_name: gpt-4o
         litellm_params:
           model: openai/gpt-4o
           api_key: os.environ/OPENAI_API_KEY
+
+      - model_name: gpt-4o
+        litellm_params:
+          model: openrouter/openai/gpt-4o
+          api_key: os.environ/OPENROUTER_API_KEY
 
       - model_name: gpt-4o-mini
         litellm_params:
@@ -111,3 +126,29 @@ data:
           model: openai/glm-4.5-flash
           api_key: os.environ/ZAI_API_KEY
           api_base: https://open.bigmodel.cn/api/paas/v4
+
+      # ── OpenRouter-only models ──
+      - model_name: deepseek-chat
+        litellm_params:
+          model: openrouter/deepseek/deepseek-chat-v3-0324
+          api_key: os.environ/OPENROUTER_API_KEY
+
+      - model_name: deepseek-r1
+        litellm_params:
+          model: openrouter/deepseek/deepseek-r1
+          api_key: os.environ/OPENROUTER_API_KEY
+
+      - model_name: mistral-large
+        litellm_params:
+          model: openrouter/mistralai/mistral-large-2411
+          api_key: os.environ/OPENROUTER_API_KEY
+
+      - model_name: llama-4-maverick
+        litellm_params:
+          model: openrouter/meta-llama/llama-4-maverick
+          api_key: os.environ/OPENROUTER_API_KEY
+
+      - model_name: qwen-3-235b
+        litellm_params:
+          model: openrouter/qwen/qwen3-235b
+          api_key: os.environ/OPENROUTER_API_KEY
