@@ -32,44 +32,34 @@ data:
       success_callback: []
       # Max tokens guard
       max_tokens: 16384
+      # Fallback routing: direct API fails → OpenRouter picks up
+      fallbacks:
+        - claude-opus-4: [claude-opus-4-openrouter]
+        - claude-sonnet-4: [claude-sonnet-4-openrouter]
+        - gpt-4o: [gpt-4o-openrouter]
 
     model_list:
-      # ── Anthropic (direct + OpenRouter fallback) ──
+      # ── Anthropic (direct) ──
       - model_name: claude-opus-4
         litellm_params:
           model: anthropic/claude-opus-4-20250514
           api_key: os.environ/ANTHROPIC_API_KEY
-
-      - model_name: claude-opus-4
-        litellm_params:
-          model: openrouter/anthropic/claude-opus-4
-          api_key: os.environ/OPENROUTER_API_KEY
 
       - model_name: claude-sonnet-4
         litellm_params:
           model: anthropic/claude-sonnet-4-20250514
           api_key: os.environ/ANTHROPIC_API_KEY
 
-      - model_name: claude-sonnet-4
-        litellm_params:
-          model: openrouter/anthropic/claude-sonnet-4
-          api_key: os.environ/OPENROUTER_API_KEY
-
       - model_name: claude-haiku
         litellm_params:
           model: anthropic/claude-3-5-haiku-20241022
           api_key: os.environ/ANTHROPIC_API_KEY
 
-      # ── OpenAI (direct + OpenRouter fallback) ──
+      # ── OpenAI (direct) ──
       - model_name: gpt-4o
         litellm_params:
           model: openai/gpt-4o
           api_key: os.environ/OPENAI_API_KEY
-
-      - model_name: gpt-4o
-        litellm_params:
-          model: openrouter/openai/gpt-4o
-          api_key: os.environ/OPENROUTER_API_KEY
 
       - model_name: gpt-4o-mini
         litellm_params:
@@ -126,6 +116,23 @@ data:
           model: openai/glm-4.5-flash
           api_key: os.environ/ZAI_API_KEY
           api_base: https://open.bigmodel.cn/api/paas/v4
+
+      # ── OpenRouter fallback targets ──
+      # These are only hit via fallbacks config above, not directly routable
+      - model_name: claude-opus-4-openrouter
+        litellm_params:
+          model: openrouter/anthropic/claude-opus-4
+          api_key: os.environ/OPENROUTER_API_KEY
+
+      - model_name: claude-sonnet-4-openrouter
+        litellm_params:
+          model: openrouter/anthropic/claude-sonnet-4
+          api_key: os.environ/OPENROUTER_API_KEY
+
+      - model_name: gpt-4o-openrouter
+        litellm_params:
+          model: openrouter/openai/gpt-4o
+          api_key: os.environ/OPENROUTER_API_KEY
 
       # ── OpenRouter-only models ──
       - model_name: deepseek-chat
