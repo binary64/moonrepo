@@ -18,10 +18,10 @@ for plugin_file in "$PLUGINS_DIR"/*.toml; do
   name=$(basename "$plugin_file" .toml)
   echo "Validating: $name ($plugin_file)"
 
-  python3 -c "
+  PLUGIN_FILE="$plugin_file" python3 -c "
 import tomllib, sys, os
 
-with open('$plugin_file', 'rb') as f:
+with open(os.environ['PLUGIN_FILE'], 'rb') as f:
     p = tomllib.load(f)
 
 errs = []
