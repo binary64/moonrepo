@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: litellm
-          image: "ghcr.io/berriai/litellm:main-v1.67.5"
+          image: "litellm/litellm:v1.81.12-stable"
           args:
             - "--config"
             - "/etc/litellm/config.yaml"
