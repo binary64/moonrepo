@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: litellm
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/binary64/moonrepo.git
+    targetRevision: master
+    path: infra/manifests/litellm
+
+  ignoreDifferences:
+    - group: ""
+      kind: Secret
+      name: litellm-env
+      namespace: litellm
+      jsonPointers:
+        - /data
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: litellm
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - RespectIgnoreDifferences=true
+      - SkipDryRunOnMissingResource=true
+      - ServerSideApply=true
+    retry:
+      limit: -1
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
