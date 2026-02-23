@@ -63,6 +63,11 @@ spec:
                 secretKeyRef:
                   name: litellm-env
                   key: ZAI_API_KEY
+            - name: OPENROUTER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: litellm-env
+                  key: OPENROUTER_API_KEY
           ports:
             - name: http
               containerPort: 4000
