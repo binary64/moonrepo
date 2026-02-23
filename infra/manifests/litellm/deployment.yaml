@@ -35,13 +35,14 @@ spec:
                   name: litellm-env
                   key: LITELLM_MASTER_KEY
             # PostgreSQL for virtual key auth + cost tracking (required in v1.81+)
-            - name: DATABASE_URL
-              value: "postgresql://litellm:$(POSTGRES_PASSWORD)@litellm-postgres:5432/litellm"
+            # POSTGRES_PASSWORD must come BEFORE DATABASE_URL for $(…) expansion
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: litellm-env
                   key: POSTGRES_PASSWORD
+            - name: DATABASE_URL
+              value: "postgresql://litellm:$(POSTGRES_PASSWORD)@litellm-postgres:5432/litellm"
             - name: ANTHROPIC_API_KEY
               valueFrom:
                 secretKeyRef:
