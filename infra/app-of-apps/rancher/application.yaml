@@ -21,13 +21,11 @@ spec:
         # bootstrapPassword omitted - Rancher will generate a secure random password
         replicas: 1
         ingress:
-          enabled: true
-          annotations:
-            # External-dns will create the Cloudflare DNS record automatically
-            external-dns.alpha.kubernetes.io/hostname: rancher.home.brandwhisper.cloud
-        # Use cert-manager for Rancher's TLS certificates (dns01 solver via Cloudflare)
-        certmanager:
-          version: "1.19.2"
+          # Disabled — no nginx-ingress-controller in this cluster.
+          # Traffic routes via Istio Gateway + HTTPRoute (see httproute.yaml)
+          enabled: false
+        # TLS handled by existing *.home.brandwhisper.cloud wildcard cert
+        tls: external
   destination:
     server: https://kubernetes.default.svc
     namespace: cattle-system
