@@ -34,6 +34,9 @@ spec:
                 secretKeyRef:
                   name: litellm-env
                   key: LITELLM_MASTER_KEY
+            # SQLite DB for virtual key auth (required in v1.81+)
+            - name: DATABASE_URL
+              value: "sqlite:///tmp/litellm.db"
             - name: ANTHROPIC_API_KEY
               valueFrom:
                 secretKeyRef:
