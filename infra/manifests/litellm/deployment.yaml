@@ -34,9 +34,14 @@ spec:
                 secretKeyRef:
                   name: litellm-env
                   key: LITELLM_MASTER_KEY
-            # SQLite DB for virtual key auth (required in v1.81+)
+            # PostgreSQL for virtual key auth + cost tracking (required in v1.81+)
             - name: DATABASE_URL
-              value: "sqlite:///tmp/litellm.db"
+              value: "postgresql://litellm:$(POSTGRES_PASSWORD)@litellm-postgres:5432/litellm"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: litellm-env
+                  key: POSTGRES_PASSWORD
             - name: ANTHROPIC_API_KEY
               valueFrom:
                 secretKeyRef:
