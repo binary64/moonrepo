@@ -15,6 +15,12 @@ spec:
       values: |
         profile: ambient
 
+        pilot:
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+
         global:
           istioNamespace: istio-system
           logAsJson: true

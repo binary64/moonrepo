@@ -49,6 +49,14 @@ spec:
             channel: 25
             log_level: info
 
+        resources:
+          requests:
+            cpu: 25m
+            memory: 128Mi
+          limits:
+            cpu: 200m
+            memory: 600Mi
+
         service:
           type: ClusterIP
           port: 8080
