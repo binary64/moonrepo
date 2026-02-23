@@ -9,6 +9,14 @@ on:
       - '*'
 
 jobs:
+  proto-plugins:
+    name: Validate Proto Plugins
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate plugin TOML schemas
+        run: bash scripts/validate-proto-plugins.sh
+
   lint:
     name: Lint & Format
     runs-on: ubuntu-latest
@@ -62,7 +70,7 @@ jobs:
     name: Integration
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: [lint, type-check, build]
+    needs: [lint, type-check, build, proto-plugins]
     steps:
       - uses: actions/checkout@v4
         with:
