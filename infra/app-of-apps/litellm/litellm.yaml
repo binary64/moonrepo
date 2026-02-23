@@ -17,8 +17,12 @@ spec:
       kind: Secret
       name: litellm-env
       namespace: litellm
+      managedFieldsManagers:
+        - kubectl-client-side-apply
+        - kubectl-create
       jsonPointers:
         - /data
+        - /stringData
 
   destination:
     server: https://kubernetes.default.svc
