@@ -32,14 +32,11 @@ data:
       success_callback: []
       # Max tokens guard
       max_tokens: 16384
-      # Fallback routing: direct API fails → OpenRouter picks up
-      fallbacks:
-        - claude-opus-4: [claude-opus-4-openrouter]
-        - claude-sonnet-4: [claude-sonnet-4-openrouter]
-        - gpt-4o: [gpt-4o-openrouter]
 
     model_list:
-      # ── Anthropic (direct) ──
+      # ══════════════════════════════════════════
+      # Anthropic (direct API only — no OpenRouter overlap)
+      # ══════════════════════════════════════════
       - model_name: claude-opus-4
         litellm_params:
           model: anthropic/claude-opus-4-20250514
@@ -55,28 +52,17 @@ data:
           model: anthropic/claude-3-5-haiku-20241022
           api_key: os.environ/ANTHROPIC_API_KEY
 
-      # ── OpenAI (direct) ──
-      - model_name: gpt-4o
+      # ══════════════════════════════════════════
+      # OpenAI (direct — latest nano only)
+      # ══════════════════════════════════════════
+      - model_name: gpt-4.1-nano
         litellm_params:
-          model: openai/gpt-4o
+          model: openai/gpt-4.1-nano
           api_key: os.environ/OPENAI_API_KEY
 
-      - model_name: gpt-4o-mini
-        litellm_params:
-          model: openai/gpt-4o-mini
-          api_key: os.environ/OPENAI_API_KEY
-
-      - model_name: o1
-        litellm_params:
-          model: openai/o1
-          api_key: os.environ/OPENAI_API_KEY
-
-      - model_name: o3-mini
-        litellm_params:
-          model: openai/o3-mini
-          api_key: os.environ/OPENAI_API_KEY
-
-      # ── Google Gemini ──
+      # ══════════════════════════════════════════
+      # Google Gemini (direct API)
+      # ══════════════════════════════════════════
       - model_name: gemini-2.5-flash
         litellm_params:
           model: gemini/gemini-2.5-flash
@@ -92,7 +78,9 @@ data:
           model: gemini/gemini-2.0-flash
           api_key: os.environ/GEMINI_API_KEY
 
-      # ── ZAI / GLM (via BigModel OpenAI-compat) ──
+      # ══════════════════════════════════════════
+      # ZAI / GLM (direct via BigModel)
+      # ══════════════════════════════════════════
       - model_name: glm-5
         litellm_params:
           model: openai/glm-5
@@ -117,45 +105,79 @@ data:
           api_key: os.environ/ZAI_API_KEY
           api_base: https://open.bigmodel.cn/api/paas/v4
 
-      # ── OpenRouter fallback targets ──
-      # These are only hit via fallbacks config above, not directly routable
-      - model_name: claude-opus-4-openrouter
+      # ══════════════════════════════════════════
+      # OpenRouter — FREE models (all with tool support)
+      # ══════════════════════════════════════════
+      - model_name: free-router
         litellm_params:
-          model: openrouter/anthropic/claude-opus-4
+          model: openrouter/openrouter/free
           api_key: os.environ/OPENROUTER_API_KEY
 
-      - model_name: claude-sonnet-4-openrouter
+      - model_name: qwen3-coder-free
         litellm_params:
-          model: openrouter/anthropic/claude-sonnet-4
+          model: openrouter/qwen/qwen3-coder:free
           api_key: os.environ/OPENROUTER_API_KEY
 
-      - model_name: gpt-4o-openrouter
+      - model_name: qwen3-235b-thinking-free
         litellm_params:
-          model: openrouter/openai/gpt-4o
+          model: openrouter/qwen/qwen3-235b-a22b-thinking-2507
           api_key: os.environ/OPENROUTER_API_KEY
 
-      # ── OpenRouter-only models ──
-      - model_name: deepseek-chat
+      - model_name: llama-3.3-70b-free
         litellm_params:
-          model: openrouter/deepseek/deepseek-chat-v3-0324
+          model: openrouter/meta-llama/llama-3.3-70b-instruct:free
+          api_key: os.environ/OPENROUTER_API_KEY
+
+      - model_name: gemma-3-27b-free
+        litellm_params:
+          model: openrouter/google/gemma-3-27b-it:free
+          api_key: os.environ/OPENROUTER_API_KEY
+
+      - model_name: mistral-small-free
+        litellm_params:
+          model: openrouter/mistralai/mistral-small-3.1-24b-instruct:free
+          api_key: os.environ/OPENROUTER_API_KEY
+
+      - model_name: stepfun-flash-free
+        litellm_params:
+          model: openrouter/stepfun/step-3.5-flash:free
+          api_key: os.environ/OPENROUTER_API_KEY
+
+      - model_name: gpt-oss-120b-free
+        litellm_params:
+          model: openrouter/openai/gpt-oss-120b:free
+          api_key: os.environ/OPENROUTER_API_KEY
+
+      # ══════════════════════════════════════════
+      # OpenRouter — ULTRA CHEAP agentic models
+      # (<$0.50/M input, tool support, 64k+ context)
+      # ══════════════════════════════════════════
+      - model_name: gpt-5-nano
+        litellm_params:
+          model: openrouter/openai/gpt-5-nano
+          api_key: os.environ/OPENROUTER_API_KEY
+
+      - model_name: qwen3-coder-next
+        litellm_params:
+          model: openrouter/qwen/qwen3-coder-next
+          api_key: os.environ/OPENROUTER_API_KEY
+
+      - model_name: deepseek-v3.2
+        litellm_params:
+          model: openrouter/deepseek/deepseek-v3.2
           api_key: os.environ/OPENROUTER_API_KEY
 
       - model_name: deepseek-r1
         litellm_params:
-          model: openrouter/deepseek/deepseek-r1
+          model: openrouter/deepseek/deepseek-r1-0528
           api_key: os.environ/OPENROUTER_API_KEY
 
-      - model_name: mistral-large
+      - model_name: minimax-m2.5
         litellm_params:
-          model: openrouter/mistralai/mistral-large-2411
+          model: openrouter/minimax/minimax-m2.5
           api_key: os.environ/OPENROUTER_API_KEY
 
-      - model_name: llama-4-maverick
+      - model_name: kimi-k2.5
         litellm_params:
-          model: openrouter/meta-llama/llama-4-maverick
-          api_key: os.environ/OPENROUTER_API_KEY
-
-      - model_name: qwen-3-235b
-        litellm_params:
-          model: openrouter/qwen/qwen3-235b
+          model: openrouter/moonshotai/kimi-k2.5
           api_key: os.environ/OPENROUTER_API_KEY
