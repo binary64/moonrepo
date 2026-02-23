@@ -317,6 +317,12 @@ while true; do
 			else
 				echo "Found $KIND in $file (doc index $i), applying with kubectl..."
 
+				# Ensure the target namespace exists before applying namespaced resources
+				RESOURCE_NS=$(yq eval -r "select(document_index == $i) | .metadata.namespace // \"\"" "$file")
+				if [ -n "$RESOURCE_NS" ] && [ "$RESOURCE_NS" != "default" ]; then
+					kubectl create namespace "$RESOURCE_NS" 2>/dev/null || true
+				fi
+
 				APPLIED=false
 				for ((r = 1; r <= 3; r++)); do
 					if yq eval "select(document_index == $i)" "$file" | kubectl apply -f -; then
