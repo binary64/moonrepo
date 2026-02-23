@@ -107,12 +107,9 @@ data:
 
       # ══════════════════════════════════════════
       # OpenRouter — FREE models (all with tool support)
+      # NOTE: openrouter/free meta-router deliberately excluded —
+      #       it logs all prompts/outputs and is marked non-production.
       # ══════════════════════════════════════════
-      - model_name: free-router
-        litellm_params:
-          model: openrouter/openrouter/free
-          api_key: os.environ/OPENROUTER_API_KEY
-
       - model_name: qwen3-coder-free
         litellm_params:
           model: openrouter/qwen/qwen3-coder:free
