@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: zeroclaw
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/binary64/moonrepo.git
+    targetRevision: master
+    path: infra/manifests/zeroclaw
+
+  ignoreDifferences:
+    - group: ""
+      kind: Secret
+      name: zeroclaw-env
+      namespace: zeroclaw
+      jsonPointers:
+        - /data
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: zeroclaw
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - RespectIgnoreDifferences=true
+      - SkipDryRunOnMissingResource=true
+      - ServerSideApply=true
+    retry:
+      limit: -1
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
