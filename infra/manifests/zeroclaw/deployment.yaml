@@ -22,9 +22,9 @@ spec:
     spec:
       containers:
         - name: zeroclaw
-          # TODO: pin to a release digest before production use
-          image: "ghcr.io/zeroclaw-labs/zeroclaw:0.1.0"
-          imagePullPolicy: IfNotPresent
+          # TODO: pin to a release digest once upstream publishes versioned tags
+          image: "ghcr.io/zeroclaw-labs/zeroclaw:latest"
+          imagePullPolicy: Always
           command: ["zeroclaw", "daemon"]
           env:
             # Non-secret config
