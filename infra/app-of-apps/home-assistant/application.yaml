@@ -22,7 +22,16 @@ spec:
         podAnnotations:
           container.apparmor.security.beta.kubernetes.io/home-assistant: unconfined
 
-        # Mount host DBus socket so HA can use Bluetooth (BLE device discovery)
+        # Bluetooth container requirements (per HA docs):
+        # - NET_ADMIN + NET_RAW for full BLE management (adapter recovery, connection params)
+        # - /run/dbus mounted read-only for BlueZ access via D-Bus
+        # https://www.home-assistant.io/integrations/bluetooth/#additional-details-for-container
+        securityContext:
+          capabilities:
+            add:
+              - NET_ADMIN
+              - NET_RAW
+
         additionalVolumes:
           - name: dbus
             hostPath:
@@ -30,6 +39,7 @@ spec:
         additionalMounts:
           - name: dbus
             mountPath: /run/dbus
+            readOnly: true
 
         configuration:
           enabled: true
