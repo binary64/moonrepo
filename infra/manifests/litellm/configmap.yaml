@@ -23,6 +23,8 @@ data:
       # Disable model listing without auth (security)
       allow_requests_on_unmatched_routes: false
 
+      forward_client_headers_to_llm_api: true
+
     litellm_settings:
       # Drop unmapped params to avoid leaking info
       drop_params: true
