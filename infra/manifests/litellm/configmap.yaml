@@ -37,31 +37,25 @@ data:
 
     model_list:
       # ══════════════════════════════════════════
-      # Anthropic (direct)
+      # Anthropic (OAuth via custom hook)
       # ══════════════════════════════════════════
       - model_name: claude-opus-4-6
         litellm_params:
           model: anthropic/claude-opus-4-6
-          api_key: os.environ/ANTHROPIC_SETUP_TOKEN
-          extra_headers:
-            anthropic-version: "2023-06-01"
-            anthropic-beta: "oauth-2025-04-20"
+          custom_llm_provider: anthropic
+          async_pre_call_hook: hooks.async_pre_call_hook
 
       - model_name: claude-sonnet-4-6
         litellm_params:
           model: anthropic/claude-sonnet-4-6
-          api_key: os.environ/ANTHROPIC_SETUP_TOKEN
-          extra_headers:
-            anthropic-version: "2023-06-01"
-            anthropic-beta: "oauth-2025-04-20"
+          custom_llm_provider: anthropic
+          async_pre_call_hook: hooks.async_pre_call_hook
 
       - model_name: claude-haiku-4-5
         litellm_params:
           model: anthropic/claude-haiku-4-5
-          api_key: os.environ/ANTHROPIC_SETUP_TOKEN
-          extra_headers:
-            anthropic-version: "2023-06-01"
-            anthropic-beta: "oauth-2025-04-20"
+          custom_llm_provider: anthropic
+          async_pre_call_hook: hooks.async_pre_call_hook
 
       # ══════════════════════════════════════════
       # OpenAI (direct — latest nano only)
@@ -128,7 +122,7 @@ data:
 
       - model_name: qwen3-235b-thinking-free
         litellm_params:
-          model: openrouter/qwen/qwen3-235b-a22b-thinking-2507
+          model: openrouter/qwen/qwen3-235b-a22b-thinking-2507:free
           api_key: os.environ/OPENROUTER_API_KEY
 
       - model_name: llama-3.3-70b-free
@@ -189,3 +183,37 @@ data:
         litellm_params:
           model: openrouter/moonshotai/kimi-k2.5
           api_key: os.environ/OPENROUTER_API_KEY
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: litellm-hooks
+  namespace: litellm
+  labels:
+    app.kubernetes.io/name: litellm
+    app.kubernetes.io/instance: litellm
+data:
+  hooks.py: |
+    """
+    Anthropic OAuth pre-call hook for LiteLLM Proxy.
+
+    This hook injects OAuth headers for Anthropic API calls, replacing the
+    traditional API key auth approach.
+    """
+    import os
+
+    async def async_pre_call_hook(self, user_api_key_dict, cache, data, call_type):
+        """
+        Runs before provider request. Mutate headers / auth here.
+        """
+        headers = data.get("headers") or {}
+        headers["Authorization"] = f"Bearer {os.environ['OAUTH_TOKEN']}"
+        headers["anthropic-version"] = "2023-06-01"
+        headers["anthropic-beta"] = "oauth-2025-04-20"
+        data["headers"] = headers
+
+        # Make sure we don't accidentally also send x-api-key
+        for k in ["api_key", "anthropic_api_key"]:
+            if k in data:
+                del data[k]
