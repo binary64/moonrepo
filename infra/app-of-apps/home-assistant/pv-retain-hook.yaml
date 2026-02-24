@@ -57,6 +57,13 @@ spec:
       containers:
         - name: pv-retain
           image: bitnami/kubectl:latest
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 50m
+              memory: 64Mi
           command:
             - /bin/sh
             - -c
