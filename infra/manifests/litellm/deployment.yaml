@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: litellm
-          image: "litellm/litellm:v1.81.12-stable"
+          image: "litellm/litellm:main-v1.81.14-nightly"
           args:
             - "--config"
             - "/etc/litellm/config.yaml"
@@ -43,6 +43,12 @@ spec:
                   key: POSTGRES_PASSWORD
             - name: DATABASE_URL
               value: "postgresql://litellm:$(POSTGRES_PASSWORD)@litellm-postgres:5432/litellm"
+            # Anthropic OAuth token for custom hook
+            - name: OAUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: litellm-env
+                  key: ANTHROPIC_OAUTH_TOKEN
             - name: ANTHROPIC_API_KEY
               valueFrom:
                 secretKeyRef:
@@ -94,7 +100,13 @@ spec:
             - name: config
               mountPath: /etc/litellm
               readOnly: true
+            - name: hooks
+              mountPath: /etc/litellm/hooks.py
+              readOnly: true
       volumes:
         - name: config
           configMap:
             name: litellm-config
+        - name: hooks
+          configMap:
+            name: litellm-hooks

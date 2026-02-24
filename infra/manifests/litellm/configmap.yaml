@@ -34,44 +34,38 @@ data:
       max_tokens: 16384
 
     model_list:
-      # ── Anthropic ──
-      - model_name: claude-opus-4
+      # ══════════════════════════════════════════
+      # Anthropic (OAuth via custom hook)
+      # ══════════════════════════════════════════
+      - model_name: claude-opus-4-6
         litellm_params:
-          model: anthropic/claude-opus-4-20250514
-          api_key: os.environ/ANTHROPIC_API_KEY
+          model: anthropic/claude-opus-4-6
+          custom_llm_provider: anthropic
+          async_pre_call_hook: hooks.async_pre_call_hook
 
-      - model_name: claude-sonnet-4
+      - model_name: claude-sonnet-4-6
         litellm_params:
-          model: anthropic/claude-sonnet-4-20250514
-          api_key: os.environ/ANTHROPIC_API_KEY
+          model: anthropic/claude-sonnet-4-6
+          custom_llm_provider: anthropic
+          async_pre_call_hook: hooks.async_pre_call_hook
 
-      - model_name: claude-haiku
+      - model_name: claude-haiku-4-5
         litellm_params:
-          model: anthropic/claude-3-5-haiku-20241022
-          api_key: os.environ/ANTHROPIC_API_KEY
+          model: anthropic/claude-haiku-4-5
+          custom_llm_provider: anthropic
+          async_pre_call_hook: hooks.async_pre_call_hook
 
-      # ── OpenAI ──
-      - model_name: gpt-4o
+      # ══════════════════════════════════════════
+      # OpenAI (direct — latest nano only)
+      # ══════════════════════════════════════════
+      - model_name: gpt-4.1-nano
         litellm_params:
-          model: openai/gpt-4o
+          model: openai/gpt-4.1-nano
           api_key: os.environ/OPENAI_API_KEY
 
-      - model_name: gpt-4o-mini
-        litellm_params:
-          model: openai/gpt-4o-mini
-          api_key: os.environ/OPENAI_API_KEY
-
-      - model_name: o1
-        litellm_params:
-          model: openai/o1
-          api_key: os.environ/OPENAI_API_KEY
-
-      - model_name: o3-mini
-        litellm_params:
-          model: openai/o3-mini
-          api_key: os.environ/OPENAI_API_KEY
-
-      # ── Google Gemini ──
+      # ══════════════════════════════════════════
+      # Google Gemini (direct API)
+      # ══════════════════════════════════════════
       - model_name: gemini-2.5-flash
         litellm_params:
           model: gemini/gemini-2.5-flash
@@ -87,7 +81,9 @@ data:
           model: gemini/gemini-2.0-flash
           api_key: os.environ/GEMINI_API_KEY
 
-      # ── ZAI / GLM (via BigModel OpenAI-compat) ──
+      # ══════════════════════════════════════════
+      # ZAI / GLM (direct via BigModel)
+      # ══════════════════════════════════════════
       - model_name: glm-5
         litellm_params:
           model: openai/glm-5
@@ -111,3 +107,110 @@ data:
           model: openai/glm-4.5-flash
           api_key: os.environ/ZAI_API_KEY
           api_base: https://open.bigmodel.cn/api/paas/v4
+
+      # ══════════════════════════════════════════
+      # OpenRouter — FREE models (all with tool support)
+      # NOTE: openrouter/free meta-router deliberately excluded —
+      #       it logs all prompts/outputs and is marked non-production.
+      # ══════════════════════════════════════════
+      - model_name: qwen3-coder-free
+        litellm_params:
+          model: openrouter/qwen/qwen3-coder:free
+          api_key: os.environ/OPENROUTER_API_KEY
+
+      - model_name: qwen3-235b-thinking-free
+        litellm_params:
+          model: openrouter/qwen/qwen3-235b-a22b-thinking-2507
+          api_key: os.environ/OPENROUTER_API_KEY
+
+      - model_name: llama-3.3-70b-free
+        litellm_params:
+          model: openrouter/meta-llama/llama-3.3-70b-instruct:free
+          api_key: os.environ/OPENROUTER_API_KEY
+
+      - model_name: gemma-3-27b-free
+        litellm_params:
+          model: openrouter/google/gemma-3-27b-it:free
+          api_key: os.environ/OPENROUTER_API_KEY
+
+      - model_name: mistral-small-free
+        litellm_params:
+          model: openrouter/mistralai/mistral-small-3.1-24b-instruct:free
+          api_key: os.environ/OPENROUTER_API_KEY
+
+      - model_name: stepfun-flash-free
+        litellm_params:
+          model: openrouter/stepfun/step-3.5-flash:free
+          api_key: os.environ/OPENROUTER_API_KEY
+
+      - model_name: gpt-oss-120b-free
+        litellm_params:
+          model: openrouter/openai/gpt-oss-120b:free
+          api_key: os.environ/OPENROUTER_API_KEY
+
+      # ══════════════════════════════════════════
+      # OpenRouter — ULTRA CHEAP agentic models
+      # (<$0.50/M input, tool support, 64k+ context)
+      # ══════════════════════════════════════════
+      - model_name: gpt-5-nano
+        litellm_params:
+          model: openrouter/openai/gpt-5-nano
+          api_key: os.environ/OPENROUTER_API_KEY
+
+      - model_name: qwen3-coder-next
+        litellm_params:
+          model: openrouter/qwen/qwen3-coder-next
+          api_key: os.environ/OPENROUTER_API_KEY
+
+      - model_name: deepseek-v3.2
+        litellm_params:
+          model: openrouter/deepseek/deepseek-v3.2
+          api_key: os.environ/OPENROUTER_API_KEY
+
+      - model_name: deepseek-r1
+        litellm_params:
+          model: openrouter/deepseek/deepseek-r1-0528
+          api_key: os.environ/OPENROUTER_API_KEY
+
+      - model_name: minimax-m2.5
+        litellm_params:
+          model: openrouter/minimax/minimax-m2.5
+          api_key: os.environ/OPENROUTER_API_KEY
+
+      - model_name: kimi-k2.5
+        litellm_params:
+          model: openrouter/moonshotai/kimi-k2.5
+          api_key: os.environ/OPENROUTER_API_KEY
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: litellm-hooks
+  namespace: litellm
+  labels:
+    app.kubernetes.io/name: litellm
+    app.kubernetes.io/instance: litellm
+data:
+  hooks.py: |
+    """
+    Anthropic OAuth pre-call hook for LiteLLM Proxy.
+
+    This hook injects OAuth headers for Anthropic API calls, replacing the
+    traditional API key auth approach.
+    """
+
+    async def async_pre_call_hook(self, user_api_key_dict, cache, data, call_type):
+        """
+        Runs before provider request. Mutate headers / auth here.
+        """
+        headers = data.get("headers") or {}
+        headers["Authorization"] = f"Bearer {OAUTH_TOKEN}"
+        headers["anthropic-version"] = "2023-06-01"
+        headers["anthropic-beta"] = "oauth-2025-04-20"
+        data["headers"] = headers
+
+        # Make sure we don't accidentally also send x-api-key
+        for k in ["api_key", "anthropic_api_key"]:
+            if k in data:
+                del data[k]
