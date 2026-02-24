@@ -42,14 +42,26 @@ data:
       - model_name: claude-opus-4-6
         litellm_params:
           model: anthropic/claude-opus-4-6
+          input_cost_per_token: 0.00000517
+          output_cost_per_token: 0.00002586
+          cache_read_input_token_cost: 0.00000052
+          cache_creation_input_token_cost: 0.00000647
 
       - model_name: claude-sonnet-4-6
         litellm_params:
           model: anthropic/claude-sonnet-4-6
+          input_cost_per_token: 0.00000104
+          output_cost_per_token: 0.00000518
+          cache_read_input_token_cost: 0.0000001
+          cache_creation_input_token_cost: 0.00000129
 
       - model_name: claude-haiku-4-5
         litellm_params:
           model: anthropic/claude-haiku-4-5
+          input_cost_per_token: 0.00000028
+          output_cost_per_token: 0.00000138
+          cache_read_input_token_cost: 0.00000003
+          cache_creation_input_token_cost: 0.00000035
 
       # ══════════════════════════════════════════
       # OpenAI (direct — latest nano only)
