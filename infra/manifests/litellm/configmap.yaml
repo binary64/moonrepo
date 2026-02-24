@@ -23,7 +23,9 @@ data:
       # Disable model listing without auth (security)
       allow_requests_on_unmatched_routes: false
 
-      forward_client_headers_to_llm_api: true
+      # Allow debugging traffic
+      store_model_in_db: true
+      store_prompts_in_spend_logs: true
 
     litellm_settings:
       # Drop unmapped params to avoid leaking info
