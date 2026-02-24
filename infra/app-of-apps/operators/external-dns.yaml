@@ -33,7 +33,7 @@ spec:
         domainFilters:
           - brandwhisper.cloud
         extraArgs:
-          - --cloudflare-proxied=true
+          - --cloudflare-proxied
         policy: sync
         txtOwnerId: external-dns
 
