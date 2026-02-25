@@ -17,8 +17,8 @@ data:
       master_key: os.environ/LITELLM_MASTER_KEY
 
       # Rate limiting (per virtual key)
-      max_parallel_requests: 20
-      global_max_parallel_requests: 50
+      max_parallel_requests: 2
+      global_max_parallel_requests: 6
 
       # Disable model listing without auth (security)
       allow_requests_on_unmatched_routes: false
@@ -35,162 +35,64 @@ data:
       # Enable cost tracking
       success_callback: []
       # Max tokens guard
-      max_tokens: 16384
+      max_tokens: 36384
 
     model_list:
       # ══════════════════════════════════════════
-      # Anthropic (OAuth via custom hook)
+      # Anthropic (Claude Max $200) — SHADOW PRICING
+      #
+      # Assumption: Max ≈ $2,000 API-equivalent/month => multiply official API prices by 0.10
+      # Cache assumptions: cache read = 0.1× input, cache write = 1.25× input (5-min TTL)
       # ══════════════════════════════════════════
       - model_name: claude-opus-4-6
         litellm_params:
           model: anthropic/claude-opus-4-6
-          input_cost_per_token: 0.00000517
-          output_cost_per_token: 0.00002586
-          cache_read_input_token_cost: 0.00000052
-          cache_creation_input_token_cost: 0.00000647
+          # official: $5 / $25 per 1M  => shadow: $0.50 / $2.50 per 1M
+          input_cost_per_token: 0.00000050
+          output_cost_per_token: 0.00000250
+          cache_read_input_token_cost: 0.00000005
+          cache_creation_input_token_cost: 0.000000625
 
       - model_name: claude-sonnet-4-6
         litellm_params:
           model: anthropic/claude-sonnet-4-6
-          input_cost_per_token: 0.00000104
-          output_cost_per_token: 0.00000518
-          cache_read_input_token_cost: 0.0000001
-          cache_creation_input_token_cost: 0.00000129
+          # official: $3 / $15 per 1M  => shadow: $0.30 / $1.50 per 1M
+          input_cost_per_token: 0.00000030
+          output_cost_per_token: 0.00000150
+          cache_read_input_token_cost: 0.00000003
+          cache_creation_input_token_cost: 0.000000375
 
       - model_name: claude-haiku-4-5
         litellm_params:
           model: anthropic/claude-haiku-4-5
-          input_cost_per_token: 0.00000028
-          output_cost_per_token: 0.00000138
-          cache_read_input_token_cost: 0.00000003
-          cache_creation_input_token_cost: 0.00000035
+          # official: $1 / $5 per 1M  => shadow: $0.10 / $0.50 per 1M
+          input_cost_per_token: 0.00000010
+          output_cost_per_token: 0.00000050
+          cache_read_input_token_cost: 0.00000001
+          cache_creation_input_token_cost: 0.000000125
 
       # ══════════════════════════════════════════
-      # OpenAI (direct — latest nano only)
-      # ══════════════════════════════════════════
-      - model_name: gpt-4.1-nano
-        litellm_params:
-          model: openai/gpt-4.1-nano
-          api_key: os.environ/OPENAI_API_KEY
-
-      # ══════════════════════════════════════════
-      # Google Gemini (direct API)
-      # ══════════════════════════════════════════
-      - model_name: gemini-2.5-flash
-        litellm_params:
-          model: gemini/gemini-2.5-flash
-          api_key: os.environ/GEMINI_API_KEY
-
-      - model_name: gemini-2.5-pro
-        litellm_params:
-          model: gemini/gemini-2.5-pro
-          api_key: os.environ/GEMINI_API_KEY
-
-      - model_name: gemini-2.0-flash
-        litellm_params:
-          model: gemini/gemini-2.0-flash
-          api_key: os.environ/GEMINI_API_KEY
-
-      # ══════════════════════════════════════════
-      # ZAI / GLM (direct via BigModel)
+      # ZAI / GLM Coding Plan Max — SHADOW PRICING
+      #
+      # Goal: reflect plan cost ≈ $68/mo (≈ 0.34× of $200).
+      # Assumption: ~870M tokens/month on the plan => $68 / 870 ≈ $0.078 per 1M
+      # Use flat $0.08 / 1M for both input & output to keep it simple.
       # ══════════════════════════════════════════
       - model_name: glm-5
         litellm_params:
           model: zai/glm-5
           api_key: os.environ/ZAI_API_KEY
           api_base: https://api.z.ai/api/coding/paas/v4
+          input_cost_per_token: 0.00000008
+          output_cost_per_token: 0.00000008
 
       - model_name: glm-4.7
         litellm_params:
-          model: openai/glm-4.7
+          model: zai/glm-4.7
           api_key: os.environ/ZAI_API_KEY
-          api_base: https://open.bigmodel.cn/api/paas/v4
-
-      - model_name: glm-4.7-flash
-        litellm_params:
-          model: openai/glm-4.7-flash
-          api_key: os.environ/ZAI_API_KEY
-          api_base: https://open.bigmodel.cn/api/paas/v4
-
-      - model_name: glm-4.5-flash
-        litellm_params:
-          model: openai/glm-4.5-flash
-          api_key: os.environ/ZAI_API_KEY
-          api_base: https://open.bigmodel.cn/api/paas/v4
-
-      # ══════════════════════════════════════════
-      # OpenRouter — FREE models (all with tool support)
-      # NOTE: openrouter/free meta-router deliberately excluded —
-      #       it logs all prompts/outputs and is marked non-production.
-      # ══════════════════════════════════════════
-      - model_name: qwen3-coder-free
-        litellm_params:
-          model: openrouter/qwen/qwen3-coder:free
-          api_key: os.environ/OPENROUTER_API_KEY
-
-      - model_name: qwen3-235b-thinking-free
-        litellm_params:
-          model: openrouter/qwen/qwen3-235b-a22b-thinking-2507:free
-          api_key: os.environ/OPENROUTER_API_KEY
-
-      - model_name: llama-3.3-70b-free
-        litellm_params:
-          model: openrouter/meta-llama/llama-3.3-70b-instruct:free
-          api_key: os.environ/OPENROUTER_API_KEY
-
-      - model_name: gemma-3-27b-free
-        litellm_params:
-          model: openrouter/google/gemma-3-27b-it:free
-          api_key: os.environ/OPENROUTER_API_KEY
-
-      - model_name: mistral-small-free
-        litellm_params:
-          model: openrouter/mistralai/mistral-small-3.1-24b-instruct:free
-          api_key: os.environ/OPENROUTER_API_KEY
-
-      - model_name: stepfun-flash-free
-        litellm_params:
-          model: openrouter/stepfun/step-3.5-flash:free
-          api_key: os.environ/OPENROUTER_API_KEY
-
-      - model_name: gpt-oss-120b-free
-        litellm_params:
-          model: openrouter/openai/gpt-oss-120b:free
-          api_key: os.environ/OPENROUTER_API_KEY
-
-      # ══════════════════════════════════════════
-      # OpenRouter — ULTRA CHEAP agentic models
-      # (<$0.50/M input, tool support, 64k+ context)
-      # ══════════════════════════════════════════
-      - model_name: gpt-5-nano
-        litellm_params:
-          model: openrouter/openai/gpt-5-nano
-          api_key: os.environ/OPENROUTER_API_KEY
-
-      - model_name: qwen3-coder-next
-        litellm_params:
-          model: openrouter/qwen/qwen3-coder-next
-          api_key: os.environ/OPENROUTER_API_KEY
-
-      - model_name: deepseek-v3.2
-        litellm_params:
-          model: openrouter/deepseek/deepseek-v3.2
-          api_key: os.environ/OPENROUTER_API_KEY
-
-      - model_name: deepseek-r1
-        litellm_params:
-          model: openrouter/deepseek/deepseek-r1-0528
-          api_key: os.environ/OPENROUTER_API_KEY
-
-      - model_name: minimax-m2.5
-        litellm_params:
-          model: openrouter/minimax/minimax-m2.5
-          api_key: os.environ/OPENROUTER_API_KEY
-
-      - model_name: kimi-k2.5
-        litellm_params:
-          model: openrouter/moonshotai/kimi-k2.5
-          api_key: os.environ/OPENROUTER_API_KEY
+          api_base: https://api.z.ai/api/coding/paas/v4
+          input_cost_per_token: 0.00000008
+          output_cost_per_token: 0.00000008
 
 ---
 apiVersion: v1
