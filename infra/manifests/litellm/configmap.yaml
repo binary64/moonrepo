@@ -25,7 +25,7 @@ data:
 
       # Allow custom auth
       forward_client_headers_to_llm_api: true
-      
+
       # Allow debugging traffic
       store_model_in_db: true
       store_prompts_in_spend_logs: true
@@ -127,6 +127,6 @@ data:
         data["headers"] = headers
 
         # Make sure we don't accidentally also send x-api-key
-        for k in ["api_key", "anthropic_api_key"]:
+        for k in ["api-key", "litellm-api-key", "litellm_api_key", "api_key", "anthropic_api_key"]:
             if k in data:
                 del data[k]
