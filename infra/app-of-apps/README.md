@@ -226,7 +226,7 @@ Resources created in cluster
 
 ## Example: Adding a Service with HTTPRoute
 
-To expose a service at `myservice.home.brandwhisper.cloud`:
+To expose a service at `myservice.brandwhisper.cloud`:
 
 1. **Create Application manifest:**
 
@@ -284,7 +284,7 @@ spec:
 
 3. **Commit and push:** ArgoCD deploys automatically
 
-The wildcard certificate `*.home.brandwhisper.cloud` covers all subdomains, so no manual certificate creation is needed.
+The wildcard certificate `*.brandwhisper.cloud` covers all subdomains, so no manual certificate creation is needed.
 
 ## Troubleshooting
 
