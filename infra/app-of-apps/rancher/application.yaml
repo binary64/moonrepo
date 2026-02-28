@@ -17,14 +17,14 @@ spec:
     helm:
       releaseName: rancher
       values: |
-        hostname: rancher.home.brandwhisper.cloud
+        hostname: rancher.brandwhisper.cloud
         # bootstrapPassword omitted - Rancher will generate a secure random password
         replicas: 1
         ingress:
           # Disabled — no nginx-ingress-controller in this cluster.
           # Traffic routes via Istio Gateway + HTTPRoute (see httproute.yaml)
           enabled: false
-        # TLS handled by existing *.home.brandwhisper.cloud wildcard cert
+        # TLS handled by existing *.brandwhisper.cloud wildcard cert
         tls: external
   destination:
     server: https://kubernetes.default.svc
