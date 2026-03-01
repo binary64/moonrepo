@@ -79,13 +79,14 @@ data:
       #
       # Goal: reflect plan cost ≈ $68/mo (≈ 0.34× of $200).
       # Assumption: ~870M tokens/month on the plan => $68 / 870 ≈ $0.078 per 1M
-      # Use flat $0.08 / 1M for both input & output to keep it simple.
+      # Use flat $0.08 / 1M for both input & output (Coding Plan shadow pricing).
       # ══════════════════════════════════════════
       - model_name: glm-5
         litellm_params:
           model: zai/glm-5
           api_key: os.environ/ZAI_API_KEY
           api_base: https://api.z.ai/api/coding/paas/v4
+        model_info:
           input_cost_per_token: 0.00000008
           output_cost_per_token: 0.00000008
 
@@ -94,6 +95,7 @@ data:
           model: zai/glm-4.7
           api_key: os.environ/ZAI_API_KEY
           api_base: https://api.z.ai/api/coding/paas/v4
+        model_info:
           input_cost_per_token: 0.00000008
           output_cost_per_token: 0.00000008
 
