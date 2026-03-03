@@ -75,6 +75,25 @@ data:
           cache_creation_input_token_cost: 0.000000125
 
       # ══════════════════════════════════════════
+      # Google Gemini 3.1 Series — API PRICING
+      # ══════════════════════════════════════════
+      - model_name: gemini-3.1-pro-preview
+        litellm_params:
+          model: gemini/gemini-3.1-pro-preview
+          api_key: os.environ/GEMINI_API_KEY
+          # $2.00 / $12.00 per 1M (<=200k context)
+          input_cost_per_token: 0.000002
+          output_cost_per_token: 0.000012
+
+      - model_name: gemini-3.1-flash-lite-preview
+        litellm_params:
+          model: gemini/gemini-3.1-flash-lite-preview
+          api_key: os.environ/GEMINI_API_KEY
+          # $0.25 / $1.50 per 1M
+          input_cost_per_token: 0.00000025
+          output_cost_per_token: 0.0000015
+
+      # ══════════════════════════════════════════
       # ZAI / GLM Coding Plan Max — SHADOW PRICING
       #
       # Goal: reflect plan cost ≈ $68/mo (≈ 0.34× of $200).
