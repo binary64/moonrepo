@@ -24,7 +24,7 @@ data:
       allow_requests_on_unmatched_routes: false
 
       # Allow custom auth
-      forward_client_headers_to_llm_api: true
+      forward_client_headers_to_llm_api: false
 
       # Allow debugging traffic
       store_model_in_db: true
