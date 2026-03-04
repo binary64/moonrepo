@@ -82,6 +82,7 @@ data:
           model: gemini/gemini-3-pro-preview
           api_key: os.environ/GEMINI_API_KEY
           # $2.00 / $12.00 per 1M (<=200k context)
+          # DEPRECATED: shutting down March 9, 2026 — migrate to 3.1 Pro
           input_cost_per_token: 0.000002
           output_cost_per_token: 0.000012
 
@@ -98,9 +99,10 @@ data:
           model: gemini/gemini-3-pro-image-preview
           api_key: os.environ/GEMINI_API_KEY
           # Nano Banana Pro — image generation model
-          # $0.50 / $3.00 per 1M tokens (text pricing)
-          input_cost_per_token: 0.0000005
-          output_cost_per_token: 0.000003
+          # Text: $2.00 / $12.00 per 1M (same as 3 Pro). Images: $120.00 per 1M output tokens
+          # DEPRECATED: shutting down March 9, 2026 — migrate to 3.1 Flash Image
+          input_cost_per_token: 0.000002
+          output_cost_per_token: 0.000012
 
       # ══════════════════════════════════════════
       # Google Gemini 3.1 Series — API PRICING
@@ -126,7 +128,8 @@ data:
           model: gemini/gemini-3.1-flash-image-preview
           api_key: os.environ/GEMINI_API_KEY
           # Nano Banana 2 — image generation model
-          # $0.50 / $3.00 per 1M tokens (text pricing)
+          # Text: $0.50 / $3.00 per 1M. Images: $60.00 per 1M output tokens
+          # (~$0.045/image at 0.5K, ~$0.067/image at 1K, ~$0.151/image at 4K)
           input_cost_per_token: 0.0000005
           output_cost_per_token: 0.000003
 
