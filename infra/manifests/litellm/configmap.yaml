@@ -55,8 +55,8 @@ data:
           # model_info overrides LiteLLM's built-in model map (litellm_params does NOT)
           input_cost_per_token: 0.00000050
           output_cost_per_token: 0.00000250
-          cache_read_input_token_cost: 0.00000005
-          cache_creation_input_token_cost: 0.000000625
+          cache_read_input_token_cost: 0.0
+          cache_creation_input_token_cost: 0.0
 
       - model_name: claude-sonnet-4-6
         litellm_params:
@@ -65,8 +65,8 @@ data:
           # official: $3 / $15 per 1M  => shadow: $0.30 / $1.50 per 1M
           input_cost_per_token: 0.00000030
           output_cost_per_token: 0.00000150
-          cache_read_input_token_cost: 0.00000003
-          cache_creation_input_token_cost: 0.000000375
+          cache_read_input_token_cost: 0.0
+          cache_creation_input_token_cost: 0.0
 
       - model_name: claude-haiku-4-5
         litellm_params:
@@ -75,8 +75,8 @@ data:
           # official: $1 / $5 per 1M  => shadow: $0.10 / $0.50 per 1M
           input_cost_per_token: 0.00000010
           output_cost_per_token: 0.00000050
-          cache_read_input_token_cost: 0.00000001
-          cache_creation_input_token_cost: 0.000000125
+          cache_read_input_token_cost: 0.0
+          cache_creation_input_token_cost: 0.0
 
       # ══════════════════════════════════════════
       # Google Gemini 3 Series — API PRICING
@@ -156,8 +156,8 @@ data:
           api_key: os.environ/ZAI_API_KEY
           api_base: https://api.z.ai/api/coding/paas/v4
         model_info:
-          input_cost_per_token: 0.00000008
-          output_cost_per_token: 0.00000008
+          input_cost_per_token: 0.00000001
+          output_cost_per_token: 0.00000001
 
       - model_name: glm-4.7
         litellm_params:
@@ -165,8 +165,8 @@ data:
           api_key: os.environ/ZAI_API_KEY
           api_base: https://api.z.ai/api/coding/paas/v4
         model_info:
-          input_cost_per_token: 0.00000008
-          output_cost_per_token: 0.00000008
+          input_cost_per_token: 0.00000001
+          output_cost_per_token: 0.00000001
 
 ---
 apiVersion: v1
