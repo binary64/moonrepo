@@ -50,7 +50,9 @@ data:
       - model_name: claude-opus-4-6
         litellm_params:
           model: anthropic/claude-opus-4-6
+        model_info:
           # official: $5 / $25 per 1M  => shadow: $0.50 / $2.50 per 1M
+          # model_info overrides LiteLLM's built-in model map (litellm_params does NOT)
           input_cost_per_token: 0.00000050
           output_cost_per_token: 0.00000250
           cache_read_input_token_cost: 0.00000005
@@ -59,6 +61,7 @@ data:
       - model_name: claude-sonnet-4-6
         litellm_params:
           model: anthropic/claude-sonnet-4-6
+        model_info:
           # official: $3 / $15 per 1M  => shadow: $0.30 / $1.50 per 1M
           input_cost_per_token: 0.00000030
           output_cost_per_token: 0.00000150
@@ -68,11 +71,45 @@ data:
       - model_name: claude-haiku-4-5
         litellm_params:
           model: anthropic/claude-haiku-4-5
+        model_info:
           # official: $1 / $5 per 1M  => shadow: $0.10 / $0.50 per 1M
           input_cost_per_token: 0.00000010
           output_cost_per_token: 0.00000050
           cache_read_input_token_cost: 0.00000001
           cache_creation_input_token_cost: 0.000000125
+
+      # ══════════════════════════════════════════
+      # Google Gemini 3 Series — API PRICING
+      # ══════════════════════════════════════════
+      - model_name: gemini-3-pro-preview
+        litellm_params:
+          model: gemini/gemini-3-pro-preview
+          api_key: os.environ/GEMINI_API_KEY
+        model_info:
+          # $2.00 / $12.00 per 1M (<=200k context)
+          # DEPRECATED: shutting down March 9, 2026 — migrate to 3.1 Pro
+          input_cost_per_token: 0.000002
+          output_cost_per_token: 0.000012
+
+      - model_name: gemini-3-flash-preview
+        litellm_params:
+          model: gemini/gemini-3-flash-preview
+          api_key: os.environ/GEMINI_API_KEY
+        model_info:
+          # $0.50 / $3.00 per 1M
+          input_cost_per_token: 0.0000005
+          output_cost_per_token: 0.000003
+
+      - model_name: gemini-3-pro-image-preview
+        litellm_params:
+          model: gemini/gemini-3-pro-image-preview
+          api_key: os.environ/GEMINI_API_KEY
+        model_info:
+          # Nano Banana Pro — image generation model
+          # Text: $2.00 / $12.00 per 1M (same as 3 Pro). Images: $120.00 per 1M output tokens
+          # DEPRECATED: shutting down March 9, 2026 — migrate to 3.1 Flash Image
+          input_cost_per_token: 0.000002
+          output_cost_per_token: 0.000012
 
       # ══════════════════════════════════════════
       # Google Gemini 3.1 Series — API PRICING
@@ -81,6 +118,7 @@ data:
         litellm_params:
           model: gemini/gemini-3.1-pro-preview
           api_key: os.environ/GEMINI_API_KEY
+        model_info:
           # $2.00 / $12.00 per 1M (<=200k context)
           input_cost_per_token: 0.000002
           output_cost_per_token: 0.000012
@@ -89,9 +127,21 @@ data:
         litellm_params:
           model: gemini/gemini-3.1-flash-lite-preview
           api_key: os.environ/GEMINI_API_KEY
+        model_info:
           # $0.25 / $1.50 per 1M
           input_cost_per_token: 0.00000025
           output_cost_per_token: 0.0000015
+
+      - model_name: gemini-3.1-flash-image-preview
+        litellm_params:
+          model: gemini/gemini-3.1-flash-image-preview
+          api_key: os.environ/GEMINI_API_KEY
+        model_info:
+          # Nano Banana 2 — image generation model
+          # Text: $0.50 / $3.00 per 1M. Images: $60.00 per 1M output tokens
+          # (~$0.045/image at 0.5K, ~$0.067/image at 1K, ~$0.151/image at 4K)
+          input_cost_per_token: 0.0000005
+          output_cost_per_token: 0.000003
 
       # ══════════════════════════════════════════
       # ZAI / GLM Coding Plan Max — SHADOW PRICING
