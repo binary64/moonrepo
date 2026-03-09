@@ -1,0 +1,13 @@
+---
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  name: home-network
+  namespace: external-dns
+spec:
+  encryptedData:
+    public-ip: AgANMEIb9YmAKAc+Y9WCQmA10PY0CVwJjgzcrbwEnF5YzajeO7Geq7EQt4wsBHGFksIKS8huASaqfahi0wz9faca0I3dc962a8qTwTRn4y5ryEonSTHKGiGGzROVx0Jzt4Lh6rQaeKgdCEHQYyrYXAnAvB3vqQQ2izr80uVEh9pOot4O2by0gubHDFwQV+1RyO6dfFPyOVHOMdc2eCLso+vYt4fDsLkuBnk8Dvp7jtnBSudIPFs+yLMKksTnoJUBW1N23yObiJ5SOm8xTQrnUwaBdl9UKidZhqvbQy69rbWdNWgFFPF2T/RfCr5v3VCw5B1yZuLwZEU7HMSUcrq6HFUI5BPHPZ5ztJHhQKQiVzvDjVNdQYILUj+K4Qs0Lc/+LaCcL0Per6qi/MVSwBpqaj749fnssIjrpH4r6zhpZErR0LE47yTcS7t5o7rwy6zZgrHH3Aga/Z/EaiVfkKdmNNVLXhuhodsP/BwuQQ6Qopyrtg3op1+DlfBMf9A0w0BFEG75JFYaFRV82bqK+PbaLd8wDgC2JuwsVKae2sbjuy+L2jjkA+rWc5LbiLqlXTT01FpScIX6pp2417uFz93BLogBhiQFxzFf1X7O1z5pcoxbgS4+//sPP5Mwxf9kI/3cqWKO8wjqWS9oWcat5KIliXnUbZ5lMkPhNvdvgr6aui7gnDxVi65bjwySFV7l3WeSlocnF1FluKLghlH8Hg==
+  template:
+    metadata:
+      name: home-network
+      namespace: external-dns
