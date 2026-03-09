@@ -1,0 +1,37 @@
+# External-DNS configuration (SealedSecret for home network IP).
+#
+# Provides the home public IP as a Kubernetes secret so external-dns can use
+# --default-targets via an env var instead of requiring per-HTTPRoute target
+# annotations.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: external-dns-config
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/binary64/moonrepo.git
+    targetRevision: master
+    path: infra/manifests/external-dns
+    directory:
+      recurse: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: external-dns
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+    retry:
+      limit: -1
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 5m

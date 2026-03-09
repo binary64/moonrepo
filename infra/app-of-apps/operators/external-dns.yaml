@@ -24,6 +24,11 @@ spec:
               secretKeyRef:
                 name: cloudflare-api-token
                 key: api-token
+          - name: HOME_PUBLIC_IP
+            valueFrom:
+              secretKeyRef:
+                name: home-network
+                key: public-ip
         sources:
           - gateway-httproute
           - gateway-grpcroute
@@ -34,6 +39,7 @@ spec:
           - brandwhisper.cloud
         extraArgs:
           - --cloudflare-proxied
+          - --default-targets=$(HOME_PUBLIC_IP)
         policy: sync
         txtOwnerId: external-dns
 
