@@ -1,0 +1,30 @@
+[Unit]
+Description=Mount encrypted vault from Contabo via NBD
+After=wg-quick@wg0.service
+Before=nfs-kernel-server.service
+Requires=wg-quick@wg0.service
+Wants=nfs-kernel-server.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+
+ExecStartPre=/sbin/modprobe nbd max_part=1
+ExecStart=/bin/bash -c '\
+    nbd-client 10.10.0.2 10809 /dev/nbd0 -persist -name blockstore && \
+    sleep 1 && \
+    cryptsetup luksOpen --key-file /root/.vault-key /dev/nbd0 vault && \
+    mkdir -p /mnt/vault && \
+    mount -o compress=zstd,noatime /dev/mapper/vault /mnt/vault && \
+    exportfs -ra \
+'
+
+ExecStop=/bin/bash -c '\
+    exportfs -ua || true; \
+    umount /mnt/vault || true; \
+    cryptsetup close vault || true; \
+    nbd-client -d /dev/nbd0 || true \
+'
+
+[Install]
+WantedBy=multi-user.target
