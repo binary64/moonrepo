@@ -40,7 +40,7 @@ spec:
                 secretKeyRef:
                   name: lan-bridge-secret
                   key: token
-                  optional: true
+                  optional: false
             - name: TV_ON_SCRIPT
               value: /host-scripts/tv-on.sh
             - name: TV_OFF_SCRIPT
@@ -74,4 +74,4 @@ spec:
         - name: host-scripts
           hostPath:
             path: /home/user/clawd/skills/chromecast/scripts
-            type: DirectoryOrCreate
+            type: Directory
