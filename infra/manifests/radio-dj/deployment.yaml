@@ -19,10 +19,14 @@ spec:
     spec:
       nodeSelector:
         kubernetes.io/hostname: vmi3137202
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
       containers:
         - name: radio-dj
-          image: ghcr.io/binary64/radio-dj:latest
-          imagePullPolicy: Always
+          image: ghcr.io/binary64/radio-dj:v0.1.0
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8100
               protocol: TCP

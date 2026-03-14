@@ -1,10 +1,24 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 echo "Arthur Radio — Starting up..."
 
-# Template Icecast config with environment variables
+# XML-escape a value for safe substitution into icecast.xml
+xml_escape() {
+    local val="$1"
+    val="${val//&/&amp;}"
+    val="${val//</&lt;}"
+    val="${val//>/&gt;}"
+    val="${val//\"/&quot;}"
+    val="${val//\'/&apos;}"
+    echo "$val"
+}
+
+# Template Icecast config with XML-escaped environment variables
 echo "Templating Icecast config..."
+export ICECAST_SOURCE_PASSWORD="$(xml_escape "${ICECAST_SOURCE_PASSWORD:-changeme}")"
+export ICECAST_RELAY_PASSWORD="$(xml_escape "${ICECAST_RELAY_PASSWORD:-changeme}")"
+export ICECAST_ADMIN_PASSWORD="$(xml_escape "${ICECAST_ADMIN_PASSWORD:-changeme}")"
 envsubst '${ICECAST_SOURCE_PASSWORD} ${ICECAST_RELAY_PASSWORD} ${ICECAST_ADMIN_PASSWORD}' \
     < /etc/icecast2/icecast.xml > /tmp/icecast2.xml
 cp /tmp/icecast2.xml /etc/icecast2/icecast.xml
@@ -39,15 +53,16 @@ for i in $(seq 1 30); do
     sleep 1
 done
 
-# Start Liquidsoap in foreground
+# Start Liquidsoap in background
 echo "Starting Liquidsoap..."
 liquidsoap /radio/radio-dj.liq &
 LIQUIDSOAP_PID=$!
 
 echo "Arthur Radio is live! Stream: http://localhost:8100/stream"
 
-# Wait for either process to exit and propagate exit code
-wait -n "$ICECAST_PID" "$LIQUIDSOAP_PID" 2>/dev/null
-EXIT_CODE=$?
+# Wait for either process to exit — capture exit code without set -e aborting
+# wait -n returns the exit code of the first child to finish
+EXIT_CODE=0
+wait -n "$ICECAST_PID" "$LIQUIDSOAP_PID" || EXIT_CODE=$?
 echo "A process exited (code $EXIT_CODE), shutting down..."
 cleanup "$EXIT_CODE"

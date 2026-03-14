@@ -65,8 +65,24 @@ def load_tiers():
     except (FileNotFoundError, json.JSONDecodeError):
         return {}
 
+def clean_track_name(filename):
+    """Clean a filename into the display name used in play history logs.
+    
+    Must match the sed pipeline in announce-track.sh:
+      sed 's/^[0-9]*-//; s/\\.mp3$//; s/\\.m4a$//; s/-/ /g; s/_/ /g'
+    """
+    name = re.sub(r'^[0-9]*-', '', filename)
+    name = re.sub(r'\.(mp3|m4a)$', '', name, flags=re.IGNORECASE)
+    name = name.replace('-', ' ').replace('_', ' ')
+    return name
+
+
 def get_last_played(track_name_lower):
-    """Get last played timestamp for a track from play history log."""
+    """Get last played timestamp for a track from play history log.
+    
+    Extracts the track-name field (second '  '-delimited segment) and
+    compares it exactly to avoid substring false positives.
+    """
     try:
         last = None
         with open(PLAY_HISTORY_LOG) as f:
@@ -75,7 +91,7 @@ def get_last_played(track_name_lower):
                 parts = line.strip().split("  ")
                 if len(parts) < 2:
                     continue
-                log_track_name = parts[1].lower()
+                log_track_name = parts[1].strip().lower()
                 if log_track_name != track_name_lower:
                     continue
                 ts_str = parts[0]
@@ -100,25 +116,35 @@ def is_christmas_track(track_name):
 
 
 def is_track_allowed(track_name, tiers):
-    """Check if a track is allowed to play based on its tier and cooldown."""
+    """Check if a track is allowed to play based on its tier and cooldown.
+    
+    Checks both the raw filename-based name AND the cleaned display name
+    to prevent cooldown bypass when logs use the cleaned form.
+    """
     name_lower = track_name.lower()
+    cleaned_lower = clean_track_name(track_name).lower()
 
     # Christmas tracks only play in December
     if is_christmas_track(track_name) and datetime.now().month != 12:
         return False
 
-    tier = tiers.get(name_lower)
+    # Check tier under both raw and cleaned names
+    tier = tiers.get(name_lower) or tiers.get(cleaned_lower)
     if tier is None:
-        return True  # no tier = normal rotation
-    if tier == "blacklist":
+        pass  # no tier = normal rotation, continue to cooldown check
+    elif tier == "blacklist":
         return False
-    cooldown_days = TIER_COOLDOWNS.get(tier, 0)
-    last_played = get_last_played(name_lower)
-    if last_played is None:
-        return True  # never played = allowed
-    now = datetime.now(last_played.tzinfo) if last_played.tzinfo else datetime.now()
-    days_since = (now - last_played).total_seconds() / 86400
-    return days_since >= cooldown_days
+    else:
+        cooldown_days = TIER_COOLDOWNS.get(tier, 0)
+        # Check last played under both name forms
+        last_played = get_last_played(name_lower) or get_last_played(cleaned_lower)
+        if last_played is not None:
+            now = datetime.now(last_played.tzinfo) if last_played.tzinfo else datetime.now()
+            days_since = (now - last_played).total_seconds() / 86400
+            if days_since < cooldown_days:
+                return False
+
+    return True
 
 # ─── Audience detection (carried over from original) ───
 
@@ -718,21 +744,34 @@ def main():
 
     if not path or not os.path.exists(path):
         print(f"Track {track_id} path not found: {path}", file=sys.stderr)
-        # Try next track in queue (loop instead of recursion)
+        # Try next track in queue — still apply tier and artist filtering
+        found = False
         while queue:
             next_id = queue.pop(0)
             next_id_str = str(next_id)
             next_path = graph["pathIndex"].get(next_id_str, "")
-            if next_path and os.path.exists(next_path):
-                track_id = next_id
-                track_id_str = next_id_str
-                path = next_path
-                save_queue(queue)
-                break
-            print(f"Track {next_id} path not found: {next_path}", file=sys.stderr)
-        else:
-            save_queue(queue)
-            mp3s = glob.glob(os.path.join(MUSIC_DIR, "*.mp3"))
+            if not next_path or not os.path.exists(next_path):
+                print(f"Track {next_id} path not found: {next_path}", file=sys.stderr)
+                continue
+            next_name = os.path.splitext(os.path.basename(next_path))[0]
+            if not is_track_allowed(next_name, tiers):
+                print(f"Skipping fallback ({tiers.get(next_name.lower(), 'cooldown')}): {next_name}", file=sys.stderr)
+                continue
+            next_artists = get_all_artists(next_name)
+            if next_artists & recent_artists:
+                print(f"Skipping fallback (artist cooldown): {next_name}", file=sys.stderr)
+                skipped_for_artist.append(next_id)
+                continue
+            track_id = next_id
+            track_id_str = next_id_str
+            path = next_path
+            found = True
+            break
+        queue.extend(skipped_for_artist)
+        save_queue(queue)
+        if not found:
+            mp3s = [m for m in glob.glob(os.path.join(MUSIC_DIR, "*.mp3"))
+                    if is_track_allowed(os.path.splitext(os.path.basename(m))[0], tiers)]
             if mp3s:
                 print(random.choice(mp3s))
             return

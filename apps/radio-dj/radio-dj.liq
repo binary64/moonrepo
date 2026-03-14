@@ -43,7 +43,8 @@ music = source.on_metadata(music, fun (m) -> begin
     log("TRACK: #{fn} (BPM: #{actual_bpm})")
     file.write(data=fn, "/state/current-track-path")
     file.write(data=actual_bpm, "/state/current-track-bpm")
-    ignore(process.run("/radio/announce-track.sh &"))
+    # Run announce script synchronously — reads from state files, no shell interpolation
+    ignore(process.run("/radio/announce-track.sh"))
   end
 
   # Build display title from ID3 tags, filtering bad artist tags
@@ -135,8 +136,10 @@ server.register("meta.update", usage="meta.update <title>", description="Update 
 end)
 
 # Song request — skip current track to trigger crossfade into requested song
+# Writes path to a file, then builds JSON safely using Python to avoid injection
 server.register("request.song", usage="request.song <path>", description="Request a song (crossfades immediately)", fun (path) -> begin
-  file.write(data='{"path": "' ^ path ^ '"}', "/state/radio-request.json")
+  file.write(data=path, "/state/radio-request-path")
+  ignore(process.run("/usr/bin/python3 -c \"import json; p=open('/state/radio-request-path').read().strip(); open('/state/radio-request.json','w').write(json.dumps({'path':p}))\""))
   source.skip(music)
   "OK: Requesting #{path}"
 end)

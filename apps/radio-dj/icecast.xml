@@ -13,6 +13,9 @@
         <burst-size>16384</burst-size>
     </limits>
 
+    <!-- Passwords are templated via envsubst at startup.
+         The entrypoint XML-escapes values before substitution to prevent
+         special characters (&, <, >, ", ') from breaking XML parsing. -->
     <authentication>
         <source-password>${ICECAST_SOURCE_PASSWORD}</source-password>
         <relay-password>${ICECAST_RELAY_PASSWORD}</relay-password>
