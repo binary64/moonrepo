@@ -2,24 +2,27 @@
  * TTS Server — On-demand Hume AI voice generation for Nest speakers
  *
  * Two-endpoint design:
- *   POST /prepare  — accepts text + acting instructions, returns a short-lived token URL
+ *   POST /prepare  — accepts utterances array with per-segment acting, returns a token URL
  *   GET  /play/:token — Nest fetches this, streams back MP3 bytes
  *   GET  /health — health check
  *
- * Flow:
- *   Jupiter → POST /prepare {text, acting} → gets back {url: "http://nuc:3090/play/abc123"}
- *   Jupiter → HA play_media(url) → Nest GETs /play/abc123 → server calls Hume → streams MP3
+ * Utterances format (mirrors Hume API):
+ *   { utterances: [{ text: "Hello", acting: "warm" }, { text: "News!", acting: "excited" }] }
  *
- * Fallback: Kokoro local TTS if Hume is down
+ * Legacy format still supported:
+ *   { text: "Hello", acting: "warm" }  →  converted to single-element utterances array
+ *
+ * Flow:
+ *   Jupiter → POST /prepare {utterances} → gets back {url: "http://nuc:3090/play/abc123"}
+ *   Jupiter → HA play_media(url) → Nest GETs /play/abc123 → server calls Hume → streams MP3
  */
 
 const express = require('express');
 const crypto = require('crypto');
 const fs = require('fs');
-const { execSync, spawn } = require('child_process');
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '100kb' }));
 
 const PORT = process.env.TTS_PORT || 3090;
 const AUTH_TOKEN = process.env.TTS_AUTH_TOKEN || '';
@@ -34,60 +37,87 @@ if (!HUME_API_KEY) {
   process.exit(1);
 }
 
-// In-memory store for prepared TTS jobs
-// token → { text, acting, voice, createdAt, status, mp3Path }
+// Default voice config
+const DEFAULT_VOICE = { name: 'Arthur', provider: 'CUSTOM_VOICE' };
+
+// In-memory store: token → job
 const jobs = new Map();
 
-// Cleanup old jobs every 5 minutes (expire after 5 min)
+// Cleanup expired jobs (5 min TTL)
 const JOB_TTL_MS = 5 * 60 * 1000;
 setInterval(() => {
   const now = Date.now();
   for (const [token, job] of jobs) {
     if (now - job.createdAt > JOB_TTL_MS) {
-      if (job.mp3Path) {
-        try { fs.unlinkSync(job.mp3Path); } catch {}
-      }
+      if (job.mp3Path) try { fs.unlinkSync(job.mp3Path); } catch {}
       jobs.delete(token);
     }
   }
 }, 60_000);
 
-// Auth middleware (skip for /health and /play)
+// Auth middleware
 function authCheck(req, res, next) {
-  if (!AUTH_TOKEN) return next(); // no auth configured
+  if (!AUTH_TOKEN) return next();
   const provided = (req.headers.authorization || '').replace('Bearer ', '');
-  if (provided !== AUTH_TOKEN) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+  if (provided !== AUTH_TOKEN) return res.status(401).json({ error: 'Unauthorized' });
   next();
 }
 
-// ─── POST /prepare ───
-// Body: { text: string, acting?: string, voice?: string }
-// Returns: { token: string, url: string }
-app.post('/prepare', authCheck, (req, res) => {
-  const { text, acting, voice } = req.body;
-
-  if (!text || typeof text !== 'string' || text.trim().length === 0) {
-    return res.status(400).json({ error: 'text is required' });
+// ─── Normalise input to utterances array ───
+function normaliseUtterances(body) {
+  // New format: { utterances: [{ text, acting?, voice? }] }
+  if (Array.isArray(body.utterances) && body.utterances.length > 0) {
+    return body.utterances.map(u => ({
+      text: String(u.text || '').trim(),
+      acting: u.acting || u.description || '',
+      voice: u.voice || body.voice || null,
+    })).filter(u => u.text.length > 0);
   }
-  if (text.length > 5000) {
-    return res.status(400).json({ error: 'text too long (max 5000 chars)' });
+
+  // Legacy format: { text, acting?, voice? }
+  if (body.text && typeof body.text === 'string') {
+    return [{
+      text: body.text.trim(),
+      acting: body.acting || body.description || '',
+      voice: body.voice || null,
+    }];
+  }
+
+  return [];
+}
+
+// ─── POST /prepare ───
+app.post('/prepare', authCheck, (req, res) => {
+  const utterances = normaliseUtterances(req.body);
+
+  if (utterances.length === 0) {
+    return res.status(400).json({
+      error: 'No utterances provided',
+      usage: {
+        array: '{ utterances: [{ text: "Hello", acting: "warm" }, ...] }',
+        legacy: '{ text: "Hello", acting: "warm" }',
+      },
+    });
+  }
+
+  // Validate total text length
+  const totalChars = utterances.reduce((sum, u) => sum + u.text.length, 0);
+  if (totalChars > 10000) {
+    return res.status(400).json({ error: `Total text too long (${totalChars}/10000 chars)` });
   }
 
   const token = crypto.randomBytes(16).toString('hex');
   const job = {
-    text: text.trim(),
-    acting: acting || '',
-    voice: voice || 'Arthur',
+    utterances,
     createdAt: Date.now(),
     status: 'pending',
     mp3Path: null,
+    error: null,
   };
 
   jobs.set(token, job);
 
-  // Pre-generate the audio immediately (don't wait for Nest to fetch)
+  // Pre-generate immediately
   generateTTS(token, job).catch(err => {
     console.error(`[${token}] Pre-generation failed:`, err.message);
   });
@@ -96,11 +126,12 @@ app.post('/prepare', authCheck, (req, res) => {
   res.json({
     token,
     url: `http://${host}/play/${token}`,
+    utteranceCount: utterances.length,
+    totalChars,
   });
 });
 
 // ─── GET /play/:token ───
-// Nest fetches this. Returns MP3 audio.
 app.get('/play/:token', async (req, res) => {
   const { token } = req.params;
   const job = jobs.get(token);
@@ -110,8 +141,8 @@ app.get('/play/:token', async (req, res) => {
   }
 
   try {
-    // Wait for generation if still in progress (up to 15s)
-    const deadline = Date.now() + 15_000;
+    // Wait for generation (up to 30s for multi-utterance)
+    const deadline = Date.now() + 30_000;
     while (job.status === 'pending' || job.status === 'generating') {
       if (Date.now() > deadline) {
         return res.status(504).json({ error: 'TTS generation timed out' });
@@ -135,7 +166,6 @@ app.get('/play/:token', async (req, res) => {
     const stream = fs.createReadStream(job.mp3Path);
     stream.pipe(res);
 
-    // Cleanup after serving
     stream.on('end', () => {
       setTimeout(() => {
         try { fs.unlinkSync(job.mp3Path); } catch {}
@@ -144,19 +174,13 @@ app.get('/play/:token', async (req, res) => {
     });
   } catch (err) {
     console.error(`[${token}] Play error:`, err);
-    if (!res.headersSent) {
-      res.status(500).json({ error: 'Internal error' });
-    }
+    if (!res.headersSent) res.status(500).json({ error: 'Internal error' });
   }
 });
 
 // ─── GET /health ───
 app.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    jobs: jobs.size,
-    uptime: process.uptime(),
-  });
+  res.json({ status: 'ok', jobs: jobs.size, uptime: process.uptime() });
 });
 
 // ─── Hume TTS Generation ───
@@ -165,76 +189,53 @@ async function generateTTS(token, job) {
   const outputPath = `/tmp/tts-${token}.mp3`;
 
   try {
-    const audio = await humeGenerate(job.text, job.acting, job.voice);
+    // Build Hume utterances array — each segment gets its own acting instructions
+    const humeUtterances = job.utterances.map(u => {
+      const entry = {
+        text: u.text,
+        voice: u.voice
+          ? { name: u.voice, provider: 'CUSTOM_VOICE' }
+          : { ...DEFAULT_VOICE },
+      };
+      if (u.acting) entry.description = u.acting;
+      return entry;
+    });
 
-    if (audio) {
-      fs.writeFileSync(outputPath, audio);
-      job.mp3Path = outputPath;
-      job.status = 'ready';
-      console.log(`[${token}] Hume TTS ready (${audio.length} bytes)`);
-      return;
+    const resp = await fetch('https://api.hume.ai/v0/tts', {
+      method: 'POST',
+      headers: {
+        'X-Hume-Api-Key': HUME_API_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        utterances: humeUtterances,
+        format: { type: 'mp3' },
+      }),
+    });
+
+    if (!resp.ok) {
+      const body = await resp.text();
+      throw new Error(`Hume API ${resp.status}: ${body}`);
     }
 
-    throw new Error('Empty audio response from Hume');
+    const data = await resp.json();
+    if (data.status_code) throw new Error(data.message || 'Hume error');
+
+    // Hume returns one audio per generation — with multiple utterances
+    // they're concatenated into a single audio output
+    const b64 = data.generations?.[0]?.audio;
+    if (!b64) throw new Error('No audio in response');
+
+    const audio = Buffer.from(b64, 'base64');
+    fs.writeFileSync(outputPath, audio);
+    job.mp3Path = outputPath;
+    job.status = 'ready';
+    console.log(`[${token}] Ready: ${job.utterances.length} utterances, ${audio.length} bytes`);
   } catch (err) {
     console.error(`[${token}] Hume failed:`, err.message);
-
-    // Fallback to Kokoro
-    try {
-      console.log(`[${token}] Trying Kokoro fallback...`);
-      await kokoroGenerate(job.text, outputPath);
-      job.mp3Path = outputPath;
-      job.status = 'ready';
-      console.log(`[${token}] Kokoro fallback ready`);
-    } catch (fallbackErr) {
-      console.error(`[${token}] Kokoro also failed:`, fallbackErr.message);
-      job.status = 'error';
-      job.error = `Hume: ${err.message}, Kokoro: ${fallbackErr.message}`;
-    }
+    job.status = 'error';
+    job.error = err.message;
   }
-}
-
-async function humeGenerate(text, acting, voiceName) {
-  const utterance = {
-    text,
-    voice: { name: voiceName || 'Arthur', provider: 'CUSTOM_VOICE' },
-  };
-  if (acting) {
-    utterance.description = acting;
-  }
-
-  const resp = await fetch('https://api.hume.ai/v0/tts', {
-    method: 'POST',
-    headers: {
-      'X-Hume-Api-Key': HUME_API_KEY,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      utterances: [utterance],
-      format: { type: 'mp3' },
-    }),
-  });
-
-  if (!resp.ok) {
-    const body = await resp.text();
-    throw new Error(`Hume API ${resp.status}: ${body}`);
-  }
-
-  const data = await resp.json();
-
-  if (data.status_code) {
-    throw new Error(data.message || 'Hume error');
-  }
-
-  const b64 = data.generations?.[0]?.audio;
-  if (!b64) throw new Error('No audio in response');
-
-  return Buffer.from(b64, 'base64');
-}
-
-function kokoroGenerate(text, outputPath) {
-  // Kokoro fallback not available in container — reject immediately
-  return Promise.reject(new Error('Kokoro not available in container'));
 }
 
 function sleep(ms) {
