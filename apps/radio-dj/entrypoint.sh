@@ -35,7 +35,7 @@ done
 
 # Start Liquidsoap in foreground
 echo "Starting Liquidsoap..."
-liquidsoap /radio/arthur-radio.liq &
+liquidsoap /radio/radio-dj.liq &
 LIQUIDSOAP_PID=$!
 
 echo "Arthur Radio is live! Stream: http://localhost:8100/stream"

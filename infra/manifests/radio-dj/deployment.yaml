@@ -1,27 +1,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: arthur-radio
-  namespace: arthur-radio
+  name: radio-dj
+  namespace: radio-dj
   labels:
-    app: arthur-radio
+    app: radio-dj
 spec:
   replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app: arthur-radio
+      app: radio-dj
   template:
     metadata:
       labels:
-        app: arthur-radio
+        app: radio-dj
     spec:
       nodeSelector:
         kubernetes.io/hostname: vmi3137202
       containers:
-        - name: arthur-radio
-          image: ghcr.io/binary64/arthur-radio:latest
+        - name: radio-dj
+          image: ghcr.io/binary64/radio-dj:latest
           ports:
             - containerPort: 8100
               protocol: TCP
@@ -31,19 +31,19 @@ spec:
             - name: OPENAI_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: arthur-radio-secret
+                  name: radio-dj-secret
                   key: openai-api-key
                   optional: false
             - name: HUME_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: arthur-radio-secret
+                  name: radio-dj-secret
                   key: hume-api-key
                   optional: true
             - name: ZAI_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: arthur-radio-secret
+                  name: radio-dj-secret
                   key: zai-api-key
                   optional: true
             - name: TZ

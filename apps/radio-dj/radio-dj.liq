@@ -147,7 +147,7 @@ output.icecast(
   password="arthur-source-2026",
   mount="/stream",
   name="Arthur Radio",
-  description="Live from 32 Hyde Road — Beat-Aware DJ Transitions",
+  description="Beat-Aware DJ Transitions",
   genre="Mixed",
   fallible=true,
   encoding="UTF-8",

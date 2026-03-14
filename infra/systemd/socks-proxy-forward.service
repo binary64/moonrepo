@@ -22,7 +22,7 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/kubectl port-forward \
+ExecStart=/mnt/arthur/.local/bin/kubectl port-forward \
   -n socks-proxy \
   svc/socks-proxy \
   1080:1080

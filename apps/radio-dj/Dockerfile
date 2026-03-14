@@ -1,4 +1,4 @@
-# Arthur Radio — Liquidsoap + Icecast streaming server
+# Radio DJ — Liquidsoap + Icecast streaming server
 # Plays BPM-aware crossfaded music from a host-mounted library
 
 FROM ubuntu:24.04
@@ -24,7 +24,7 @@ WORKDIR /radio
 COPY icecast.xml /etc/icecast2/icecast.xml
 
 # Radio scripts (with container-adjusted paths)
-COPY arthur-radio.liq /radio/arthur-radio.liq
+COPY radio-dj.liq /radio/radio-dj.liq
 COPY next_track.py /radio/next_track.py
 COPY announce-track.sh /radio/announce-track.sh
 COPY dj-session-line.sh /radio/dj-session-line.sh
