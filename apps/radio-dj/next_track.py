@@ -231,10 +231,20 @@ def save_queue(queue):
 # ─── Graph loading ───
 
 def load_graph():
-    """Load the pre-computed track graph."""
+    """Load the pre-computed track graph and rewrite paths to container mounts."""
     try:
         with open(GRAPH_FILE) as f:
-            return json.load(f)
+            graph = json.load(f)
+
+        # Rewrite host paths to container paths
+        HOST_PREFIX = "/home/user/clawd/data/music/"
+        CONTAINER_PREFIX = MUSIC_DIR + "/"
+        if "pathIndex" in graph:
+            for tid, path in graph["pathIndex"].items():
+                if path.startswith(HOST_PREFIX):
+                    graph["pathIndex"][tid] = CONTAINER_PREFIX + path[len(HOST_PREFIX):]
+
+        return graph
     except (FileNotFoundError, json.JSONDecodeError) as e:
         print(f"Error loading graph: {e}", file=sys.stderr)
         return None
