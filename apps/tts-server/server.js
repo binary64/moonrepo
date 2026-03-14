@@ -20,6 +20,7 @@
 const express = require('express');
 const crypto = require('crypto');
 const fs = require('fs');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 app.use(express.json({ limit: '100kb' }));
@@ -39,6 +40,15 @@ if (!HUME_API_KEY) {
 
 // Default voice config
 const DEFAULT_VOICE = { name: 'Arthur', provider: 'CUSTOM_VOICE' };
+
+// Rate limiting — exempt /health
+const limiter = rateLimit({
+  windowMs: 60_000,
+  max: 30,
+  skip: (req) => req.path === '/health',
+  message: { error: 'Too many requests' },
+});
+app.use(limiter);
 
 // In-memory store: token → job
 const jobs = new Map();
@@ -230,7 +240,7 @@ async function generateTTS(token, job) {
     fs.writeFileSync(outputPath, audio);
     job.mp3Path = outputPath;
     job.status = 'ready';
-    console.log(`[${token}] Ready: ${job.utterances.length} utterances, ${audio.length} bytes`);
+    console.log('[%s] Ready: %d utterances, %d bytes', token, job.utterances.length, audio.length);
   } catch (err) {
     console.error(`[${token}] Hume failed:`, err.message);
     job.status = 'error';
@@ -244,7 +254,7 @@ function sleep(ms) {
 
 // ─── Start ───
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`TTS Server listening on :${PORT}`);
-  console.log(`Hume API key: ${HUME_API_KEY.slice(0, 5)}...`);
-  console.log(`Auth: ${AUTH_TOKEN ? 'enabled' : 'disabled'}`);
+  console.log('TTS Server listening on :%d', PORT);
+  console.log('Hume API key: configured (%d chars)', HUME_API_KEY.length);
+  console.log('Auth: %s', AUTH_TOKEN ? 'enabled' : 'disabled');
 });
