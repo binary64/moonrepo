@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lan-bridge
+  namespace: lan-bridge
+  labels:
+    app: lan-bridge
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: lan-bridge
+  template:
+    metadata:
+      labels:
+        app: lan-bridge
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      nodeSelector:
+        node-role.kubernetes.io/master: "true"
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/control-plane
+          effect: NoSchedule
+      containers:
+        - name: lan-bridge
+          image: ghcr.io/binary64/lan-bridge:latest
+          ports:
+            - containerPort: 3080
+              protocol: TCP
+          env:
+            - name: PORT
+              value: "3080"
+            - name: LAN_BRIDGE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: lan-bridge-secret
+                  key: token
+                  optional: false
+            - name: TV_ON_SCRIPT
+              value: /host-scripts/tv-on.sh
+            - name: TV_OFF_SCRIPT
+              value: /host-scripts/tv-off.sh
+            - name: TV_STATUS_SCRIPT
+              value: /host-scripts/tv-app-status.py
+          volumeMounts:
+            - name: host-scripts
+              mountPath: /host-scripts
+              readOnly: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3080
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3080
+            initialDelaySeconds: 3
+            periodSeconds: 10
+      volumes:
+        - name: host-scripts
+          hostPath:
+            path: /home/user/clawd/skills/chromecast/scripts
+            type: Directory

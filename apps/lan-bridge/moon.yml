@@ -1,0 +1,11 @@
+$schema: "../../.moon/cache/schemas/workspace.json"
+
+language: 'node'
+type: 'application'
+
+tags:
+  - service
+
+tasks:
+  lint:
+    command: "npx biome check ."
