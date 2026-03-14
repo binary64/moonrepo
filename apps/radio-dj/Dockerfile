@@ -28,6 +28,7 @@ COPY icecast.xml /etc/icecast2/icecast.xml
 COPY radio-dj.liq /radio/radio-dj.liq
 COPY next_track.py /radio/next_track.py
 COPY announce-track.sh /radio/announce-track.sh
+COPY dj-commentary.sh /radio/dj-commentary.sh
 COPY dj-session-line.sh /radio/dj-session-line.sh
 COPY entrypoint.sh /radio/entrypoint.sh
 
