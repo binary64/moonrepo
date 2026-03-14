@@ -19,6 +19,17 @@ if (!TOKEN) {
 }
 
 // ---------------------------------------------------------------------------
+// Rate limiting — applied globally BEFORE auth so failed-auth requests are also limited
+// ---------------------------------------------------------------------------
+const commandRateLimiter = rateLimit({
+  windowMs: 60_000, // 1 minute
+  max: 30, // 30 requests per minute per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests, please try again later." },
+});
+
+// ---------------------------------------------------------------------------
 // Auth middleware (skip for /health — needed for k8s probes)
 // ---------------------------------------------------------------------------
 function auth(req, res, next) {
@@ -30,18 +41,8 @@ function auth(req, res, next) {
   next();
 }
 
+app.use(commandRateLimiter);
 app.use(auth);
-
-// ---------------------------------------------------------------------------
-// Rate limiting for routes that execute system commands (CodeQL security fix)
-// ---------------------------------------------------------------------------
-const commandRateLimiter = rateLimit({
-  windowMs: 60_000, // 1 minute
-  max: 30, // 30 requests per minute per IP
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: "Too many requests, please try again later." },
-});
 
 // ---------------------------------------------------------------------------
 // Device aliases
@@ -62,7 +63,7 @@ function resolveDevice(name) {
 // POST /cast — Cast media or site to Chromecast
 // { device, url, type: "media"|"site" }
 // ---------------------------------------------------------------------------
-app.post("/cast", commandRateLimiter, async (req, res) => {
+app.post("/cast", async (req, res) => {
   try {
     const { url, type = "media" } = req.body;
     if (!url) {
@@ -87,7 +88,7 @@ app.post("/cast", commandRateLimiter, async (req, res) => {
 // POST /tts — Play audio file on Nest speakers
 // { device, url }
 // ---------------------------------------------------------------------------
-app.post("/tts", commandRateLimiter, async (req, res) => {
+app.post("/tts", async (req, res) => {
   try {
     const { url } = req.body;
     if (!url) {
@@ -110,7 +111,7 @@ app.post("/tts", commandRateLimiter, async (req, res) => {
 // ---------------------------------------------------------------------------
 // POST /tv/on — Turn TV on via script
 // ---------------------------------------------------------------------------
-app.post("/tv/on", commandRateLimiter, async (_req, res) => {
+app.post("/tv/on", async (_req, res) => {
   try {
     const scriptPath =
       process.env.TV_ON_SCRIPT ||
@@ -127,7 +128,7 @@ app.post("/tv/on", commandRateLimiter, async (_req, res) => {
 // ---------------------------------------------------------------------------
 // POST /tv/off — Turn TV off via script
 // ---------------------------------------------------------------------------
-app.post("/tv/off", commandRateLimiter, async (_req, res) => {
+app.post("/tv/off", async (_req, res) => {
   try {
     const scriptPath =
       process.env.TV_OFF_SCRIPT ||
@@ -144,7 +145,7 @@ app.post("/tv/off", commandRateLimiter, async (_req, res) => {
 // ---------------------------------------------------------------------------
 // GET /tv/status — Check TV state
 // ---------------------------------------------------------------------------
-app.get("/tv/status", commandRateLimiter, async (_req, res) => {
+app.get("/tv/status", async (_req, res) => {
   try {
     const scriptPath =
       process.env.TV_STATUS_SCRIPT ||
@@ -216,7 +217,7 @@ function validateArgs(command, args) {
   return null;
 }
 
-app.post("/exec", commandRateLimiter, async (req, res) => {
+app.post("/exec", async (req, res) => {
   try {
     const { command, args = [] } = req.body;
     if (!command || !ALLOWED_COMMANDS.has(command)) {
