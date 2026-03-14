@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ring-mqtt
+  namespace: ring-mqtt
+  labels:
+    app: ring-mqtt
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ring-mqtt
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: ring-mqtt
+    spec:
+      # Run on master (NUC) — same network as Mosquitto and HA
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: "true"
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/control-plane
+          effect: NoSchedule
+      # hostNetwork not needed - uses cluster networking
+      dnsPolicy: ClusterFirst
+      containers:
+        - name: ring-mqtt
+          image: tsightler/ring-mqtt:latest
+          env:
+            # Mosquitto broker (cluster service IP)
+            - name: MQTTHOST
+              value: "mosquitto.home-assistant.svc"
+            - name: MQTTPORT
+              value: "1883"
+            # Web UI for initial Ring auth (port 55123)
+            - name: ENABLECAMERAS
+              value: "true"
+            - name: ENABLEMODES
+              value: "true"
+            - name: LIVESTREAMUSER
+              value: ""
+            - name: LIVESTREAMPASSWORD
+              value: ""
+          ports:
+            - containerPort: 55123
+              protocol: TCP
+              name: web-ui
+            - containerPort: 8554
+              protocol: TCP
+              name: rtsp
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 55123
+            initialDelaySeconds: 30
+            periodSeconds: 60
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 55123
+            initialDelaySeconds: 10
+            periodSeconds: 30
+      volumes:
+        - name: data
+          hostPath:
+            path: /opt/ring-mqtt/data
+            type: DirectoryOrCreate
