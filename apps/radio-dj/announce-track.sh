@@ -58,7 +58,13 @@ echo "meta.update $PRETTY_NAME" | nc -w1 127.0.0.1 1234 >/dev/null 2>&1 || true
     # Check schedule.json for Abi's work status (if Abi not working, Cara is on)
     if [ -f /config/schedule.json ]; then
         TODAY=$(date +%Y-%m-%d)
-        ABI_STATUS=$(jq -r --arg d "$TODAY" '.[$d].abi // "working"' /config/schedule.json 2>/dev/null || echo "working")
+        ABI_STATUS=$(jq -r --arg d "$TODAY" '
+            if (.schedule? | type) == "array" then
+                ([.schedule[] | select(.date == $d) | .abi][0] // "working") | if type == "object" then .status // "working" else . end
+            else
+                .abi[$d] // .[$d].abi // "working"
+            end
+        ' /config/schedule.json 2>/dev/null || echo "working")
         if [ "$ABI_STATUS" = "not-working" ] && [ "$DJ_NAME" = "arthur" ]; then
             DJ_NAME="cara"
         fi

@@ -60,7 +60,7 @@ spec:
                 secretKeyRef:
                   name: radio-dj-secret
                   key: tts-auth-token
-                  optional: false
+                  optional: true
             - name: HUME_API_KEY
               valueFrom:
                 secretKeyRef:
