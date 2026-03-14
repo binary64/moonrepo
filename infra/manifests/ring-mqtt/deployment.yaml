@@ -29,7 +29,7 @@ spec:
       dnsPolicy: ClusterFirst
       containers:
         - name: ring-mqtt
-          image: tsightler/ring-mqtt:latest
+          image: tsightler/ring-mqtt:5.9.3
           env:
             # Mosquitto broker (cluster service IP)
             - name: MQTTHOST
