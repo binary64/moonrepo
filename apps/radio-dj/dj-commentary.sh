@@ -109,4 +109,7 @@ PUSH_RESPONSE=$(echo "${QUEUE_NAME}.push ${PADDED_FILE}" | nc -w2 "$LIQUIDSOAP_H
     exit 1
 }
 
+# Schedule cleanup in background — gives Liquidsoap time to read the file
+(sleep 30 && rm -f "$PADDED_FILE" "$RAW_FILE") &
+
 echo "[dj-commentary] Done — DJ $DJ_NAME commentary queued ($CLIP_ID)"

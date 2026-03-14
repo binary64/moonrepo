@@ -4,7 +4,8 @@ set -e
 echo "Arthur Radio — Starting up..."
 
 # Ensure /state is writable for TTS temp files
-mkdir -p /state 2>/dev/null || true
+mkdir -p /state
+[ -w /state ] || { echo "ERROR: /state is not writable"; exit 1; }
 
 # Template Icecast config with environment variables
 echo "Templating Icecast config..."

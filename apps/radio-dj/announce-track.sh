@@ -112,9 +112,18 @@ echo "meta.update $PRETTY_NAME" | nc -w1 127.0.0.1 1234 >/dev/null 2>&1 || true
 
     echo "[announce-track] DJ $DJ_DISPLAY_NAME says: $DJ_LINE"
 
-    # Call dj-commentary.sh to generate TTS and inject into stream
-    /radio/dj-commentary.sh "$DJ_NAME" "$PRETTY_NAME" "$DJ_LINE" || {
-        echo "[announce-track] TTS commentary failed, continuing" >&2
+    # Re-check track hasn't changed while LLM was generating
+    if [ "$(cat /state/current-track-path 2>/dev/null)" = "$TRACK_PATH" ]; then
+        /radio/dj-commentary.sh "$DJ_NAME" "$PRETTY_NAME" "$DJ_LINE" || {
+            echo "[announce-track] TTS commentary failed, continuing" >&2
+        }
+    else
+        echo "[announce-track] Track changed, skipping stale commentary" >&2
+    fi
+) &
+
+exit 0
+cho "[announce-track] TTS commentary failed, continuing" >&2
     }
 ) &
 
