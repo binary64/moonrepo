@@ -41,7 +41,9 @@ music = source.on_metadata(music, fun (m) -> begin
 
   if fn != "" then
     log("TRACK: #{fn} (BPM: #{actual_bpm})")
-    ignore(process.run("/radio/announce-track.sh '#{fn}' '#{actual_bpm}' &"))
+    file.write(data=fn, "/state/current-track-path")
+    file.write(data=actual_bpm, "/state/current-track-bpm")
+    ignore(process.run("/radio/announce-track.sh &"))
   end
 
   # Build display title from ID3 tags, filtering bad artist tags
@@ -134,7 +136,7 @@ end)
 
 # Song request — skip current track to trigger crossfade into requested song
 server.register("request.song", usage="request.song <path>", description="Request a song (crossfades immediately)", fun (path) -> begin
-  ignore(process.run("/bin/bash -c \"python3 -c \\\"import json; json.dump({'path': '#{path}'}, open('/state/radio-request.json','w'))\\\"\""))
+  file.write(data='{"path": "' ^ path ^ '"}', "/state/radio-request.json")
   source.skip(music)
   "OK: Requesting #{path}"
 end)
@@ -144,7 +146,7 @@ output.icecast(
   %mp3(bitrate=192),
   host="localhost",
   port=8100,
-  password="arthur-source-2026",
+  password=environment.get(default="changeme", "ICECAST_SOURCE_PASSWORD"),
   mount="/stream",
   name="Arthur Radio",
   description="Beat-Aware DJ Transitions",

@@ -32,12 +32,20 @@ COPY entrypoint.sh /radio/entrypoint.sh
 
 RUN chmod +x /radio/*.sh /radio/*.py
 
+# Create non-root user
+RUN groupadd -r radio && useradd -r -g radio -s /bin/false radio
+
 # Create directories for runtime state
 RUN mkdir -p /state /data /config
 
 # Icecast needs to write to its log dir (even though we log to stderr)
-RUN mkdir -p /var/log/icecast2 && chown nobody:nogroup /var/log/icecast2
+# Also ensure /etc/icecast2 is writable for envsubst templating at startup
+RUN mkdir -p /var/log/icecast2 && chown radio:radio /var/log/icecast2 \
+    && chown radio:radio /etc/icecast2/icecast.xml \
+    && chown -R radio:radio /state /radio
 
 EXPOSE 8100 1234
+
+USER radio
 
 ENTRYPOINT ["/radio/entrypoint.sh"]

@@ -72,14 +72,19 @@ def get_last_played(track_name_lower):
         with open(PLAY_HISTORY_LOG) as f:
             for line in f:
                 # Format: "2026-02-20T17:43:52+00:00  Track Name  (filename.mp3)"
-                if track_name_lower in line.lower():
-                    ts_str = line.strip().split("  ")[0]
-                    try:
-                        ts = datetime.fromisoformat(ts_str)
-                        if last is None or ts > last:
-                            last = ts
-                    except ValueError:
-                        continue
+                parts = line.strip().split("  ")
+                if len(parts) < 2:
+                    continue
+                log_track_name = parts[1].lower()
+                if log_track_name != track_name_lower:
+                    continue
+                ts_str = parts[0]
+                try:
+                    ts = datetime.fromisoformat(ts_str)
+                    if last is None or ts > last:
+                        last = ts
+                except ValueError:
+                    continue
         return last
     except FileNotFoundError:
         return None
@@ -713,14 +718,24 @@ def main():
 
     if not path or not os.path.exists(path):
         print(f"Track {track_id} path not found: {path}", file=sys.stderr)
-        # Try next in queue recursively
-        if queue:
+        # Try next track in queue (loop instead of recursion)
+        while queue:
+            next_id = queue.pop(0)
+            next_id_str = str(next_id)
+            next_path = graph["pathIndex"].get(next_id_str, "")
+            if next_path and os.path.exists(next_path):
+                track_id = next_id
+                track_id_str = next_id_str
+                path = next_path
+                save_queue(queue)
+                break
+            print(f"Track {next_id} path not found: {next_path}", file=sys.stderr)
+        else:
             save_queue(queue)
-            return main()
-        mp3s = glob.glob(os.path.join(MUSIC_DIR, "*.mp3"))
-        if mp3s:
-            print(random.choice(mp3s))
-        return
+            mp3s = glob.glob(os.path.join(MUSIC_DIR, "*.mp3"))
+            if mp3s:
+                print(random.choice(mp3s))
+            return
 
     # Update state
     track_info = graph["tracks"].get(track_id_str, {})

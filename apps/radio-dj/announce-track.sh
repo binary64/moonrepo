@@ -3,12 +3,14 @@
 # Logs play history, writes now-playing, updates Icecast metadata via telnet.
 # DJ commentary and TTS are disabled for v1.
 #
-# Usage: announce-track.sh <full_path_to_track> [bpm]
+# Reads track info from state files written by Liquidsoap:
+#   /state/current-track-path  — full path to the track
+#   /state/current-track-bpm   — detected BPM
 
 set -e
 
-TRACK_PATH="$1"
-TRACK_BPM="$2"
+TRACK_PATH=$(cat /state/current-track-path 2>/dev/null || echo "")
+TRACK_BPM=$(cat /state/current-track-bpm 2>/dev/null || echo "")
 TRACK_FILE=$(basename "$TRACK_PATH" 2>/dev/null || echo "unknown")
 HISTORY_LOG="/data/music/play-history.log"
 
@@ -28,8 +30,8 @@ TIMESTAMP=$(date -Iseconds)
 mkdir -p "$(dirname "$HISTORY_LOG")"
 echo "$TIMESTAMP  $TRACK_NAME  ($TRACK_FILE)" >> "$HISTORY_LOG"
 
-# Write now-playing for instant lookups
-PRETTY_NAME=$(echo "$TRACK_FILE" | sed 's/\.mp3$//')
+# Write now-playing for instant lookups (use cleaned name, not raw filename)
+PRETTY_NAME="$TRACK_NAME"
 echo "$PRETTY_NAME" > /state/radio-now-playing
 
 # Update Icecast stream metadata via Liquidsoap telnet

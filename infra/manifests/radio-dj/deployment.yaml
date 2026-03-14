@@ -22,6 +22,7 @@ spec:
       containers:
         - name: radio-dj
           image: ghcr.io/binary64/radio-dj:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8100
               protocol: TCP
@@ -33,6 +34,24 @@ spec:
                 secretKeyRef:
                   name: radio-dj-secret
                   key: openai-api-key
+                  optional: false
+            - name: ICECAST_SOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: radio-dj-secret
+                  key: icecast-source-password
+                  optional: false
+            - name: ICECAST_RELAY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: radio-dj-secret
+                  key: icecast-relay-password
+                  optional: false
+            - name: ICECAST_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: radio-dj-secret
+                  key: icecast-admin-password
                   optional: false
             - name: HUME_API_KEY
               valueFrom:
