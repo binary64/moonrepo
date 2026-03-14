@@ -202,7 +202,7 @@ const ALLOWED_ARG_PATTERNS = {
 };
 
 // Values (non-flag args) must match safe patterns — no shell metacharacters
-const SAFE_VALUE = /^[a-zA-Z0-9_./:@=,\-\s"']+$/;
+const SAFE_VALUE = /^[a-zA-Z0-9_./:@=, -]+$/;
 
 function validateArgs(command, args) {
   const patterns = ALLOWED_ARG_PATTERNS[command] || [];
