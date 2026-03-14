@@ -17,8 +17,6 @@ spec:
       labels:
         app: arthur-radio
     spec:
-      hostNetwork: true
-      dnsPolicy: ClusterFirstWithHostNet
       nodeSelector:
         kubernetes.io/hostname: vmi3137202
       containers:
