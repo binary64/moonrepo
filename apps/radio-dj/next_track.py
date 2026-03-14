@@ -33,7 +33,7 @@ DJ_OVERRIDE_FILE = "/data/music/dj-override.json"
 GATEWAY_URL = "https://api.openai.com/v1/chat/completions"
 GATEWAY_TOKEN = os.environ.get("OPENAI_API_KEY", "")
 LLM_MODEL = "gpt-4o-mini"
-LLM_TIMEOUT = 90  # seconds
+LLM_TIMEOUT = 15  # seconds — keep short so fallback random walk kicks in fast
 
 # Tuning
 TRACK_COOLDOWN = 100
