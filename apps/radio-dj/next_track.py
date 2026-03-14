@@ -137,13 +137,20 @@ def get_audience():
     today = now.strftime("%Y-%m-%d")
     hour = now.hour
 
-    # Schedule file format: {"schedule": [{"date": "...", "abi": {"status": "..."}}]}
+    # Schedule file format varies:
+    #   v1: {"schedule": [{"date": "...", "abi": {"status": "..."}}]}
+    #   v2: {"schedule": [{"date": "...", "abi": "not-working"}]}
+    #   legacy: {"abi": {"2026-03-02": "not-working"}}
     abi_status = "working"  # default weekday assumption
     schedule_list = schedule.get("schedule", [])
     if isinstance(schedule_list, list):
         for day in schedule_list:
             if day.get("date") == today:
-                abi_status = day.get("abi", {}).get("status", "working")
+                abi_val = day.get("abi", "working")
+                if isinstance(abi_val, dict):
+                    abi_status = abi_val.get("status", "working")
+                else:
+                    abi_status = str(abi_val)
                 break
     else:
         # Legacy format: {"abi": {"2026-03-02": "not-working"}}
