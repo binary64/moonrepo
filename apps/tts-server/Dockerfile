@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 COPY package.json ./
 COPY package-lock.json ./
-RUN npm ci --production
+RUN npm ci --omit=dev
 COPY server.js ./
 
 EXPOSE 3090
