@@ -1,0 +1,49 @@
+<icecast>
+    <location>Bournemouth, UK</location>
+    <admin>admin@arthurradio.local</admin>
+
+    <limits>
+        <clients>10</clients>
+        <sources>2</sources>
+        <queue-size>131072</queue-size>
+        <client-timeout>30</client-timeout>
+        <header-timeout>15</header-timeout>
+        <source-timeout>10</source-timeout>
+        <burst-on-connect>1</burst-on-connect>
+        <burst-size>16384</burst-size>
+    </limits>
+
+    <authentication>
+        <source-password>arthur-source-2026</source-password>
+        <relay-password>arthur-relay-2026</relay-password>
+        <admin-user>admin</admin-user>
+        <admin-password>arthur-admin-2026</admin-password>
+    </authentication>
+
+    <hostname>localhost</hostname>
+
+    <listen-socket>
+        <port>8100</port>
+    </listen-socket>
+
+    <mount>
+        <mount-name>/stream</mount-name>
+        <fallback-mount>/silence</fallback-mount>
+        <fallback-override>1</fallback-override>
+    </mount>
+
+    <fileserve>1</fileserve>
+
+    <paths>
+        <basedir>/usr/share/icecast2</basedir>
+        <logdir>/var/log/icecast2</logdir>
+        <webroot>/usr/share/icecast2/web</webroot>
+        <adminroot>/usr/share/icecast2/admin</adminroot>
+    </paths>
+
+    <logging>
+        <accesslog>-</accesslog>
+        <errorlog>-</errorlog>
+        <loglevel>3</loglevel>
+    </logging>
+</icecast>

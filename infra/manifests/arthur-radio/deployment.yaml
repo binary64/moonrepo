@@ -1,0 +1,120 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: arthur-radio
+  namespace: arthur-radio
+  labels:
+    app: arthur-radio
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: arthur-radio
+  template:
+    metadata:
+      labels:
+        app: arthur-radio
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      nodeSelector:
+        kubernetes.io/hostname: vmi3137202
+      containers:
+        - name: arthur-radio
+          image: ghcr.io/binary64/arthur-radio:latest
+          ports:
+            - containerPort: 8100
+              protocol: TCP
+            - containerPort: 1234
+              protocol: TCP
+          env:
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: arthur-radio-secret
+                  key: openai-api-key
+                  optional: false
+            - name: HUME_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: arthur-radio-secret
+                  key: hume-api-key
+                  optional: true
+            - name: ZAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: arthur-radio-secret
+                  key: zai-api-key
+                  optional: true
+            - name: TZ
+              value: "Europe/London"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /status-json.xsl
+              port: 8100
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            timeoutSeconds: 5
+          volumeMounts:
+            - name: music
+              mountPath: /data/music
+              readOnly: true
+            - name: music-index
+              mountPath: /data/music-index
+              readOnly: true
+            - name: track-graph
+              mountPath: /data/radio-track-graph.json
+              readOnly: true
+            - name: play-history
+              mountPath: /data/music/play-history.log
+            - name: track-tiers
+              mountPath: /data/music/track-tiers.json
+              readOnly: true
+            - name: dj-override
+              mountPath: /data/music/dj-override.json
+              readOnly: true
+            - name: schedule
+              mountPath: /config/schedule.json
+              readOnly: true
+            - name: state
+              mountPath: /state
+      volumes:
+        - name: music
+          hostPath:
+            path: /mnt/arthur/clawd/data/music
+            type: Directory
+        - name: music-index
+          hostPath:
+            path: /mnt/arthur/clawd/data/music-index
+            type: Directory
+        - name: track-graph
+          hostPath:
+            path: /mnt/arthur/clawd/data/radio-track-graph.json
+            type: File
+        - name: play-history
+          hostPath:
+            path: /mnt/arthur/clawd/data/music/play-history.log
+            type: FileOrCreate
+        - name: track-tiers
+          hostPath:
+            path: /mnt/arthur/clawd/data/music/track-tiers.json
+            type: File
+        - name: dj-override
+          hostPath:
+            path: /mnt/arthur/clawd/data/music/dj-override.json
+            type: File
+        - name: schedule
+          hostPath:
+            path: /mnt/arthur/clawd/memory/schedule.json
+            type: File
+        - name: state
+          emptyDir: {}
