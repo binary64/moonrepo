@@ -53,6 +53,9 @@ function resolveDevice(name) {
 app.post("/cast", async (req, res) => {
   try {
     const { url, type = "media" } = req.body;
+    if (!url) {
+      return res.status(400).json({ error: "missing required parameter: url" });
+    }
     const device = resolveDevice(req.body.device) || "192.168.1.90";
     const cmd = type === "site" ? "cast_site" : "cast";
     const { stdout, stderr } = await execFileAsync(
@@ -75,6 +78,9 @@ app.post("/cast", async (req, res) => {
 app.post("/tts", async (req, res) => {
   try {
     const { url } = req.body;
+    if (!url) {
+      return res.status(400).json({ error: "missing required parameter: url" });
+    }
     const device = resolveDevice(req.body.device) || "All Speakers";
     const { stdout, stderr } = await execFileAsync(
       "catt",
@@ -146,23 +152,53 @@ app.get("/tv/status", async (_req, res) => {
 // ---------------------------------------------------------------------------
 const ALLOWED_COMMANDS = new Set(["catt", "curl", "ping", "ffmpeg", "ffprobe"]);
 
-// Reject args that look like they write to arbitrary paths
-const BLOCKED_ARG_PATTERNS = [
-  /^-o$/,
-  /^--output$/,
-  /^--output=/,
-  /^-O$/,
-  /^\/etc\//,
-  /^\/root\//,
-  /^\/var\//,
-];
+// ---------------------------------------------------------------------------
+// Allowlisted arg patterns per command (allowlist > blocklist)
+// Only args matching these patterns are permitted.
+// ---------------------------------------------------------------------------
+const ALLOWED_ARG_PATTERNS = {
+  catt: [/^-d$/, /^cast$/, /^cast_site$/, /^stop$/, /^status$/, /^volume$/],
+  curl: [
+    /^-s$/,
+    /^-S$/,
+    /^-f$/,
+    /^-L$/,
+    /^-o$/,
+    /^--max-time$/,
+    /^--connect-timeout$/,
+  ],
+  ping: [/^-c$/, /^-W$/],
+  ffmpeg: [
+    /^-y$/,
+    /^-i$/,
+    /^-f$/,
+    /^-ac$/,
+    /^-ar$/,
+    /^-filter:a$/,
+    /^-t$/,
+    /^-ss$/,
+  ],
+  ffprobe: [
+    /^-v$/,
+    /^-show_format$/,
+    /^-show_streams$/,
+    /^-print_format$/,
+    /^-of$/,
+  ],
+};
 
-function validateArgs(args) {
+// Values (non-flag args) must match safe patterns — no shell metacharacters
+const SAFE_VALUE = /^[a-zA-Z0-9_./:@=,\-\s"']+$/;
+
+function validateArgs(command, args) {
+  const patterns = ALLOWED_ARG_PATTERNS[command] || [];
   for (const arg of args) {
-    for (const pattern of BLOCKED_ARG_PATTERNS) {
-      if (pattern.test(arg)) {
-        return `blocked arg: ${arg}`;
-      }
+    // Check if it matches an allowed flag
+    const isAllowedFlag = patterns.some((p) => p.test(arg));
+    if (isAllowedFlag) continue;
+    // Otherwise treat as a value — must match safe pattern
+    if (!SAFE_VALUE.test(arg)) {
+      return `disallowed arg: ${arg}`;
     }
   }
   return null;
@@ -176,7 +212,7 @@ app.post("/exec", async (req, res) => {
         error: `command not allowed. Allowed: ${[...ALLOWED_COMMANDS].join(", ")}`,
       });
     }
-    const argError = validateArgs(args);
+    const argError = validateArgs(command, args);
     if (argError) {
       return res.status(400).json({ error: argError });
     }
