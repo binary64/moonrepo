@@ -27,6 +27,7 @@ app.use(express.json({ limit: '100kb' }));
 
 const PORT = process.env.TTS_PORT || 3090;
 const AUTH_TOKEN = process.env.TTS_AUTH_TOKEN || '';
+const BASE_URL = process.env.TTS_BASE_URL || `http://192.168.1.201:${PORT}`;
 const HUME_API_KEY = process.env.HUME_API_KEY || (() => {
   const keyPath = `${process.env.HOME}/.config/hume/api_key`;
   try { return fs.readFileSync(keyPath, 'utf8').trim(); }
@@ -132,10 +133,9 @@ app.post('/prepare', authCheck, (req, res) => {
     console.error(`[${token}] Pre-generation failed:`, err.message);
   });
 
-  const host = req.headers.host || `192.168.1.201:${PORT}`;
   res.json({
     token,
-    url: `http://${host}/play/${token}`,
+    url: `${BASE_URL}/play/${token}`,
     utteranceCount: utterances.length,
     totalChars,
   });
@@ -255,6 +255,7 @@ function sleep(ms) {
 // ─── Start ───
 app.listen(PORT, '0.0.0.0', () => {
   console.log('TTS Server listening on :%d', PORT);
+  console.log('Base URL: %s', BASE_URL);
   console.log('Hume API key: %s', HUME_API_KEY ? 'configured' : 'MISSING');
   console.log('Auth: %s', AUTH_TOKEN ? 'enabled' : 'disabled');
 });

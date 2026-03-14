@@ -28,13 +28,15 @@ spec:
           effect: NoSchedule
       containers:
         - name: tts-server
-          image: ghcr.io/binary64/tts-server:latest
+          image: ghcr.io/binary64/tts-server:v1.0.0
           ports:
             - containerPort: 3090
               protocol: TCP
           env:
             - name: TTS_PORT
               value: "3090"
+            - name: TTS_BASE_URL
+              value: "http://192.168.1.201:3090"
             - name: HUME_API_KEY
               valueFrom:
                 secretKeyRef:

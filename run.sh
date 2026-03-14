@@ -257,6 +257,35 @@ while true; do
 				NAMESPACE=$(yq eval -r "select(document_index == $i) | .spec.destination.namespace // \"default\"" "$file")
 				VALUES=$(yq eval -r "select(document_index == $i) | .spec.source.helm.values" "$file")
 
+				# Git-path Application (no Helm chart, just raw manifests)
+				GIT_PATH=$(yq eval -r "select(document_index == $i) | .spec.source.path" "$file")
+				if [ "$CHART" == "null" ] && [ "$GIT_PATH" != "null" ] && [ -n "$GIT_PATH" ]; then
+					echo "Found git-path Application: $RELEASE_NAME (path: $GIT_PATH)"
+					if [ -d "$REPO_ROOT/$GIT_PATH" ]; then
+						kubectl create namespace "$NAMESPACE" 2>/dev/null || true
+						APPLIED=false
+						for ((r = 1; r <= 3; r++)); do
+							if kubectl apply -f "$REPO_ROOT/$GIT_PATH/" --namespace "$NAMESPACE"; then
+								APPLIED=true
+								break
+							fi
+							echo "Warning: Failed to apply $GIT_PATH (attempt $r/3), retrying..."
+							sleep 1
+						done
+						if [ "$APPLIED" = false ]; then
+							echo "Error: Failed to apply git-path $GIT_PATH after 3 retries."
+							FAILURES=$((FAILURES + 1))
+							FAILURES_LIST+=("Git-path Application: $RELEASE_NAME ($GIT_PATH)")
+						else
+							INSTALLED_TRACKER["$TRACK_ID"]="true"
+						fi
+					else
+						echo "Warning: git-path $GIT_PATH not found locally, skipping."
+					fi
+					echo "----------------------------------------"
+					continue
+				fi
+
 				if [ "$REPO_URL" == "null" ] || [ "$CHART" == "null" ]; then
 					echo "Skipping Application in $file: repoURL or chart is missing."
 					continue
