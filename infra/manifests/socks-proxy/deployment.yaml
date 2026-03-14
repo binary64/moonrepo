@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: socks-proxy
+  namespace: socks-proxy
+  labels:
+    app: socks-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: socks-proxy
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: socks-proxy
+    spec:
+      # Run on master node (NUC) — uses residential broadband IP for outbound
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: "true"
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/control-plane
+          effect: NoSchedule
+      # hostNetwork so outbound traffic uses the node's residential IP
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+        - name: microsocks
+          # microsocks: tiny, single-purpose SOCKS5 proxy (~14KB binary)
+          # https://github.com/rofl0r/microsocks
+          image: vimagick/microsocks:latest
+          args:
+            - "-p"
+            - "1080"
+            - "-b"
+            - "0.0.0.0"
+          ports:
+            - containerPort: 1080
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 10m
+              memory: 8Mi
+            limits:
+              cpu: 100m
+              memory: 32Mi
+          livenessProbe:
+            tcpSocket:
+              port: 1080
+            initialDelaySeconds: 3
+            periodSeconds: 30
+          readinessProbe:
+            tcpSocket:
+              port: 1080
+            initialDelaySeconds: 2
+            periodSeconds: 10
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 65534

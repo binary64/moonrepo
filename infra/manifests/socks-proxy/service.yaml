@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: socks-proxy
+  namespace: socks-proxy
+  labels:
+    app: socks-proxy
+spec:
+  selector:
+    app: socks-proxy
+  ports:
+    - port: 1080
+      targetPort: 1080
+      protocol: TCP
+  type: ClusterIP

@@ -1,0 +1,33 @@
+# kubectl port-forward for SOCKS5 proxy
+# Forwards localhost:1080 → socks-proxy pod on master node
+#
+# The pod runs on the master (NUC) with hostNetwork, so all
+# outbound traffic exits via the node's residential IP.
+#
+# Install:
+#   cp socks-proxy-forward.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now socks-proxy-forward
+#
+# Verify:
+#   curl --socks5-hostname localhost:1080 https://ifconfig.me
+#
+# Then add to OpenClaw:
+#   openclaw config set browser.extraArgs '["--proxy-server=socks5://localhost:1080"]'
+
+[Unit]
+Description=kubectl port-forward for SOCKS5 proxy (residential IP)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/kubectl port-forward \
+  -n socks-proxy \
+  svc/socks-proxy \
+  1080:1080
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
