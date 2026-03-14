@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tts-server
+  namespace: tts-server
+  labels:
+    app: tts-server
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: tts-server
+  template:
+    metadata:
+      labels:
+        app: tts-server
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      nodeSelector:
+        node-role.kubernetes.io/master: "true"
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/control-plane
+          effect: NoSchedule
+      containers:
+        - name: tts-server
+          image: ghcr.io/binary64/tts-server:latest
+          ports:
+            - containerPort: 3090
+              protocol: TCP
+          env:
+            - name: TTS_PORT
+              value: "3090"
+            - name: HUME_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: tts-server-secret
+                  key: hume-api-key
+                  optional: false
+            - name: TTS_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: tts-server-secret
+                  key: auth-token
+                  optional: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3090
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3090
+            initialDelaySeconds: 3
+            periodSeconds: 10

@@ -1,0 +1,12 @@
+{
+  "name": "tts-server",
+  "version": "1.0.0",
+  "description": "On-demand Hume AI TTS server for Nest speakers",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0"
+  }
+}
