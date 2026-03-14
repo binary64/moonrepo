@@ -19,11 +19,6 @@ spec:
     spec:
       nodeSelector:
         kubernetes.io/hostname: vmi3137202
-      tolerations:
-        - key: node.kubernetes.io/storage
-          operator: Equal
-          value: "true"
-          effect: NoSchedule
       containers:
         - name: radio-dj
           image: ghcr.io/binary64/radio-dj:latest
