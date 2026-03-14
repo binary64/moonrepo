@@ -22,6 +22,7 @@ if (!TOKEN) {
 // Rate limiting — applied globally BEFORE auth so failed-auth requests are also limited
 // ---------------------------------------------------------------------------
 const commandRateLimiter = rateLimit({
+  skip: (req) => req.path === "/health",
   windowMs: 60_000, // 1 minute
   max: 30, // 30 requests per minute per IP
   standardHeaders: true,
