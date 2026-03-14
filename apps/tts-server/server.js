@@ -183,7 +183,7 @@ app.get('/play/:token', async (req, res) => {
       }, 5000);
     });
   } catch (err) {
-    console.error(`[${token}] Play error:`, err);
+    console.error('[play] error:', err.message);
     if (!res.headersSent) res.status(500).json({ error: 'Internal error' });
   }
 });
@@ -255,6 +255,6 @@ function sleep(ms) {
 // ─── Start ───
 app.listen(PORT, '0.0.0.0', () => {
   console.log('TTS Server listening on :%d', PORT);
-  console.log('Hume API key: configured (%d chars)', HUME_API_KEY.length);
+  console.log('Hume API key: %s', HUME_API_KEY ? 'configured' : 'MISSING');
   console.log('Auth: %s', AUTH_TOKEN ? 'enabled' : 'disabled');
 });
