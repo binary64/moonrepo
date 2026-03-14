@@ -42,15 +42,11 @@ spec:
                   key: token
                   optional: false
             - name: TV_ON_SCRIPT
-              value: /host-scripts/tv-on.sh
+              value: /app/scripts/tv-on.sh
             - name: TV_OFF_SCRIPT
-              value: /host-scripts/tv-off.sh
+              value: /app/scripts/tv-off.sh
             - name: TV_STATUS_SCRIPT
-              value: /host-scripts/tv-app-status.py
-          volumeMounts:
-            - name: host-scripts
-              mountPath: /host-scripts
-              readOnly: true
+              value: /app/scripts/tv-app-status.py
           resources:
             requests:
               cpu: 50m
@@ -70,8 +66,3 @@ spec:
               port: 3080
             initialDelaySeconds: 3
             periodSeconds: 10
-      volumes:
-        - name: host-scripts
-          hostPath:
-            path: /home/user/clawd/skills/chromecast/scripts
-            type: Directory
