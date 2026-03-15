@@ -54,7 +54,7 @@ spec:
                   key: icecast-admin-password
                   optional: false
             - name: TTS_SERVER_URL
-              value: "http://192.168.1.201:3090"
+              value: "http://127.0.0.1:3090"
             - name: TTS_AUTH_TOKEN
               valueFrom:
                 secretKeyRef:

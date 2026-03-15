@@ -19,13 +19,10 @@ spec:
     spec:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
+      imagePullSecrets:
+        - name: ghcr-pull
       nodeSelector:
-        node-role.kubernetes.io/master: "true"
-      tolerations:
-        - key: node-role.kubernetes.io/master
-          effect: NoSchedule
-        - key: node-role.kubernetes.io/control-plane
-          effect: NoSchedule
+        kubernetes.io/hostname: vmi3137202
       containers:
         - name: tts-server
           image: ghcr.io/binary64/tts-server:latest
