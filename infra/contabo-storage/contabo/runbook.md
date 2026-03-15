@@ -13,7 +13,7 @@ One-time setup after ordering. You start with root + password over SSH.
 # Then on the VPS:
 sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
 sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
-systemctl restart sshd
+systemctl restart ssh
 ```
 
 Verify you can still SSH in with your key before closing the session.
@@ -57,40 +57,16 @@ If your home IP changes (dynamic ISP), update the rules or consider a DDNS-based
 ## 3. Install Packages
 
 ```bash
-apt-get install -y nbd-server
+apt-get install -y nbd-server unzip htop curl wget ripgrep
 ```
 
 ## 4. Create Sparse Blockstore
 
 ```bash
-truncate -s 1.3T /srv/blockstore.img
+truncate -s 1T /srv/blockstore.img
 ls -lh /srv/blockstore.img
 ```
 
-This is sparse — it doesn't consume 1.3TB on disk until data is written.
-
-## 5. Configure NBD Server
-
-```bash
-mkdir -p /etc/nbd-server
-
-cat > /etc/nbd-server/config <<'EOF'
-[generic]
-  listenaddr = 0.0.0.0
-  port = 10809
-  allowlist = true
-
-[blockstore]
-  exportname = /srv/blockstore.img
-  flush = true
-  fua = true
-EOF
-
-systemctl enable --now nbd-server
-ss -tlnp | grep 10809   # verify it's listening
-```
-
-UFW handles access control — NBD listens on all interfaces but only your home IP can reach it.
 
 ## 6. Join RKE2 Cluster
 
@@ -106,9 +82,9 @@ server: https://<YOUR_HOME_IP>:9345
 token: <RKE2_TOKEN>
 node-label:
   - "topology.kubernetes.io/zone=contabo-portsmouth"
-  - "node-role.kubernetes.io/storage=true"
+  - "node.kubernetes.io/storage=true"
 node-taint:
-  - "node-role.kubernetes.io/storage=true:NoSchedule"
+  - "node.kubernetes.io/storage=true:NoSchedule"
 EOF
 
 systemctl enable --now rke2-agent
