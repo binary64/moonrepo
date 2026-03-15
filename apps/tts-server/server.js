@@ -201,12 +201,16 @@ async function generateTTS(token, job) {
   try {
     // Build Hume utterances array — each segment gets its own acting instructions
     const humeUtterances = job.utterances.map(u => {
-      const entry = {
-        text: u.text,
-        voice: u.voice
-          ? { name: u.voice, provider: 'CUSTOM_VOICE' }
-          : { ...DEFAULT_VOICE },
-      };
+      const entry = { text: u.text };
+      if (u.voice && typeof u.voice === 'object') {
+        // Pass voice object through as-is (e.g. {id: "..."} or {name: "...", provider: "..."})
+        entry.voice = u.voice;
+      } else if (u.voice && typeof u.voice === 'string') {
+        // String voice name → Hume custom voice lookup
+        entry.voice = { name: u.voice, provider: 'CUSTOM_VOICE' };
+      } else {
+        entry.voice = { ...DEFAULT_VOICE };
+      }
       if (u.acting) entry.description = u.acting;
       return entry;
     });
