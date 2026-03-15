@@ -1,0 +1,130 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: headscale-config
+  namespace: headscale
+  labels:
+    app.kubernetes.io/name: headscale
+data:
+  config.yaml: |
+    server_url: https://headscale.home.brandwhisper.cloud
+    listen_addr: 0.0.0.0:8080
+    metrics_listen_addr: 0.0.0.0:9090
+    grpc_listen_addr: 0.0.0.0:50443
+    grpc_allow_insecure: false
+
+    noise:
+      private_key_path: /var/lib/headscale/noise_private.key
+
+    prefixes:
+      v4: 100.64.0.0/10
+      v6: fd7a:115c:a1e0::/48
+      allocation: sequential
+
+    derp:
+      server:
+        enabled: true
+        region_id: 999
+        region_code: "home"
+        region_name: "Home Lab DERP"
+        verify_clients: true
+        stun_listen_addr: "0.0.0.0:3478"
+        private_key_path: /var/lib/headscale/derp_server_private.key
+        automatically_add_embedded_derp_region: true
+      urls:
+        - https://controlplane.tailscale.com/derpmap/default
+      paths: []
+      auto_update_enabled: true
+      update_frequency: 3h
+
+    disable_check_updates: true
+    ephemeral_node_inactivity_timeout: 30m
+
+    database:
+      type: sqlite
+      debug: false
+      gorm:
+        prepare_stmt: true
+        parameterized_queries: true
+        skip_err_record_not_found: true
+        slow_threshold: 1000
+      sqlite:
+        path: /var/lib/headscale/db.sqlite
+        write_ahead_log: true
+        wal_autocheckpoint: 1000
+
+    log:
+      level: info
+      format: text
+
+    policy:
+      mode: file
+      path: /etc/headscale/acl.json
+
+    dns:
+      magic_dns: true
+      base_domain: tail.home.brandwhisper.cloud
+      override_local_dns: false
+      nameservers:
+        global:
+          - 1.1.1.1
+          - 1.0.0.1
+        split: {}
+      search_domains: []
+      extra_records: []
+
+    unix_socket: /var/run/headscale/headscale.sock
+    unix_socket_permission: "0770"
+
+    # OIDC - Authentik SSO integration (configure after Authentik setup)
+    # oidc:
+    #   only_start_if_oidc_is_available: true
+    #   issuer: "https://authentik.home.brandwhisper.cloud/application/o/headscale/"
+    #   client_id: "headscale"
+    #   client_secret_path: "/etc/headscale/oidc-secret"
+    #   expiry: 180d
+    #   use_expiry_from_token: false
+    #   scope: ["openid", "profile", "email"]
+    #   email_verified_required: true
+
+  acl.json: |
+    {
+      "groups": {
+        "group:admin": ["admin"]
+      },
+      "tagOwners": {
+        "tag:server": ["group:admin"],
+        "tag:k8s": ["group:admin"],
+        "tag:monitor": ["group:admin"]
+      },
+      "acls": [
+        {
+          "action": "accept",
+          "src": ["group:admin"],
+          "dst": ["*:*"]
+        },
+        {
+          "action": "accept",
+          "src": ["tag:server"],
+          "dst": ["tag:server:*"]
+        },
+        {
+          "action": "accept",
+          "src": ["tag:k8s"],
+          "dst": ["tag:k8s:*"]
+        },
+        {
+          "action": "accept",
+          "src": ["tag:monitor"],
+          "dst": ["*:9090", "*:9100"]
+        }
+      ],
+      "ssh": [
+        {
+          "action": "accept",
+          "src": ["group:admin"],
+          "dst": ["tag:server"],
+          "users": ["autogroup:nonroot"]
+        }
+      ]
+    }

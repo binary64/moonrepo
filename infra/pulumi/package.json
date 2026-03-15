@@ -11,6 +11,6 @@
     "@pulumi/kubernetes": "^4"
   },
   "overrides": {
-    "tar": ">=7.5.8"
+    "tar": ">=7.5.10"
   }
 }
