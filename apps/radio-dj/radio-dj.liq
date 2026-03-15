@@ -105,13 +105,13 @@ end
 music_crossed = cross(duration=8., minimum=4., beat_crossfade,
   fallback(track_sensitive=false, [music, silence]))
 
-# ReplayGain normalization on music only (→ -20 LUFS) then -10dB → -30 LUFS target
+# ReplayGain normalization on music only (→ -20 LUFS) then -3dB for headroom
 music_normalized = amplify(1., override="replay_gain", music_crossed)
-music_quiet = amplify(0.316, music_normalized)  # -10dB = 10^(-10/20) ≈ 0.316 → -30 LUFS
+music_quiet = amplify(0.7, music_normalized)  # -3dB = 10^(-3/20) ≈ 0.7 → -23 LUFS
 
 # ─── TTS Voice Boost (per-DJ) ───
-arthur_boosted = amplify(1.7, queue_arthur)
-cara_boosted = amplify(1.4, queue_cara)
+arthur_boosted = amplify(3.0, queue_arthur)
+cara_boosted = amplify(2.5, queue_cara)
 
 # Merge both voice queues
 voices = add(normalize=false, [arthur_boosted, cara_boosted])
