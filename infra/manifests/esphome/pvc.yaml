@@ -1,0 +1,17 @@
+# PVC for ESPHome config directory.
+# Stores device YAML configs and compiled firmware cache.
+# Prune=false prevents ArgoCD from deleting data on app removal.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: esphome-config
+  namespace: esphome
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: local-path
