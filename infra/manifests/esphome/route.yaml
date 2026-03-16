@@ -10,6 +10,7 @@ spec:
   parentRefs:
   - name: gateway
     namespace: istio-system
+    sectionName: https
   hostnames:
   - "esphome.brandwhisper.cloud"
   rules:
