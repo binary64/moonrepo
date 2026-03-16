@@ -1,0 +1,67 @@
+# ESPHome Dashboard — web UI for managing ESP32 devices.
+# Compiles firmware for ESP32 Bluetooth proxy devices (BLE triangulation).
+# Runs on master node (NUC) for home LAN access to devices via OTA.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: esphome
+  namespace: esphome
+  labels:
+    app: esphome
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: esphome
+  template:
+    metadata:
+      labels:
+        app: esphome
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/master: "true"
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/control-plane
+          effect: NoSchedule
+      # Host networking for mDNS device discovery and OTA flashing on LAN
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+        - name: esphome
+          image: ghcr.io/esphome/esphome:2025.2.2
+          ports:
+            - containerPort: 6052
+              protocol: TCP
+          env:
+            - name: ESPHOME_DASHBOARD_USE_PING
+              value: "true"
+          volumeMounts:
+            - name: config
+              mountPath: /config
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 6052
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 6052
+            initialDelaySeconds: 10
+            periodSeconds: 10
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: esphome-config
