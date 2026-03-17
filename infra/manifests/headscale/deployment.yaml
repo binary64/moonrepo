@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: headscale
+  namespace: headscale
+  labels:
+    app.kubernetes.io/name: headscale
+    app.kubernetes.io/version: "0.28.0"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate  # SQLite doesn't support concurrent writers
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: headscale
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: headscale
+    spec:
+      serviceAccountName: headscale
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534    # nobody
+        runAsGroup: 65534
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: headscale
+          image: docker.io/headscale/headscale:0.28.0
+          args:
+            - serve
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+            - name: grpc
+              containerPort: 50443
+              protocol: TCP
+            - name: stun
+              containerPort: 3478
+              protocol: UDP
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+          volumeMounts:
+            - name: config
+              mountPath: /etc/headscale/config.yaml
+              subPath: config.yaml
+              readOnly: true
+            - name: config
+              mountPath: /etc/headscale/acl.json
+              subPath: acl.json
+              readOnly: true
+            - name: data
+              mountPath: /var/lib/headscale
+            - name: run
+              mountPath: /var/run/headscale
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: config
+          configMap:
+            name: headscale-config
+        - name: data
+          persistentVolumeClaim:
+            claimName: headscale-data
+        - name: run
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}

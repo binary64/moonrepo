@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: headscale
+  namespace: headscale
+  labels:
+    app.kubernetes.io/name: headscale
+spec:
+  selector:
+    app.kubernetes.io/name: headscale
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+    - name: metrics
+      port: 9090
+      targetPort: 9090
+      protocol: TCP
+    - name: grpc
+      port: 50443
+      targetPort: 50443
+      protocol: TCP
+---
+# STUN needs UDP — exposed via a separate service
+apiVersion: v1
+kind: Service
+metadata:
+  name: headscale-stun
+  namespace: headscale
+  labels:
+    app.kubernetes.io/name: headscale
+spec:
+  type: NodePort
+  selector:
+    app.kubernetes.io/name: headscale
+  ports:
+    - name: stun
+      port: 3478
+      targetPort: 3478
+      protocol: UDP
