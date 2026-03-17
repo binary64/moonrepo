@@ -39,6 +39,8 @@ data:
       success_callback: []
       # Max tokens guard
       max_tokens: 36384
+      # Custom callbacks (Anthropic OAuth hook)
+      callbacks: hooks.proxy_handler_instance
 
     model_list:
       # ══════════════════════════════════════════
@@ -105,16 +107,6 @@ data:
       # ══════════════════════════════════════════
       # Google Gemini 3 Series — API PRICING
       # ══════════════════════════════════════════
-      - model_name: gemini-3-pro-preview
-        litellm_params:
-          model: gemini/gemini-3-pro-preview
-          api_key: os.environ/GEMINI_API_KEY
-        model_info:
-          # $2.00 / $12.00 per 1M (<=200k context)
-          # DEPRECATED: shutting down March 9, 2026 — migrate to 3.1 Pro
-          input_cost_per_token: 0.000002
-          output_cost_per_token: 0.000012
-
       - model_name: gemini-3-flash-preview
         litellm_params:
           model: gemini/gemini-3-flash-preview
@@ -123,17 +115,6 @@ data:
           # $0.50 / $3.00 per 1M
           input_cost_per_token: 0.0000005
           output_cost_per_token: 0.000003
-
-      - model_name: gemini-3-pro-image-preview
-        litellm_params:
-          model: gemini/gemini-3-pro-image-preview
-          api_key: os.environ/GEMINI_API_KEY
-        model_info:
-          # Nano Banana Pro — image generation model
-          # Text: $2.00 / $12.00 per 1M (same as 3 Pro). Images: $120.00 per 1M output tokens
-          # DEPRECATED: shutting down March 9, 2026 — migrate to 3.1 Flash Image
-          input_cost_per_token: 0.000002
-          output_cost_per_token: 0.000012
 
       # ══════════════════════════════════════════
       # Google Gemini 3.1 Series — API PRICING
@@ -210,23 +191,27 @@ data:
     traditional API key auth approach.
     """
     import os
+    from litellm.integrations.custom_logger import CustomLogger
 
-    async def async_pre_call_hook(self, user_api_key_dict, cache, data, call_type):
-        """
-        Runs before provider request. Mutate headers / auth here.
-        Only applies to Anthropic models.
-        """
-        model = data.get("model", "")
-        if not model.startswith("anthropic/"):
-            return data
+    class AnthropicOAuthHook(CustomLogger):
+        async def async_pre_call_hook(self, user_api_key_dict, cache, data, call_type):
+            """
+            Runs before provider request. Mutate headers / auth here.
+            Only applies to Anthropic models.
+            """
+            model = data.get("model", "")
+            if not model.startswith("anthropic/"):
+                return data
 
-        headers = data.get("headers") or {}
-        headers["Authorization"] = f"Bearer {os.environ['OAUTH_TOKEN']}"
-        headers["anthropic-version"] = "2023-06-01"
-        headers["anthropic-beta"] = "oauth-2025-04-20"
-        data["headers"] = headers
+            headers = data.get("headers") or {}
+            headers["Authorization"] = f"Bearer {os.environ['OAUTH_TOKEN']}"
+            headers["anthropic-version"] = "2023-06-01"
+            headers["anthropic-beta"] = "oauth-2025-04-20"
+            data["headers"] = headers
 
-        # Strip API key so we don't send both OAuth and key auth
-        litellm_params = data.get("litellm_params") or {}
-        litellm_params.pop("api_key", None)
-        data["litellm_params"] = litellm_params
+            # Strip API key so we don't send both OAuth and key auth
+            litellm_params = data.get("litellm_params") or {}
+            litellm_params.pop("api_key", None)
+            data["litellm_params"] = litellm_params
+
+    proxy_handler_instance = AnthropicOAuthHook()
