@@ -1,0 +1,31 @@
+esphome:
+  name: triang1
+  friendly_name: triang1
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+api:
+  encryption:
+    key: "YulI/KNfLvb0VKiLbNhqCdJCnHttd50K1XF0SwNJ5Tg="
+
+ota:
+  - platform: esphome
+    password: "b8a2909e998eb9e171c6b57748b13099"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+logger:
+
+esp32_ble_tracker:
+  scan_parameters:
+    interval: 1200ms
+    window: 800ms
+    active: false
+
+bluetooth_proxy:
+  active: true
