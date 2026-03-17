@@ -17,6 +17,8 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: litellm-postgres
+      annotations:
+        ambient.istio.io/redirection: disabled
     spec:
       containers:
         - name: postgres
