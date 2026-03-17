@@ -203,15 +203,15 @@ data:
             if not model.startswith("anthropic/"):
                 return data
 
-            headers = data.get("headers") or {}
-            headers["Authorization"] = f"Bearer {os.environ['OAUTH_TOKEN']}"
-            headers["anthropic-version"] = "2023-06-01"
-            headers["anthropic-beta"] = "oauth-2025-04-20"
-            data["headers"] = headers
+            extra_headers = data.get("extra_headers") or {}
+            extra_headers["Authorization"] = f"Bearer {os.environ['OAUTH_TOKEN']}"
+            extra_headers["anthropic-version"] = "2023-06-01"
+            extra_headers["anthropic-beta"] = "oauth-2025-04-20"
+            data["extra_headers"] = extra_headers
 
-            # Strip API key so we don't send both OAuth and key auth
-            litellm_params = data.get("litellm_params") or {}
-            litellm_params.pop("api_key", None)
-            data["litellm_params"] = litellm_params
+            # Clear API key so we don't send both OAuth and key auth
+            data["api_key"] = ""
+
+            return data
 
     proxy_handler_instance = AnthropicOAuthHook()
