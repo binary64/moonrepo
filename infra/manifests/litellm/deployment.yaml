@@ -18,6 +18,8 @@ spec:
         app.kubernetes.io/name: litellm
         app.kubernetes.io/instance: litellm
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: vmi3137202
       initContainers:
         # Wait for PostgreSQL to be reachable before starting LiteLLM.
         # Prisma's Rust engine has DNS issues on wolfi-based images (BerriAI/litellm#16190),
