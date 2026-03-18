@@ -234,7 +234,8 @@ ingress:
   enabled: false
 
 # ── Extra resources ───────────────────────────────────────────────────────
-# Resources rendered alongside the chart (Istio HTTPRoute + hooks ConfigMap)
+# Istio HTTPRoute only — litellm-hooks ConfigMap lives in infra/manifests/litellm/
+# so it's always present before the pre-sync migration Job runs.
 extraResources:
   - apiVersion: gateway.networking.k8s.io/v1
     kind: HTTPRoute
@@ -255,36 +256,3 @@ extraResources:
           backendRefs:
             - name: litellm
               port: 4000
-
-  - apiVersion: v1
-    kind: ConfigMap
-    metadata:
-      name: litellm-hooks
-      namespace: litellm
-      labels:
-        app.kubernetes.io/name: litellm
-        app.kubernetes.io/instance: litellm
-    data:
-      hooks.py: |
-        """
-        Anthropic OAuth pre-call hook for LiteLLM Proxy.
-        Injects OAuth headers for Anthropic API calls.
-        """
-        import os
-        from litellm.integrations.custom_logger import CustomLogger
-
-        class AnthropicOAuthHook(CustomLogger):
-            async def async_pre_call_hook(self, user_api_key_dict, cache, data, call_type):
-                model = data.get("model", "")
-                if not model.startswith("anthropic/"):
-                    return data
-
-                extra_headers = data.get("extra_headers") or {}
-                extra_headers["Authorization"] = f"Bearer {os.environ['OAUTH_TOKEN']}"
-                extra_headers["anthropic-version"] = "2023-06-01"
-                extra_headers["anthropic-beta"] = "oauth-2025-04-20"
-                data["extra_headers"] = extra_headers
-                data["api_key"] = ""
-                return data
-
-        proxy_handler_instance = AnthropicOAuthHook()
