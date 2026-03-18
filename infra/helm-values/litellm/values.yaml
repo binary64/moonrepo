@@ -46,13 +46,17 @@ db:
 # Run prisma migrate deploy as an ArgoCD pre-sync hook Job.
 # Co-located on Jupiter so the Rust prisma engine can reach CNPG postgres.
 migrationJob:
-  enabled: true
+  # Disabled: CNPG cluster (litellm-pg) must be Running before migrations work.
+  # ArgoCD pre-sync hooks run before resources are applied, creating a deadlock
+  # when CNPG hasn't provisioned postgres yet. Once litellm-pg is healthy,
+  # re-enable this and the Job will run on next sync.
+  enabled: false
   retries: 3
   backoffLimit: 4
   ttlSecondsAfterFinished: 120
   hooks:
     argocd:
-      enabled: true   # creates a Job with argocd.argoproj.io/hook: PreSync
+      enabled: false
     helm:
       enabled: false
 
