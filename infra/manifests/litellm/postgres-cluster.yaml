@@ -18,8 +18,12 @@ metadata:
 spec:
   instances: 1
 
-  nodeSelector:
-    kubernetes.io/hostname: vmi3137202
+  # Pin to Jupiter (vmi3137202) — co-located with litellm to avoid cross-node
+  # Calico+VXLAN TX checksum offload bug that breaks Rust/tokio TCP connections.
+  # CNPG uses spec.affinity.nodeSelector, not spec.nodeSelector.
+  affinity:
+    nodeSelector:
+      kubernetes.io/hostname: vmi3137202
 
   postgresql:
     pg_hba:
