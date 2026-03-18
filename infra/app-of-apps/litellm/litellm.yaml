@@ -7,10 +7,27 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-  source:
-    repoURL: https://github.com/binary64/moonrepo.git
-    targetRevision: master
-    path: infra/manifests/litellm
+
+  # Multi-source: official Helm chart + git values file + raw manifests (CNPG cluster)
+  sources:
+    # 1. Official LiteLLM Helm chart with values from git
+    - repoURL: https://berriai.github.io/litellm
+      chart: litellm-helm
+      targetRevision: "0.2.3"
+      helm:
+        valueFiles:
+          - $values/infra/helm-values/litellm/values.yaml
+
+    # 2. Values file reference (git)
+    - repoURL: https://github.com/binary64/moonrepo.git
+      targetRevision: master
+      ref: values
+
+    # 3. Raw manifests: CNPG Cluster only
+    #    (Deployment + Service come from Helm; HTTPRoute + hooks ConfigMap via extraResources)
+    - repoURL: https://github.com/binary64/moonrepo.git
+      targetRevision: master
+      path: infra/manifests/litellm
 
   ignoreDifferences:
     - group: ""

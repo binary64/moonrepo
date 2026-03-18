@@ -1,0 +1,288 @@
+## LiteLLM Helm chart values for binary64/moonrepo
+## Chart: https://berriai.github.io/litellm  (litellm-helm 0.2.3)
+## Docs:  https://docs.litellm.ai/docs/proxy/configs
+
+replicaCount: 1
+
+image:
+  # Non-database variant — we use CNPG for postgres and run migrations ourselves
+  repository: litellm/litellm
+  tag: "v1.82.3-stable"
+  pullPolicy: IfNotPresent
+
+# Pin to Jupiter (vmi3137202) — CNPG postgres cluster is also on Jupiter.
+# Keeps Prisma Rust/tokio engine co-located to avoid Calico+VXLAN TX checksum
+# offload bug that breaks cross-node Rust async TCP.
+nodeSelector:
+  kubernetes.io/hostname: vmi3137202
+
+# ── Secrets & env ──────────────────────────────────────────────────────────
+# Inject litellm-env secret keys as env vars (LITELLM_MASTER_KEY, OAUTH_TOKEN,
+# ANTHROPIC_API_KEY, ANTHROPIC_OAUTH_TOKEN, GEMINI_API_KEY, ZAI_API_KEY, etc.)
+environmentSecrets:
+  - litellm-env
+
+extraEnvVars:
+  # DATABASE_URL from CNPG-generated secret
+  - name: DATABASE_URL
+    valueFrom:
+      secretKeyRef:
+        name: litellm-pg-app
+        key: uri
+  # hooks.py lives at /etc/litellm/hooks.py (mounted via extraVolumes below)
+  - name: PYTHONPATH
+    value: "/etc/litellm"
+
+# ── Postgres ───────────────────────────────────────────────────────────────
+# Don't deploy the chart's bundled postgres — we use a CloudNativePG Cluster
+# (litellm-pg) defined in infra/manifests/litellm/postgres-cluster.yaml
+db:
+  deployStandalone: false
+  useExisting: true
+
+# ── Migration job ──────────────────────────────────────────────────────────
+# Run prisma migrate deploy as an ArgoCD pre-sync hook Job.
+# Co-located on Jupiter so the Rust prisma engine can reach CNPG postgres.
+migrationJob:
+  enabled: true
+  retries: 3
+  backoffLimit: 4
+  ttlSecondsAfterFinished: 120
+  hooks:
+    argocd:
+      enabled: true   # creates a Job with argocd.argoproj.io/hook: PreSync
+    helm:
+      enabled: false
+
+# ── Config ─────────────────────────────────────────────────────────────────
+# The chart renders proxy_config as a ConfigMap (key: config.yaml) and mounts
+# it at the default config path.  proxyConfigMap.create: true (default).
+proxy_config:
+  general_settings:
+    master_key: os.environ/LITELLM_MASTER_KEY
+    max_parallel_requests: 2
+    global_max_parallel_requests: 6
+    allow_requests_on_unmatched_routes: false
+    forward_client_headers_to_llm_api: false
+    store_model_in_db: true
+    store_prompts_in_spend_logs: true
+
+  litellm_settings:
+    drop_params: true
+    request_timeout: 300
+    success_callback: []
+    max_tokens: 36384
+    callbacks: hooks.proxy_handler_instance
+
+  model_list:
+    # ── Anthropic (Claude Max — shadow pricing at 0.10×) ──────────────────
+    - model_name: claude-opus-4-6
+      litellm_params:
+        model: anthropic/claude-opus-4-6
+      model_info:
+        input_cost_per_token: 0.00000050
+        output_cost_per_token: 0.00000250
+        cache_read_input_token_cost: 0.0
+        cache_creation_input_token_cost: 0.0
+        max_input_tokens: 188000
+        max_output_tokens: 29999
+        max_tokens: 200000
+        supports_assistant_prefill: true
+        supports_function_calling: true
+        supports_pdf_input: true
+        supports_prompt_caching: true
+        supports_vision: true
+
+    - model_name: claude-sonnet-4-6
+      litellm_params:
+        model: anthropic/claude-sonnet-4-6
+      model_info:
+        input_cost_per_token: 0.00000030
+        output_cost_per_token: 0.00000150
+        cache_read_input_token_cost: 0.0
+        cache_creation_input_token_cost: 0.0
+        max_input_tokens: 188000
+        max_output_tokens: 29999
+        max_tokens: 200000
+        supports_assistant_prefill: true
+        supports_function_calling: true
+        supports_pdf_input: true
+        supports_prompt_caching: true
+        supports_vision: true
+
+    - model_name: claude-haiku-4-5
+      litellm_params:
+        model: anthropic/claude-haiku-4-5
+      model_info:
+        input_cost_per_token: 0.00000010
+        output_cost_per_token: 0.00000050
+        cache_read_input_token_cost: 0.0
+        cache_creation_input_token_cost: 0.0
+        max_input_tokens: 188000
+        max_output_tokens: 29999
+        max_tokens: 200000
+        supports_assistant_prefill: true
+        supports_function_calling: true
+        supports_pdf_input: true
+        supports_prompt_caching: true
+        supports_vision: true
+
+    # ── Google Gemini 3 ────────────────────────────────────────────────────
+    - model_name: gemini-3-flash-preview
+      litellm_params:
+        model: gemini/gemini-3-flash-preview
+        api_key: os.environ/GEMINI_API_KEY
+      model_info:
+        input_cost_per_token: 0.0000005
+        output_cost_per_token: 0.000003
+
+    # ── Google Gemini 3.1 ──────────────────────────────────────────────────
+    - model_name: gemini-3.1-pro-preview
+      litellm_params:
+        model: gemini/gemini-3.1-pro-preview
+        api_key: os.environ/GEMINI_API_KEY
+      model_info:
+        input_cost_per_token: 0.000002
+        output_cost_per_token: 0.000012
+
+    - model_name: gemini-3.1-flash-lite-preview
+      litellm_params:
+        model: gemini/gemini-3.1-flash-lite-preview
+        api_key: os.environ/GEMINI_API_KEY
+      model_info:
+        input_cost_per_token: 0.00000025
+        output_cost_per_token: 0.0000015
+
+    - model_name: gemini-3.1-flash-image-preview
+      litellm_params:
+        model: gemini/gemini-3.1-flash-image-preview
+        api_key: os.environ/GEMINI_API_KEY
+      model_info:
+        input_cost_per_token: 0.0000005
+        output_cost_per_token: 0.000003
+
+    # ── ZAI / GLM (Coding Plan Max — shadow pricing) ───────────────────────
+    - model_name: glm-5
+      litellm_params:
+        model: zai/glm-5
+        api_key: os.environ/ZAI_API_KEY
+        api_base: https://api.z.ai/api/coding/paas/v4
+      model_info:
+        input_cost_per_token: 0.00000001
+        output_cost_per_token: 0.00000001
+
+    - model_name: glm-4.7
+      litellm_params:
+        model: zai/glm-4.7
+        api_key: os.environ/ZAI_API_KEY
+        api_base: https://api.z.ai/api/coding/paas/v4
+      model_info:
+        input_cost_per_token: 0.00000001
+        output_cost_per_token: 0.00000001
+
+# ── Hooks volume ───────────────────────────────────────────────────────────
+# Mount hooks.py (Anthropic OAuth callback) from the litellm-hooks ConfigMap
+# at /etc/litellm/hooks.py so PYTHONPATH can import it.
+volumes:
+  - name: hooks
+    configMap:
+      name: litellm-hooks
+
+volumeMounts:
+  - name: hooks
+    mountPath: /etc/litellm/hooks.py
+    subPath: hooks.py
+    readOnly: true
+
+# ── Service ────────────────────────────────────────────────────────────────
+service:
+  type: ClusterIP
+  port: 4000
+
+# ── Resources ─────────────────────────────────────────────────────────────
+resources:
+  requests:
+    cpu: 200m
+    memory: 512Mi
+  limits:
+    memory: 2Gi
+
+# ── Probes ────────────────────────────────────────────────────────────────
+startupProbe:
+  path: /health/readiness
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  failureThreshold: 30
+
+livenessProbe:
+  path: /health/liveliness
+  initialDelaySeconds: 0
+  periodSeconds: 10
+  failureThreshold: 3
+
+readinessProbe:
+  path: /health/readiness
+  initialDelaySeconds: 0
+  periodSeconds: 10
+  failureThreshold: 3
+
+# ── Ingress ───────────────────────────────────────────────────────────────
+# Disabled — we use an Istio HTTPRoute instead (see extraResources below)
+ingress:
+  enabled: false
+
+# ── Extra resources ───────────────────────────────────────────────────────
+# Resources rendered alongside the chart (Istio HTTPRoute + hooks ConfigMap)
+extraResources:
+  - apiVersion: gateway.networking.k8s.io/v1
+    kind: HTTPRoute
+    metadata:
+      name: litellm
+      namespace: litellm
+    spec:
+      parentRefs:
+        - name: gateway
+          namespace: istio-system
+      hostnames:
+        - "llm.brandwhisper.cloud"
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /
+          backendRefs:
+            - name: litellm
+              port: 4000
+
+  - apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: litellm-hooks
+      namespace: litellm
+      labels:
+        app.kubernetes.io/name: litellm
+        app.kubernetes.io/instance: litellm
+    data:
+      hooks.py: |
+        """
+        Anthropic OAuth pre-call hook for LiteLLM Proxy.
+        Injects OAuth headers for Anthropic API calls.
+        """
+        import os
+        from litellm.integrations.custom_logger import CustomLogger
+
+        class AnthropicOAuthHook(CustomLogger):
+            async def async_pre_call_hook(self, user_api_key_dict, cache, data, call_type):
+                model = data.get("model", "")
+                if not model.startswith("anthropic/"):
+                    return data
+
+                extra_headers = data.get("extra_headers") or {}
+                extra_headers["Authorization"] = f"Bearer {os.environ['OAUTH_TOKEN']}"
+                extra_headers["anthropic-version"] = "2023-06-01"
+                extra_headers["anthropic-beta"] = "oauth-2025-04-20"
+                data["extra_headers"] = extra_headers
+                data["api_key"] = ""
+                return data
+
+        proxy_handler_instance = AnthropicOAuthHook()
