@@ -1,0 +1,35 @@
+# CloudNativePG Cluster for LiteLLM
+#
+# Replaces the hand-rolled postgres Deployment + Service + PVC.
+# CNPG auto-creates:
+#   - Secret "litellm-pg-app" with keys: uri, username, password, host, port, dbname
+#   - Service "litellm-pg-rw" (read-write endpoint)
+#
+# Co-located on Jupiter (vmi3137202) with the litellm pod to avoid the
+# Calico+VXLAN TX checksum offload bug that breaks cross-node Prisma connections.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: litellm-pg
+  namespace: litellm
+  labels:
+    app.kubernetes.io/name: litellm-postgres
+    app.kubernetes.io/instance: litellm
+spec:
+  instances: 1
+
+  nodeSelector:
+    kubernetes.io/hostname: vmi3137202
+
+  postgresql:
+    pg_hba:
+      - host all all all scram-sha-256
+
+  bootstrap:
+    initdb:
+      database: litellm
+      owner: litellm
+
+  storage:
+    size: 2Gi
+    storageClass: local-path
