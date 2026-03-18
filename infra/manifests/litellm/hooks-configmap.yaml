@@ -22,7 +22,7 @@ data:
                 return data
 
             extra_headers = data.get("extra_headers") or {}
-            extra_headers["Authorization"] = f"Bearer {os.environ['OAUTH_TOKEN']}"
+            extra_headers["Authorization"] = f"Bearer {os.environ['ANTHROPIC_OAUTH_TOKEN']}"
             extra_headers["anthropic-version"] = "2023-06-01"
             extra_headers["anthropic-beta"] = "oauth-2025-04-20"
             data["extra_headers"] = extra_headers
