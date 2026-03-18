@@ -131,7 +131,7 @@ spec:
               mountPath: /etc/litellm
               readOnly: true
             - name: hooks
-              mountPath: /hooks/hooks.py
+              mountPath: /etc/litellm/hooks.py
               subPath: hooks.py
               readOnly: true
       volumes:
