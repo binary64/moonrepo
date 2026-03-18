@@ -8,17 +8,19 @@ metadata:
 spec:
   project: default
 
-  # Multi-source: official Helm chart + git values file + raw manifests (CNPG cluster)
+  # Multi-source: chart from upstream git + our values from git + raw manifests (CNPG cluster)
   sources:
-    # 1. Official LiteLLM Helm chart with values from git
-    - repoURL: https://berriai.github.io/litellm
-      chart: litellm-helm
-      targetRevision: "0.2.3"
+    # 1. LiteLLM Helm chart pulled directly from BerriAI's git repo.
+    #    The published Helm repo (berriai.github.io/litellm) has a broken index —
+    #    it references a tgz that returns 404.  Pulling from git is more reliable.
+    - repoURL: https://github.com/BerriAI/litellm.git
+      targetRevision: v1.82.3-stable
+      path: deploy/charts/litellm-helm
       helm:
         valueFiles:
           - $values/infra/helm-values/litellm/values.yaml
 
-    # 2. Values file reference (git)
+    # 2. Values file reference (our git)
     - repoURL: https://github.com/binary64/moonrepo.git
       targetRevision: master
       ref: values
