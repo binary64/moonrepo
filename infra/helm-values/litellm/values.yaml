@@ -35,10 +35,12 @@ extraEnvVars:
 
 # ── Postgres ───────────────────────────────────────────────────────────────
 # Don't deploy the chart's bundled postgres — we use a CloudNativePG Cluster
-# (litellm-pg) defined in infra/manifests/litellm/postgres-cluster.yaml
+# (litellm-pg) defined in infra/manifests/litellm/postgres-cluster.yaml.
+# Both deployStandalone and useExisting are false so the chart does NOT inject
+# DATABASE_URL itself — we inject it via extraEnvVars from the CNPG secret.
 db:
   deployStandalone: false
-  useExisting: true
+  useExisting: false
 
 # ── Migration job ──────────────────────────────────────────────────────────
 # Run prisma migrate deploy as an ArgoCD pre-sync hook Job.
