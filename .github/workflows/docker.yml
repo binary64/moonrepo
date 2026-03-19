@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       app:
-        description: 'App to build (e.g. tts-server, lan-bridge). Leave empty for all changed.'
+        description: 'App to build (e.g. tts-server). Leave empty for all changed.'
         required: false
         type: string
 
