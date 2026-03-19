@@ -21,7 +21,13 @@ data:
             if not model.startswith("anthropic/"):
                 return data
 
+            # Scrub extra_headers first to remove any leaking API key headers
             extra_headers = data.get("extra_headers") or {}
+            for key in list(extra_headers.keys()):
+                if key.lower() in ("x-api-key", "x-litellm-api-key", "authorization", "anthropic-api-key"):
+                    del extra_headers[key]
+            
+            # Now set OAuth headers
             extra_headers["Authorization"] = f"Bearer {os.environ['ANTHROPIC_OAUTH_TOKEN']}"
             extra_headers["anthropic-version"] = "2023-06-01"
             extra_headers["anthropic-beta"] = "oauth-2025-04-20"
@@ -34,7 +40,7 @@ data:
             # Remove any x-api-key style headers from the request
             headers = data.get("headers") or {}
             for key in list(headers.keys()):
-                if key.lower() in ("x-api-key", "x-litellm-api-key", "authorization"):
+                if key.lower() in ("x-api-key", "x-litellm-api-key", "authorization", "anthropic-api-key"):
                     del headers[key]
             data["headers"] = headers
             
