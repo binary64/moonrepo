@@ -20,6 +20,47 @@ spec:
         app.kubernetes.io/name: zeroclaw
         app.kubernetes.io/instance: zeroclaw
     spec:
+      # Bootstrap the config dir on first start.
+      # The PVC mounts at /zeroclaw-data and shadows the image's baked-in config.
+      # This initContainer seeds .zeroclaw/config.toml + workspace/ if they are absent,
+      # then exits — the main container starts with a valid config every time.
+      initContainers:
+        - name: init-config
+          image: "busybox:1.37"
+          imagePullPolicy: IfNotPresent
+          command:
+            - "/bin/sh"
+            - "-c"
+            - |
+              set -e
+              CONFIG_DIR="/zeroclaw-data/.zeroclaw"
+              CONFIG_FILE="$CONFIG_DIR/config.toml"
+              WORKSPACE="/zeroclaw-data/workspace"
+              if [ ! -f "$CONFIG_FILE" ]; then
+                mkdir -p "$CONFIG_DIR" "$WORKSPACE"
+                cat > "$CONFIG_FILE" <<'TOML'
+              workspace_dir = "/zeroclaw-data/workspace"
+              api_key = ""
+              default_provider = "openrouter"
+              default_model = "anthropic/claude-sonnet-4-20250514"
+              default_temperature = 0.7
+
+              [gateway]
+              port = 42617
+              host = "[::]"
+              allow_public_bind = true
+              TOML
+                # Ensure ZeroClaw (UID/GID 65534) owns all seeded paths and
+                # config.toml is only readable by its owner.
+                chown -R 65534:65534 "$CONFIG_DIR" "$WORKSPACE"
+                chmod 600 "$CONFIG_FILE"
+                echo "init-config: seeded $CONFIG_FILE (owned by 65534)"
+              else
+                echo "init-config: $CONFIG_FILE already exists, skipping"
+              fi
+          volumeMounts:
+            - name: zeroclaw-data
+              mountPath: /zeroclaw-data
       containers:
         - name: zeroclaw
           # TODO: pin to a release digest once upstream publishes versioned tags
@@ -32,6 +73,11 @@ spec:
               value: "true"
             - name: ZEROCLAW_GATEWAY_PORT
               value: "42617"
+            # Point config resolution at the PVC so the daemon persists state across restarts
+            - name: ZEROCLAW_CONFIG_DIR
+              value: "/zeroclaw-data/.zeroclaw"
+            - name: HOME
+              value: "/zeroclaw-data"
             # LiteLLM proxy — OpenAI-compatible endpoint in-cluster
             # ZeroClaw's "custom:" prefix routes to any OpenAI-compat API
             - name: PROVIDER
@@ -51,14 +97,14 @@ spec:
           livenessProbe:
             exec:
               command: ["zeroclaw", "status"]
-            initialDelaySeconds: 15
+            initialDelaySeconds: 30
             periodSeconds: 60
             timeoutSeconds: 10
             failureThreshold: 3
           readinessProbe:
             exec:
               command: ["zeroclaw", "status"]
-            initialDelaySeconds: 10
+            initialDelaySeconds: 20
             periodSeconds: 30
             timeoutSeconds: 10
             failureThreshold: 3
