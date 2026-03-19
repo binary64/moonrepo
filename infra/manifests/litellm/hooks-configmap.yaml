@@ -26,7 +26,18 @@ data:
             extra_headers["anthropic-version"] = "2023-06-01"
             extra_headers["anthropic-beta"] = "oauth-2025-04-20"
             data["extra_headers"] = extra_headers
+            
+            # Clear any API key fields that might leak
             data["api_key"] = ""
+            data["anthropic_api_key"] = ""
+            
+            # Remove any x-api-key style headers from the request
+            headers = data.get("headers") or {}
+            for key in list(headers.keys()):
+                if key.lower() in ("x-api-key", "x-litellm-api-key", "authorization"):
+                    del headers[key]
+            data["headers"] = headers
+            
             return data
 
     proxy_handler_instance = AnthropicOAuthHook()
