@@ -90,7 +90,7 @@ data:
   acl.json: |
     {
       "groups": {
-        "group:admin": ["admin"]
+        "group:admin": ["admin@headscale.home.brandwhisper.cloud"]
       },
       "tagOwners": {
         "tag:server": ["group:admin"],
