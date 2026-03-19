@@ -50,7 +50,11 @@ spec:
               host = "[::]"
               allow_public_bind = true
               TOML
-                echo "init-config: seeded $CONFIG_FILE"
+                # Ensure ZeroClaw (UID/GID 65534) owns all seeded paths and
+                # config.toml is only readable by its owner.
+                chown -R 65534:65534 "$CONFIG_DIR" "$WORKSPACE"
+                chmod 600 "$CONFIG_FILE"
+                echo "init-config: seeded $CONFIG_FILE (owned by 65534)"
               else
                 echo "init-config: $CONFIG_FILE already exists, skipping"
               fi
