@@ -15,31 +15,29 @@ spec:
         authentik:
           secret_key: "CHANGE_ME_USE_SEALED_SECRET"
           postgresql:
-            # Connect to the CloudNativePG cluster
-            # The CNPG cluster chart creates a service named: <release-name>-rw
-            host: "authentik-postgres-cluster-rw"
+            host: "authentik-pg-rw"
             port: 5432
-            database: "app"
-            user: "app"
-            # Password is loaded from CNPG-generated secret via environment variable
-            # See server.env and worker.env below
-        
-        # Load PostgreSQL password from CNPG-generated secret
-        # CNPG creates a secret named <cluster-name>-app with username and password keys
+            database: "authentik"
+            user: "authentik"
+
         server:
+          nodeSelector:
+            kubernetes.io/hostname: vmi3137202
           env:
             - name: AUTHENTIK_POSTGRESQL__PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: authentik-postgres-cluster-app
+                  name: authentik-pg-app
                   key: password
-        
+
         worker:
+          nodeSelector:
+            kubernetes.io/hostname: vmi3137202
           env:
             - name: AUTHENTIK_POSTGRESQL__PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: authentik-postgres-cluster-app
+                  name: authentik-pg-app
                   key: password
 
   destination:

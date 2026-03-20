@@ -11,38 +11,10 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://cloudnative-pg.github.io/charts/
-    chart: cluster
-    targetRevision: 0.5.0
-    helm:
-      values: |
-        # CloudNativePG Cluster configuration
-        # See: https://github.com/cloudnative-pg/charts/tree/main/charts/cluster
-        
-        type: postgresql
-        
-        mode: standalone
-        
-        cluster:
-          name: authentik-postgresql
-          instances: 1
-          
-          # PostgreSQL image will be auto-selected based on type
-          imageName: ""
-          
-          storage:
-            size: 8Gi
-            storageClass: ""
-          
-          walStorage:
-            enabled: false
-        
-        # Backups configuration (disabled for now)
-        backups:
-          enabled: false
-        
-        externalClusters: []
-  
+    repoURL: https://github.com/binary64/moonrepo.git
+    targetRevision: HEAD
+    path: infra/manifests/authentik
+
   destination:
     server: https://kubernetes.default.svc
     namespace: authentik
@@ -55,8 +27,8 @@ spec:
       - CreateNamespace=true
       - ServerSideApply=true
     retry:
-      limit: 225
+      limit: 5
       backoff:
         duration: 5s
         factor: 2
-        maxDuration: 31m
+        maxDuration: 3m
