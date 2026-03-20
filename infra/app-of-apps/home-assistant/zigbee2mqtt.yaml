@@ -60,6 +60,9 @@ spec:
           port: 8080
 
         statefulset:
+          podAnnotations:
+            traffic.sidecar.istio.io/excludeOutboundPorts: "1883"
+
           storage:
             enabled: true
             size: 10Gi
