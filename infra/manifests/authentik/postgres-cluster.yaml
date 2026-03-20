@@ -1,0 +1,35 @@
+# CloudNativePG Cluster for Authentik
+#
+# CNPG auto-creates:
+#   - Secret "authentik-pg-app" with keys: uri, username, password, host, port, dbname
+#   - Service "authentik-pg-rw" (read-write endpoint)
+#
+# Pinned to Jupiter (vmi3137202) for storage and to co-locate with authentik pods.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: authentik-pg
+  namespace: authentik
+  labels:
+    app.kubernetes.io/name: authentik-postgres
+    app.kubernetes.io/instance: authentik
+spec:
+  instances: 1
+
+  # Pin to Jupiter (vmi3137202)
+  affinity:
+    nodeSelector:
+      kubernetes.io/hostname: vmi3137202
+
+  postgresql:
+    pg_hba:
+      - host all all all scram-sha-256
+
+  bootstrap:
+    initdb:
+      database: authentik
+      owner: authentik
+
+  storage:
+    size: 4Gi
+    storageClass: local-path
