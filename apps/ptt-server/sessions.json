@@ -1,0 +1,42 @@
+[
+  {
+    "id": "james",
+    "label": "Arthur",
+    "sessionKey": "agent:main:telegram:direct:james",
+    "color": "#0D47A1",
+    "icon": "🗡️",
+    "model": "opus"
+  },
+  {
+    "id": "smarthome",
+    "label": "Home",
+    "sessionKey": "agent:main:telegram:group:-5297868919",
+    "color": "#1B5E20",
+    "icon": "🏠",
+    "model": "opus"
+  },
+  {
+    "id": "saas",
+    "label": "SaaS",
+    "sessionKey": "agent:main:telegram:group:-5173870517",
+    "color": "#E65100",
+    "icon": "☁️",
+    "model": "opus"
+  },
+  {
+    "id": "watch",
+    "label": "Watch",
+    "sessionKey": "agent:main:telegram:group:-5182444525",
+    "color": "#4A148C",
+    "icon": "⌚",
+    "model": "opus"
+  },
+  {
+    "id": "haiku",
+    "label": "Quick",
+    "sessionKey": "agent:main:telegram:group:-5166572823",
+    "color": "#880E4F",
+    "icon": "⚡",
+    "model": "haiku"
+  }
+]
