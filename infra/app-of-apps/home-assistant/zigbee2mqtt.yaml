@@ -6,10 +6,16 @@ metadata:
   annotations:
     moonrepo.dev/skip-local: "true"
 spec:
+  ignoreDifferences:
+    - group: apps
+      kind: StatefulSet
+      jqPathExpressions:
+        - .spec.volumeClaimTemplates[]?.spec.volumeMode
+        - .spec.volumeClaimTemplates[]?.status
   project: default
   source:
     repoURL: https://charts.zigbee2mqtt.io/
-    targetRevision: "2.7.1"
+    targetRevision: "2.9.1"
     chart: zigbee2mqtt
     helm:
       releaseName: zigbee2mqtt
