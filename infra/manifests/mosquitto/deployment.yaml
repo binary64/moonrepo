@@ -50,4 +50,5 @@ spec:
           configMap:
             name: mosquitto
         - name: mosquitto-data
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: mosquitto-data
