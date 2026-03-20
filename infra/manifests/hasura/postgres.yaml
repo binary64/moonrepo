@@ -1,0 +1,32 @@
+# CloudNativePG Cluster for Hasura
+#
+# CNPG auto-creates:
+#   - Secret "hasura-pg-app" with keys: uri, username, password, host, port, dbname
+#   - Service "hasura-pg-rw" (read-write endpoint)
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: hasura-pg
+  namespace: hasura
+  labels:
+    app.kubernetes.io/name: hasura-postgres
+    app.kubernetes.io/instance: hasura
+spec:
+  instances: 1
+
+  affinity:
+    nodeSelector:
+      kubernetes.io/hostname: vmi3137202
+
+  postgresql:
+    pg_hba:
+      - host all all all scram-sha-256
+
+  bootstrap:
+    initdb:
+      database: hasura
+      owner: hasura
+
+  storage:
+    size: 2Gi
+    storageClass: local-path
