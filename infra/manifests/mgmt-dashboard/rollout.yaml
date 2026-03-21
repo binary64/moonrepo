@@ -1,0 +1,61 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: mgmt-dashboard
+  namespace: mgmt-dashboard
+  labels:
+    app.kubernetes.io/name: mgmt-dashboard
+    app.kubernetes.io/instance: mgmt-dashboard
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mgmt-dashboard
+      app.kubernetes.io/instance: mgmt-dashboard
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mgmt-dashboard
+        app.kubernetes.io/instance: mgmt-dashboard
+    spec:
+      containers:
+        - name: mgmt-dashboard
+          image: ghcr.io/binary64/mgmt-dashboard:0.1.0
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          envFrom:
+            - secretRef:
+                name: mgmt-dashboard-env
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            failureThreshold: 10
+            periodSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+  strategy:
+    canary:
+      steps:
+        - setWeight: 20
+        - pause:
+            duration: 30s
+        - setWeight: 100

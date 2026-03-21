@@ -11,7 +11,7 @@ import {
   LogOut,
   Menu,
 } from "lucide-react";
-import { UserButton } from "@clerk/nextjs";
+import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -25,6 +25,21 @@ const navigation = [
   { name: "Reports", href: "/dashboard/reports", icon: BarChart3 },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
+
+function UserMenu() {
+  const { data: session } = useSession();
+  return (
+    <div className="flex items-center gap-2">
+      <User className="w-8 h-8 text-gray-500 dark:text-gray-400 shrink-0" />
+      <span className="text-sm text-gray-700 dark:text-gray-300 flex-1 truncate">
+        {session?.user?.name ?? session?.user?.email}
+      </span>
+      <button onClick={() => signOut()} title="Sign out">
+        <LogOut className="w-4 h-4 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors" />
+      </button>
+    </div>
+  );
+}
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -62,13 +77,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             })}
           </nav>
           <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-            <UserButton
-              appearance={{
-                elements: {
-                  avatarBox: "w-8 h-8",
-                },
-              }}
-            />
+            <UserMenu />
           </div>
         </div>
       </aside>
@@ -112,7 +121,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   })}
                 </nav>
                 <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-                  <UserButton />
+                  <UserMenu />
                 </div>
               </div>
             </SheetContent>
@@ -120,7 +129,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <h1 className="text-lg font-bold text-gray-900 dark:text-white">
             Dashboard
           </h1>
-          <UserButton />
+          <UserMenu />
         </div>
       </div>
 

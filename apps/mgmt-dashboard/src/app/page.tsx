@@ -1,4 +1,4 @@
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,9 +18,9 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const { userId } = await auth();
+  const session = await getSession();
 
-  if (userId) {
+  if (session?.user) {
     redirect("/dashboard");
   }
 
@@ -83,7 +83,7 @@ export default async function Home() {
                 Secure
               </CardTitle>
               <CardDescription className="text-gray-600 dark:text-gray-400">
-                Enterprise-grade security with Clerk authentication
+                Enterprise-grade security with Authentik SSO
               </CardDescription>
             </CardHeader>
           </Card>
