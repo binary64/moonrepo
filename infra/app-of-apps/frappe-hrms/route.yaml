@@ -15,5 +15,5 @@ spec:
             type: PathPrefix
             value: /
       backendRefs:
-        - name: frappe-hrms-erpnext-nginx
+        - name: frappe-hrms-erpnext
           port: 8080
