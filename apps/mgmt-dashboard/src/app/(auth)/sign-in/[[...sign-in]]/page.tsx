@@ -1,6 +1,6 @@
-import { signIn } from "@/lib/auth";
+"use client";
 
-export const dynamic = "force-dynamic";
+import { signIn } from "next-auth/react";
 
 export default function Page() {
   return (
@@ -9,19 +9,13 @@ export default function Page() {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
           Sign in
         </h1>
-        <form
-          action={async () => {
-            "use server";
-            await signIn("authentik");
-          }}
+        <button
+          type="button"
+          onClick={() => signIn("authentik")}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
         >
-          <button
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-          >
-            Sign in with Authentik
-          </button>
-        </form>
+          Sign in with Authentik
+        </button>
       </div>
     </div>
   );

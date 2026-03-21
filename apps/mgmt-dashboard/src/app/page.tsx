@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,7 +18,7 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const session = await auth();
+  const session = await getSession();
 
   if (session?.user) {
     redirect("/dashboard");
