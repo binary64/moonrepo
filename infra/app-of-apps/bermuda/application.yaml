@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: tv-portal
+  name: bermuda
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
@@ -10,12 +10,12 @@ spec:
 
   source:
     repoURL: https://github.com/binary64/moonrepo.git
-    path: infra/manifests/tv-portal
+    path: infra/manifests/bermuda
     targetRevision: HEAD
 
   destination:
     server: https://kubernetes.default.svc
-    namespace: tv-portal
+    namespace: bermuda
 
   syncPolicy:
     automated:
