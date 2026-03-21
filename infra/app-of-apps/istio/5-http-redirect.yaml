@@ -1,0 +1,20 @@
+# Redirect all HTTP traffic to HTTPS on the Istio gateway.
+# Targets only the port 80 "default" listener by sectionName.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: http-to-https-redirect
+  namespace: istio-system
+spec:
+  parentRefs:
+    - name: gateway
+      namespace: istio-system
+      sectionName: default
+  hostnames:
+    - "*.brandwhisper.cloud"
+  rules:
+    - filters:
+        - type: RequestRedirect
+          requestRedirect:
+            scheme: https
+            statusCode: 301
