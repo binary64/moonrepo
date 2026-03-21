@@ -2,12 +2,12 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - namespace.yaml
-  - icecast-sealed-secret.yaml
+  - icecast-secret.yaml
   - icecast-deployment.yaml
   - icecast-service.yaml
-  - liquidsoap-sealed-secret.yaml
+  - liquidsoap-secret.yaml
   - liquidsoap-deployment.yaml
   - liquidsoap-service.yaml
-  - dj-brain-sealed-secret.yaml
+  - dj-brain-secret.yaml
   - dj-brain-deployment.yaml
   - dj-brain-service.yaml
