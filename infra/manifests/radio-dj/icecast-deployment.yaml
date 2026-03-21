@@ -21,9 +21,8 @@ spec:
         kubernetes.io/hostname: vmi3137202
       containers:
         - name: icecast
-          # TODO: pin to SHA digest after first CI build (e.g. ghcr.io/binary64/icecast@sha256:...)
-          image: ghcr.io/binary64/icecast:latest
-          imagePullPolicy: Always
+          image: ghcr.io/binary64/icecast@sha256:03006a86fe005bace521e5b6080400123d05a0b829308c9d8d9e627a85d0d2cb
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8100
               protocol: TCP
