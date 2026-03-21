@@ -65,17 +65,12 @@ helm upgrade --install cloudnative-pg cloudnative-pg/cloudnative-pg \
     --namespace cloudnative-pg --create-namespace \
     --set crds.create=true $HELM_WAIT_FLAG --timeout 15m
 
-# MariaDB Operator CRDs (must be installed first)
+# MariaDB Operator (with CRDs managed by the chart itself)
 helm repo add mariadb-operator https://helm.mariadb.com/mariadb-operator || true
 helm repo update mariadb-operator
-helm upgrade --install mariadb-operator-crds mariadb-operator/mariadb-operator-crds \
-    --namespace mariadb-operator --create-namespace \
-    --wait --timeout 20m
-
-# MariaDB Operator
 helm upgrade --install mariadb-operator mariadb-operator/mariadb-operator \
     --namespace mariadb-operator --create-namespace \
-    --set crds.enabled=false \
+    --set crds.enabled=true \
     --set ha.enabled=false --wait --timeout 20m
 echo "=== Parsing Applications in $APP_DIR ==="
 
