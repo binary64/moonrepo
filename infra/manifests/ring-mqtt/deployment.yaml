@@ -63,17 +63,23 @@ spec:
               cpu: 500m
               memory: 512Mi
           livenessProbe:
-            httpGet:
-              path: /
-              port: 55123
+            exec:
+              command:
+                - pgrep
+                - -f
+                - ring-mqtt.js
             initialDelaySeconds: 30
             periodSeconds: 60
+            failureThreshold: 3
           readinessProbe:
-            httpGet:
-              path: /
-              port: 55123
-            initialDelaySeconds: 10
+            exec:
+              command:
+                - pgrep
+                - -f
+                - ring-mqtt.js
+            initialDelaySeconds: 15
             periodSeconds: 30
+            failureThreshold: 3
       volumes:
         - name: data
           hostPath:
