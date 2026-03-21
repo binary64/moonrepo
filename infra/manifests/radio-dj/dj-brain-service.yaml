@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: dj-brain
+  namespace: radio-dj
+  labels:
+    app: dj-brain
+spec:
+  selector:
+    app: dj-brain
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP

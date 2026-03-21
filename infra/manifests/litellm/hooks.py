@@ -5,6 +5,11 @@ This hook injects OAuth headers for Anthropic API calls, replacing the
 traditional API key auth approach.
 """
 
+import os
+
+OAUTH_TOKEN = os.environ.get("OAUTH_TOKEN", "")
+
+
 async def async_pre_call_hook(self, user_api_key_dict, cache, data, call_type):
     """
     Runs before provider request. Mutate headers / auth here.
