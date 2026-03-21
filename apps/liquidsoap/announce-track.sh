@@ -9,6 +9,9 @@
 set -e
 
 TRACK_PATH=$(cat /state/current-track-path 2>/dev/null || echo "")
+if [ -z "$TRACK_PATH" ]; then
+    exit 0
+fi
 TRACK_BPM=$(cat /state/current-track-bpm 2>/dev/null || echo "")
 TRACK_FILE=$(basename "$TRACK_PATH" 2>/dev/null || echo "unknown")
 HISTORY_LOG="/data/music/play-history.log"

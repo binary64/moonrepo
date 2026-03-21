@@ -14,9 +14,13 @@ if [ -n "$MISSING" ]; then
 fi
 
 # Template Icecast config with environment variables
+# Use restricted temp file to avoid exposing passwords in world-readable /tmp
+TMPCONF=$(mktemp /tmp/icecast-XXXXXX.xml)
+chmod 600 "$TMPCONF"
 envsubst '${ICECAST_SOURCE_PASSWORD} ${ICECAST_RELAY_PASSWORD} ${ICECAST_ADMIN_PASSWORD}' \
-    < /etc/icecast2/icecast.xml > /tmp/icecast2.xml
-cp /tmp/icecast2.xml /etc/icecast2/icecast.xml
+    < /etc/icecast2/icecast.xml > "$TMPCONF"
+cp "$TMPCONF" /etc/icecast2/icecast.xml
+rm -f "$TMPCONF"
 
 echo "Starting Icecast on port 8100..."
 exec icecast2 -c /etc/icecast2/icecast.xml
