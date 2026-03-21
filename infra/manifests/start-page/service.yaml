@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: start-page
+  namespace: start-page
+spec:
+  selector:
+    app: start-page
+  ports:
+    - port: 80
+      targetPort: 80

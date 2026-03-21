@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home Services</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      background: #0a0a0f;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    
+    .header h1 {
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: #f1f5f9;
+      letter-spacing: -0.02em;
+    }
+    
+    .header p {
+      color: #64748b;
+      font-size: 0.85rem;
+      margin-top: 0.3rem;
+    }
+    
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    .section-title {
+      grid-column: 1 / -1;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #475569;
+      padding: 1.5rem 0 0.3rem 0.2rem;
+      border-bottom: 1px solid #1e293b;
+    }
+    
+    .section-title:first-of-type { padding-top: 0; }
+    
+    .card {
+      background: #111118;
+      border: 1px solid #1e293b;
+      border-radius: 10px;
+      padding: 1rem 1.2rem;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    
+    .card:hover {
+      border-color: #334155;
+      background: #161622;
+    }
+    
+    .card .icon {
+      font-size: 1.6rem;
+      width: 2.2rem;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    
+    .card .info { flex: 1; min-width: 0; }
+    
+    .card .name {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: #f1f5f9;
+    }
+    
+    .card .url {
+      font-size: 0.75rem;
+      color: #64748b;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .card .badge {
+      font-size: 0.65rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 99px;
+      font-weight: 500;
+      flex-shrink: 0;
+    }
+    
+    .badge.ext { background: #1e3a5f; color: #60a5fa; }
+    .badge.lan { background: #1a2e1a; color: #6ee7b7; }
+    .badge.k8s { background: #2d1f3d; color: #c084fc; }
+    
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: #334155;
+    }
+    
+    .status-dot.up { background: #22c55e; }
+    .status-dot.down { background: #ef4444; }
+    .status-dot.unknown { background: #64748b; }
+    
+    .footer {
+      text-align: center;
+      margin-top: 3rem;
+      color: #334155;
+      font-size: 0.7rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🏠 Home</h1>
+    <p>Home Services</p>
+  </div>
+
+  <div class="grid" id="services">
+    <!-- Populated by JS from config -->
+  </div>
+
+  <div class="footer">
+    <span id="last-check"></span>
+  </div>
+
+  <script>
+    const CONFIG = {
+      sections: [
+        {
+          title: "Infrastructure",
+          services: [
+            { name: "Home Assistant", icon: "🏠", url: "https://home.brandwhisper.cloud", badge: "ext", health: "https://home.brandwhisper.cloud/api/" },
+            { name: "ArgoCD", icon: "🔄", url: "https://argocd.brandwhisper.cloud", badge: "ext" },
+            { name: "Rancher", icon: "🤠", url: "https://rancher.brandwhisper.cloud", badge: "ext" },
+            { name: "Headscale", icon: "🔗", url: "https://headscale.home.brandwhisper.cloud", badge: "ext" },
+            { name: "LiteLLM", icon: "🤖", url: "https://llm.home.brandwhisper.cloud", badge: "ext" },
+            { name: "Argo Rollouts", icon: "📊", url: "https://rollouts.brandwhisper.cloud", badge: "ext" },
+          ]
+        },
+        {
+          title: "Smart Home",
+          services: [
+            { name: "ESPHome", icon: "📟", url: "http://192.168.1.201:6052", badge: "lan" },
+            { name: "Zigbee2MQTT", icon: "📡", url: "https://zigbee.brandwhisper.cloud", badge: "ext" },
+          ]
+        },
+        {
+          title: "Media & Entertainment",
+          services: [
+            { name: "Jellyfin", icon: "🎬", url: "http://192.168.1.154:8096", badge: "lan" },
+            { name: "Arthur Radio", icon: "📻", url: "http://192.168.1.201:30100/stream", badge: "lan" },
+            { name: "TV Portal", icon: "📺", url: "http://192.168.1.201:30033", badge: "lan" },
+          ]
+        },
+        {
+          title: "AI & Voice",
+          services: [
+            { name: "TTS Server", icon: "🗣️", url: "http://192.168.1.201:30090/health", badge: "k8s" },
+            { name: "Watch PTT", icon: "⌚", url: "http://192.168.1.201:9876", badge: "lan" },
+            { name: "Desktop Portal", icon: "🖥️", url: "http://192.168.1.187:3001", badge: "lan" },
+          ]
+        },
+        {
+          title: "Network",
+          services: [
+            { name: "Router", icon: "🌐", url: "http://192.168.1.1", badge: "lan" },
+            { name: "SOCKS Proxy", icon: "🧦", url: "http://192.168.1.201:1080", badge: "lan", noLink: true },
+          ]
+        },
+        {
+          title: "External",
+          services: [
+            { name: "arthurloe.com", icon: "🗡️", url: "https://arthurloe.com", badge: "ext" },
+            { name: "GitHub — moonrepo", icon: "🐙", url: "https://github.com/binary64/moonrepo", badge: "ext" },
+            { name: "GitHub — graphql-engine", icon: "🐙", url: "https://github.com/binary64/graphql-engine", badge: "ext" },
+            { name: "Cloudflare", icon: "☁️", url: "https://dash.cloudflare.com", badge: "ext" },
+          ]
+        }
+      ]
+    };
+
+    function sanitizeId(name) {
+      return name.replace(/\W/g, '');
+    }
+
+    function renderServices() {
+      const grid = document.getElementById('services');
+      let html = '';
+
+      for (const section of CONFIG.sections) {
+        html += `<div class="section-title">${section.title}</div>`;
+        for (const svc of section.services) {
+          const tag = svc.noLink ? 'div' : 'a';
+          const href = svc.noLink ? '' : ` href="${svc.url}" target="_blank"`;
+          const displayUrl = svc.url.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+          html += `
+            <${tag} class="card"${href} data-health="${svc.health || svc.url}">
+              <span class="icon">${svc.icon}</span>
+              <div class="info">
+                <div class="name">${svc.name}</div>
+                <div class="url">${displayUrl}</div>
+              </div>
+              <span class="status-dot unknown" id="status-${sanitizeId(svc.name)}"></span>
+              <span class="badge ${svc.badge}">${svc.badge}</span>
+            </${tag}>`;
+        }
+      }
+
+      grid.innerHTML = html;
+    }
+
+    async function checkHealth() {
+      for (const section of CONFIG.sections) {
+        for (const svc of section.services) {
+          const dotId = `status-${sanitizeId(svc.name)}`;
+          const dot = document.getElementById(dotId);
+          if (!dot) continue;
+
+          // Skip health checks for LAN/k8s services — mixed content blocks HTTP from HTTPS page
+          if (svc.badge !== 'ext') {
+            dot.className = 'status-dot unknown';
+            continue;
+          }
+
+          const url = svc.health || svc.url;
+          try {
+            const controller = new AbortController();
+            setTimeout(() => controller.abort(), 5000);
+            await fetch(url, { mode: 'no-cors', signal: controller.signal });
+            dot.className = 'status-dot up';
+          } catch {
+            dot.className = 'status-dot down';
+          }
+        }
+      }
+      document.getElementById('last-check').textContent = `Last checked: ${new Date().toLocaleTimeString()}`;
+    }
+
+    renderServices();
+    checkHealth();
+    setInterval(checkHealth, 60000);
+  </script>
+</body>
+</html>
