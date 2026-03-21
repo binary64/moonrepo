@@ -19,6 +19,13 @@ spec:
     spec:
       nodeSelector:
         kubernetes.io/hostname: vmi3137202
+      initContainers:
+        - name: fix-state-perms
+          image: busybox:1.37
+          command: ['sh', '-c', 'chmod -R 777 /state']
+          volumeMounts:
+            - name: state
+              mountPath: /state
       containers:
         - name: dj-brain
           image: ghcr.io/binary64/dj-brain:latest
