@@ -144,10 +144,10 @@ function createSessionState(sessionKey) {
   };
 }
 
-// Reset a session's VAD state (keep sessionKey)
+// Reset a session's VAD state (keep sessionKey and buffered audio)
 function resetSessionState(state) {
   state.vadState = createVADState();
-  state.frameBuffer = Buffer.alloc(0);
+  // Preserve frameBuffer — audio may have arrived during transcription
   state.speechStarted = false;
   state.speechMs = 0;
   state.silenceMs = 0;
@@ -233,28 +233,13 @@ app.post('/text', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-// Simple rate limiter for routes with file system access
-function rateLimit(windowMs, maxRequests) {
-  const hits = new Map();
-  return (req, res, next) => {
-    const key = req.ip;
-    const now = Date.now();
-    const record = hits.get(key);
-    if (record && now - record.start < windowMs) {
-      record.count++;
-      if (record.count > maxRequests) {
-        return res.status(429).json({ error: 'Too many requests' });
-      }
-    } else {
-      hits.set(key, { start: now, count: 1 });
-    }
-    next();
-  };
-}
+// Rate limiter for routes with file system access
+const rateLimit = require('express-rate-limit');
+const sessionsLimiter = rateLimit({ windowMs: 60000, max: 30, standardHeaders: true, legacyHeaders: false });
 
 // Curated session list for watch pager
 const SESSIONS_FILE = path.join(__dirname, 'sessions.json');
-app.get('/sessions', rateLimit(60000, 30), (req, res) => {
+app.get('/sessions', sessionsLimiter, (req, res) => {
   try {
     const sessions = JSON.parse(fs.readFileSync(SESSIONS_FILE, 'utf-8'));
     res.json({ sessions });
@@ -343,6 +328,12 @@ wss.on('connection', (ws, req) => {
       })
       .finally(() => {
         resetSessionState(state);
+        // Drain any audio that arrived while we were transcribing
+        if (state.frameBuffer.length >= FRAME_BYTES && !processing) {
+          drainFrames();
+        } else if (state.frameBuffer.length >= FRAME_BYTES) {
+          pendingData = true;
+        }
       });
   }
 
@@ -401,14 +392,18 @@ wss.on('connection', (ws, req) => {
       state = sessionStates.get(targetIndex);
     }
 
-    if (!state || state.transcribing) return;
+    if (!state) return;
 
+    // Always buffer audio — even while transcribing, so we don't drop frames
     state.frameBuffer = Buffer.concat([state.frameBuffer, pcmData]);
 
-    if (!processing) {
-      drainFrames();
-    } else {
-      pendingData = true;
+    // Only kick off VAD processing if not transcribing (drainFrames skips transcribing sessions)
+    if (!state.transcribing) {
+      if (!processing) {
+        drainFrames();
+      } else {
+        pendingData = true;
+      }
     }
   });
 
