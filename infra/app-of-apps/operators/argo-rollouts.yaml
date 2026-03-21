@@ -16,6 +16,8 @@ spec:
       values: |
         dashboard:
           enabled: true
+          image:
+            tag: v1.7.2
           service:
             type: NodePort
             nodePort: 31000
