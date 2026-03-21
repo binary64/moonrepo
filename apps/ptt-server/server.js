@@ -162,6 +162,12 @@ function resetSessionState(state) {
 const app = express();
 app.use(express.json());
 
+// Rate limiters — defined before routes so middleware runs on every matching request
+const rateLimit = require('express-rate-limit');
+const sessionsLimiter = rateLimit({ windowMs: 60000, max: 30, standardHeaders: true, legacyHeaders: false });
+const textLimiter = rateLimit({ windowMs: 60000, max: 60, standardHeaders: true, legacyHeaders: false });
+const batteryLimiter = rateLimit({ windowMs: 60000, max: 60, standardHeaders: true, legacyHeaders: false });
+
 // HA battery reporting (optional)
 let lastBatteryUpdate = 0;
 
@@ -218,30 +224,20 @@ app.get('/metrics', (req, res) => {
   res.json(summary);
 });
 
-app.post('/battery', (req, res) => {
+app.post('/battery', batteryLimiter, (req, res) => {
   const level = req.body?.level ?? -1;
   const charging = req.body?.charging ?? false;
   if (level >= 0) updateHABattery(level, charging);
   res.json({ status: 'ok' });
 });
 
-app.post('/text', (req, res) => {
+app.post('/text', textLimiter, (req, res) => {
   const text = req.body?.text?.trim();
   const sessionKey = req.body?.sessionKey;
   if (!text) return res.status(400).json({ error: 'No text' });
   sendToOpenClaw(text, null, sessionKey);
   res.json({ status: 'ok' });
 });
-
-// Rate limiters
-const rateLimit = require('express-rate-limit');
-const sessionsLimiter = rateLimit({ windowMs: 60000, max: 30, standardHeaders: true, legacyHeaders: false });
-const textLimiter = rateLimit({ windowMs: 60000, max: 60, standardHeaders: true, legacyHeaders: false });
-const batteryLimiter = rateLimit({ windowMs: 60000, max: 60, standardHeaders: true, legacyHeaders: false });
-
-// Apply rate limiters to routes with file/network access
-app.use('/text', textLimiter);
-app.use('/battery', batteryLimiter);
 
 // Curated session list for watch pager
 const SESSIONS_FILE = path.join(__dirname, 'sessions.json');

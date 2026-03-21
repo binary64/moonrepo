@@ -16,6 +16,9 @@ RUN npm install --production
 COPY server.js ./
 COPY sessions.json ./
 
+# Give the node user write access so metrics.json can be persisted at runtime
+RUN chown -R node:node /app
+
 EXPOSE 9876
 
 USER node
