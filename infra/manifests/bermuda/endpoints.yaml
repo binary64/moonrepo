@@ -1,7 +1,7 @@
 ---
 # Explicit Endpoints for bermuda-mapper WebSocket server.
-# Points to Jupiter's loopback so that kube-proxy on Jupiter routes
-# NodePort 30099 → localhost:8099.
+# Points to Jupiter's real node IP (158.220.90.28) so Endpoints work
+# cluster-wide, not just node-local. NodePort 30099 → 158.220.90.28:8099.
 apiVersion: v1
 kind: Endpoints
 metadata:
@@ -11,7 +11,7 @@ metadata:
     app: bermuda-mapper
 subsets:
   - addresses:
-      - ip: 127.0.0.1
+      - ip: 158.220.90.28
     ports:
       - name: ws
         port: 8099
