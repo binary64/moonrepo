@@ -7,7 +7,7 @@ metadata:
     app.kubernetes.io/name: headscale
 data:
   config.yaml: |
-    server_url: https://headscale.home.brandwhisper.cloud
+    server_url: https://headscale.brandwhisper.cloud
     listen_addr: 0.0.0.0:8080
     metrics_listen_addr: 0.0.0.0:9090
     grpc_listen_addr: 0.0.0.0:50443
@@ -63,7 +63,7 @@ data:
 
     dns:
       magic_dns: true
-      base_domain: tail.home.brandwhisper.cloud
+      base_domain: tail.brandwhisper.cloud
       override_local_dns: false
       nameservers:
         global:
@@ -79,7 +79,7 @@ data:
     # OIDC - Authentik SSO integration (configure after Authentik setup)
     # oidc:
     #   only_start_if_oidc_is_available: true
-    #   issuer: "https://authentik.home.brandwhisper.cloud/application/o/headscale/"
+    #   issuer: "https://authentik.brandwhisper.cloud/application/o/headscale/"
     #   client_id: "headscale"
     #   client_secret_path: "/etc/headscale/oidc-secret"
     #   expiry: 180d
@@ -90,7 +90,7 @@ data:
   acl.json: |
     {
       "groups": {
-        "group:admin": ["admin@headscale.home.brandwhisper.cloud"]
+        "group:admin": ["admin@headscale.brandwhisper.cloud"]
       },
       "tagOwners": {
         "tag:server": ["group:admin"],
