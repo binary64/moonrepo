@@ -134,19 +134,7 @@ spec:
 
         addons:
           codeserver:
-            enabled: true
-            image:
-              tag: "4.19.1"
-            ingress:
-              enabled: false
-              className: istio
-              annotations:
-                kubernetes.io/ingress.class: istio
-              hosts:
-                - host: hass-code.localhost
-                  paths:
-                    - path: /
-                      pathType: Prefix
+            enabled: false
 
   destination:
     server: https://kubernetes.default.svc
