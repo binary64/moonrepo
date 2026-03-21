@@ -7,4 +7,3 @@ resources:
   - liquidsoap-deployment.yaml
   - liquidsoap-service.yaml
   - dj-brain-deployment.yaml
-  - dj-brain-service.yaml
