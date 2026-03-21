@@ -22,7 +22,7 @@ COPY entrypoint.sh /radio/entrypoint.sh
 
 RUN chmod +x /radio/*.sh
 
-RUN groupadd -r radio && useradd -r -g radio -s /bin/false radio \
+RUN groupadd -r -g 999 radio && useradd -r -u 999 -g radio -s /bin/false radio \
     && mkdir -p /state /config \
     && chown -R radio:radio /state /radio
 
