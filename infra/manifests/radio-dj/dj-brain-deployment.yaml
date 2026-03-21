@@ -24,10 +24,6 @@ spec:
           image: ghcr.io/binary64/dj-brain:latest
           imagePullPolicy: Always
           env:
-            - name: LIQUIDSOAP_HOST
-              value: "liquidsoap.radio-dj.svc.cluster.local"
-            - name: LIQUIDSOAP_PORT
-              value: "1234"
             - name: OPENAI_API_KEY
               valueFrom:
                 secretKeyRef:

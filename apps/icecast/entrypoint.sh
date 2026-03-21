@@ -13,6 +13,7 @@ if [ -n "$MISSING" ]; then
     exit 1
 fi
 
+
 # Template Icecast config with environment variables
 # Use restricted temp file to avoid exposing passwords in world-readable /tmp
 TMPCONF=$(mktemp /tmp/icecast-XXXXXX.xml)
