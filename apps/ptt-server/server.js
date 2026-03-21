@@ -233,9 +233,28 @@ app.post('/text', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// Simple rate limiter for routes with file system access
+function rateLimit(windowMs, maxRequests) {
+  const hits = new Map();
+  return (req, res, next) => {
+    const key = req.ip;
+    const now = Date.now();
+    const record = hits.get(key);
+    if (record && now - record.start < windowMs) {
+      record.count++;
+      if (record.count > maxRequests) {
+        return res.status(429).json({ error: 'Too many requests' });
+      }
+    } else {
+      hits.set(key, { start: now, count: 1 });
+    }
+    next();
+  };
+}
+
 // Curated session list for watch pager
 const SESSIONS_FILE = path.join(__dirname, 'sessions.json');
-app.get('/sessions', (req, res) => {
+app.get('/sessions', rateLimit(60000, 30), (req, res) => {
   try {
     const sessions = JSON.parse(fs.readFileSync(SESSIONS_FILE, 'utf-8'));
     res.json({ sessions });
@@ -303,14 +322,15 @@ wss.on('connection', (ws, req) => {
     transcribeAndSend(wavBuffer, state.sessionKey)
       .then((result) => {
         const endToEndMs = Date.now() - e2eStart;
-        const text = result || '';
-        console.log(`[${ts()}] ✅ "${text}" (e2e: ${endToEndMs}ms)`);
+        const text = result?.text || '';
+        const whisperMs = result?.whisperMs || endToEndMs;
+        console.log(`[${ts()}] ✅ "${text}" (whisper: ${whisperMs}ms, e2e: ${endToEndMs}ms)`);
         send({ event: 'result', status: 'ok', text });
 
         if (text) {
           recordMetric({
             ts: new Date().toISOString(),
-            whisperMs: endToEndMs,
+            whisperMs,
             vadSpeechMs,
             endToEndMs,
             text: text.slice(0, 80)
@@ -322,7 +342,7 @@ wss.on('connection', (ws, req) => {
         send({ event: 'result', status: 'error', text: '', error: err.message });
       })
       .finally(() => {
-        state.transcribing = false;
+        resetSessionState(state);
       });
   }
 
@@ -465,7 +485,6 @@ wss.on('connection', (ws, req) => {
               send({ event: 'vad_end', index });
               state.transcribing = true;
               finishUtteranceForState(state);
-              resetSessionState(state);
               continue;
             }
 
@@ -474,7 +493,6 @@ wss.on('connection', (ws, req) => {
               send({ event: 'vad_end', index });
               state.transcribing = true;
               finishUtteranceForState(state);
-              resetSessionState(state);
               continue;
             }
           }
@@ -585,6 +603,7 @@ function transcribeAndSend(wavBuffer, sessionKey) {
     );
     const body = Buffer.concat([pre, wavBuffer, post]);
 
+    const whisperStart = Date.now();
     const apiReq = https.request({
       hostname: 'api.openai.com', path: '/v1/audio/transcriptions', method: 'POST',
       headers: {
@@ -596,18 +615,19 @@ function transcribeAndSend(wavBuffer, sessionKey) {
       let data = '';
       apiRes.on('data', (c) => data += c);
       apiRes.on('end', () => {
+        const whisperMs = Date.now() - whisperStart;
         if (apiRes.statusCode !== 200) return reject(new Error(`Whisper ${apiRes.statusCode}: ${data}`));
         const text = data.trim();
-        console.log(`[${ts()}] 🗣️ Whisper: "${text}"`);
-        if (!text || text.length < 2) return resolve('');
+        console.log(`[${ts()}] 🗣️ Whisper: "${text}" (${whisperMs}ms)`);
+        if (!text || text.length < 2) return resolve({ text: '', whisperMs });
         if (isHallucination(text)) {
           console.log(`[${ts()}] 🚫 Filtered hallucination: "${text}"`);
           metrics.totalHallucinations++;
-          return resolve('');
+          return resolve({ text: '', whisperMs });
         }
 
         // Send to main session with location context — Arthur routes it
-        sendToOpenClaw(text, (err) => err ? reject(err) : resolve(text));
+        sendToOpenClaw(text, (err) => err ? reject(err) : resolve({ text, whisperMs }));
       });
     });
     apiReq.on('error', reject);
