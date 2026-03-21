@@ -1,0 +1,41 @@
+---
+# tv-portal: Next.js tracking app running on Jupiter (vmi3137202) as a systemd
+# service at localhost:3003.  There is no pod — traffic is routed via an explicit
+# Endpoints object that points to Jupiter's loopback address.  Because kube-proxy
+# runs on every node (including Jupiter) the NodePort listener on Jupiter's eth0
+# will forward traffic directly to 127.0.0.1:3003 on that same host.
+apiVersion: v1
+kind: Service
+metadata:
+  name: tv-portal
+  namespace: tv-portal
+  labels:
+    app: tv-portal
+spec:
+  type: NodePort
+  # No selector — endpoints are managed manually below
+  ports:
+    - name: http
+      port: 3003
+      targetPort: 3003
+      nodePort: 30033
+      protocol: TCP
+---
+# bermuda-mapper: WebSocket server running on Jupiter at localhost:8099.
+# Exposed on NodePort 30099.
+apiVersion: v1
+kind: Service
+metadata:
+  name: bermuda-mapper
+  namespace: tv-portal
+  labels:
+    app: bermuda-mapper
+spec:
+  type: NodePort
+  # No selector — endpoints are managed manually below
+  ports:
+    - name: ws
+      port: 8099
+      targetPort: 8099
+      nodePort: 30099
+      protocol: TCP
