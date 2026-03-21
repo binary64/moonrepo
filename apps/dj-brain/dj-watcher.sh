@@ -45,7 +45,7 @@ while true; do
                         if (.schedule? | type) == "array" then
                             ([.schedule[] | select(.date == $d) | .abi][0] // "working") | if type == "object" then .status // "working" else . end
                         else
-                            .abi[$d] // .[$d].abi // "working"
+                            (.abi[$d] // .[$d].abi // "working") | if type == "object" then .status // "working" else . end
                         end
                     ' /config/schedule.json 2>/dev/null || echo "working")
                     if [ "$ABI_STATUS" = "not-working" ] && [ "$DJ_NAME" = "arthur" ]; then
