@@ -3,8 +3,8 @@ FROM node:22-alpine AS base
 FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
-COPY package.json package-lock.json* ./
-RUN if [ -f package-lock.json ]; then npm ci --ignore-scripts; else npm install --ignore-scripts; fi
+COPY package.json package-lock.json ./
+RUN npm ci --ignore-scripts
 
 FROM base AS builder
 WORKDIR /app
