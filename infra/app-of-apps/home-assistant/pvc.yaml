@@ -27,4 +27,4 @@ spec:
   # REINSTALL NOTE: if the cluster is wiped, this PV won't exist and the PVC
   # will sit Pending. Fix: remove volumeName (lets a new PV be provisioned)
   # or update it to the new PV name after provisioning fresh storage.
-  volumeName: pvc-f02d127f-90e3-4389-9883-a895265c4761
+  volumeName: pvc-e546e0c8-ec7b-414b-9179-9b0387820986
