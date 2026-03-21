@@ -6,7 +6,6 @@ metadata:
   finalizers:
     - resources-finalizer.argocd.argoproj.io
   annotations:
-    # Skip in CI - depends on cert-manager-crds and needs secrets
     moonrepo.dev/skip-local: "true"
 spec:
   project: default
@@ -17,6 +16,8 @@ spec:
     helm:
       releaseName: cert-manager
       values: |
+        crds:
+          enabled: true
         featureGates: "ExperimentalGatewayAPISupport=true"
         config:
           enableGatewayAPI: true
