@@ -16,6 +16,9 @@ spec:
       values: |
         dashboard:
           enabled: true
+          service:
+            type: NodePort
+            nodePort: 31000
         serviceMonitor:
           enabled: false
   destination:
