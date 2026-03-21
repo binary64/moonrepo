@@ -4,3 +4,4 @@ resources:
   - namespace.yaml
   - rollout.yaml
   - service.yaml
+  - sealed-secret.yaml
