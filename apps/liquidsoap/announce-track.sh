@@ -13,6 +13,12 @@ if [ -z "$TRACK_PATH" ]; then
     exit 0
 fi
 TRACK_BPM=$(cat /state/current-track-bpm 2>/dev/null || echo "")
+
+# Guard: nothing to do if we have no track path
+if [ -z "$TRACK_PATH" ]; then
+    exit 0
+fi
+
 TRACK_FILE=$(basename "$TRACK_PATH" 2>/dev/null || echo "unknown")
 HISTORY_LOG="/data/music/play-history.log"
 
