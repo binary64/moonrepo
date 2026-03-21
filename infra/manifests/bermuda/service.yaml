@@ -1,9 +1,8 @@
 ---
 # bermuda-mapper: WebSocket server running on Jupiter (vmi3137202) as a systemd
-# service at localhost:8099.  There is no pod — traffic is routed via an explicit
-# Endpoints object that points to Jupiter's loopback address.  Because kube-proxy
-# runs on every node (including Jupiter) the NodePort listener on Jupiter's eth0
-# will forward traffic directly to 127.0.0.1:8099 on that same host.
+# service at 158.220.90.28:8099.  There is no pod — traffic is routed via an
+# explicit Endpoints object that points to Jupiter's real IP (158.220.90.28).
+# The NodePort listener forwards traffic to the node IP endpoint on port 8099.
 apiVersion: v1
 kind: Service
 metadata:
