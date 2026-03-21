@@ -1,77 +1,44 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: radio-dj
+  name: liquidsoap
   namespace: radio-dj
   labels:
-    app: radio-dj
+    app: liquidsoap
 spec:
   replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app: radio-dj
+      app: liquidsoap
   template:
     metadata:
       labels:
-        app: radio-dj
+        app: liquidsoap
     spec:
       nodeSelector:
         kubernetes.io/hostname: vmi3137202
       containers:
-        - name: radio-dj
-          image: ghcr.io/binary64/radio-dj:latest
+        - name: liquidsoap
+          image: ghcr.io/binary64/liquidsoap:latest
           imagePullPolicy: Always
           ports:
-            - containerPort: 8100
-              protocol: TCP
             - containerPort: 1234
               protocol: TCP
           env:
-            - name: OPENAI_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: radio-dj-secret
-                  key: openai-api-key
-                  optional: false
+            - name: ICECAST_HOST
+              value: "icecast.radio-dj.svc.cluster.local"
             - name: ICECAST_SOURCE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: radio-dj-secret
+                  name: liquidsoap-secret
                   key: icecast-source-password
-                  optional: false
-            - name: ICECAST_RELAY_PASSWORD
+            - name: OPENAI_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: radio-dj-secret
-                  key: icecast-relay-password
-                  optional: false
-            - name: ICECAST_ADMIN_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: radio-dj-secret
-                  key: icecast-admin-password
-                  optional: false
-            - name: TTS_SERVER_URL
-              value: "http://158.220.90.28:3090"
-            - name: TTS_AUTH_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: radio-dj-secret
-                  key: tts-auth-token
-                  optional: true
-            - name: HUME_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: radio-dj-secret
-                  key: hume-api-key
-                  optional: true
-            - name: ZAI_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: radio-dj-secret
-                  key: zai-api-key
+                  name: liquidsoap-secret
+                  key: openai-api-key
                   optional: true
             - name: TZ
               value: "Europe/London"
@@ -82,13 +49,6 @@ spec:
             limits:
               cpu: 500m
               memory: 1Gi
-          livenessProbe:
-            httpGet:
-              path: /status-json.xsl
-              port: 8100
-            initialDelaySeconds: 15
-            periodSeconds: 30
-            timeoutSeconds: 5
           volumeMounts:
             - name: music
               mountPath: /data/music
@@ -142,4 +102,6 @@ spec:
             path: /mnt/arthur/clawd/memory/schedule.json
             type: File
         - name: state
-          emptyDir: {}
+          hostPath:
+            path: /tmp/radio-state
+            type: DirectoryOrCreate

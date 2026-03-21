@@ -13,7 +13,7 @@ TEXT="${3:?Usage: dj-commentary.sh <dj_name> <track_name> <text>}"
 
 TTS_SERVER_URL="${TTS_SERVER_URL:-http://192.168.1.201:3090}"
 TTS_AUTH_TOKEN="${TTS_AUTH_TOKEN:-}"
-LIQUIDSOAP_HOST="${LIQUIDSOAP_HOST:-127.0.0.1}"
+LIQUIDSOAP_HOST="${LIQUIDSOAP_HOST:-liquidsoap.radio-dj.svc.cluster.local}"
 LIQUIDSOAP_PORT="${LIQUIDSOAP_PORT:-1234}"
 
 # Voice IDs
@@ -103,7 +103,7 @@ ffmpeg -y -loglevel error \
 }
 
 # Step 4: Push to Liquidsoap queue via telnet
-echo "[dj-commentary] Pushing to ${QUEUE_NAME}..."
+echo "[dj-commentary] Pushing to ${QUEUE_NAME} via ${LIQUIDSOAP_HOST}:${LIQUIDSOAP_PORT}..."
 PUSH_RESPONSE=$(echo "${QUEUE_NAME}.push ${PADDED_FILE}" | nc -w2 "$LIQUIDSOAP_HOST" "$LIQUIDSOAP_PORT" 2>&1) || {
     echo "[dj-commentary] ERROR: Failed to push to Liquidsoap queue" >&2
     exit 1

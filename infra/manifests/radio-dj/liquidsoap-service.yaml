@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: liquidsoap
+  namespace: radio-dj
+  labels:
+    app: liquidsoap
+spec:
+  type: ClusterIP
+  selector:
+    app: liquidsoap
+  ports:
+    - port: 1234
+      targetPort: 1234
+      protocol: TCP
