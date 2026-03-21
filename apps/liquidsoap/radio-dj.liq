@@ -7,10 +7,12 @@
 
 settings.server.telnet.set(true)
 settings.server.telnet.port.set(1234)
-# Binds to 127.0.0.1 — telnet is loopback-only. announce-track.sh (same
-# container) communicates via 127.0.0.1:1234 directly. Cross-pod access from
-# dj-brain uses the state-file event mechanism rather than telnet.
-settings.server.telnet.bind_addr.set("127.0.0.1")
+# Binds to 0.0.0.0 so dj-brain (separate pod) can push TTS clips via
+# `nc liquidsoap.radio-dj.svc.cluster.local 1234`. Network isolation is
+# provided by Kubernetes — the liquidsoap Service is ClusterIP only (no
+# NodePort/LoadBalancer), so the telnet interface is unreachable outside
+# the cluster. announce-track.sh (same container) also uses 127.0.0.1.
+settings.server.telnet.bind_addr.set("0.0.0.0")
 
 # Separate voice queues — Arthur and Cara have independent volume
 queue_arthur = request.queue(id="queue_arthur")
