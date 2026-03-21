@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: mgmt-dashboard
-          image: ghcr.io/binary64/mgmt-dashboard:latest
+          image: ghcr.io/binary64/mgmt-dashboard:0.1.0
           ports:
             - name: http
               containerPort: 3000

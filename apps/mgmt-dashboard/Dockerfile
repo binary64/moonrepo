@@ -3,13 +3,13 @@ FROM node:22-alpine AS base
 FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
-COPY apps/mgmt-dashboard/package.json ./
-RUN npm install
+COPY package.json package-lock.json* ./
+RUN if [ -f package-lock.json ]; then npm ci --ignore-scripts; else npm install --ignore-scripts; fi
 
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY apps/mgmt-dashboard/ .
+COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
