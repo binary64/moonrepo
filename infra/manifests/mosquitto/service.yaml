@@ -7,10 +7,11 @@ metadata:
     app.kubernetes.io/name: mosquitto
     app.kubernetes.io/instance: mosquitto
 spec:
-  type: ClusterIP
+  type: NodePort
   ports:
     - port: 1883
       targetPort: mqtt
+      nodePort: 31883
       protocol: TCP
       name: mqtt
     - port: 8883
