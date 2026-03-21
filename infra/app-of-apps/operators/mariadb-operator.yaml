@@ -14,6 +14,8 @@ spec:
     helm:
       releaseName: mariadb-operator
       values: |
+        crds:
+          enabled: true
         ha:
           enabled: false
 
