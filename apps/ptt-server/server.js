@@ -233,9 +233,15 @@ app.post('/text', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-// Rate limiter for routes with file system access
+// Rate limiters
 const rateLimit = require('express-rate-limit');
 const sessionsLimiter = rateLimit({ windowMs: 60000, max: 30, standardHeaders: true, legacyHeaders: false });
+const textLimiter = rateLimit({ windowMs: 60000, max: 60, standardHeaders: true, legacyHeaders: false });
+const batteryLimiter = rateLimit({ windowMs: 60000, max: 60, standardHeaders: true, legacyHeaders: false });
+
+// Apply rate limiters to routes with file/network access
+app.use('/text', textLimiter);
+app.use('/battery', batteryLimiter);
 
 // Curated session list for watch pager
 const SESSIONS_FILE = path.join(__dirname, 'sessions.json');
@@ -686,13 +692,13 @@ function gatewayRPC(method, params) {
   });
 }
 
-async function sendToOpenClaw(text, cb) {
+async function sendToOpenClaw(text, cb, sessionKey) {
   try {
     const location = await getLocation();
     const messageText = `⌚ User spoke into his watch from the ${location}: "${text}"`;
     await gatewayRPC('chat.send', {
       message: messageText,
-      sessionKey: MAIN_SESSION,
+      sessionKey: sessionKey || MAIN_SESSION,
       idempotencyKey: `ptt-${Date.now()}`
     });
     console.log(`[${ts()}] → Main session: "${text}" (location: ${location})`);
