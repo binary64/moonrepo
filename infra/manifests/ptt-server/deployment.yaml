@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ptt-server
+  namespace: ptt-server
+  labels:
+    app: ptt-server
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: ptt-server
+  template:
+    metadata:
+      labels:
+        app: ptt-server
+    spec:
+      # Run on NUC (master) — close to LAN for low-latency watch comms
+      nodeSelector:
+        node-role.kubernetes.io/master: "true"
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/control-plane
+          effect: NoSchedule
+      containers:
+        - name: ptt-server
+          image: ghcr.io/binary64/ptt-server:v1.0.0
+          ports:
+            - containerPort: 9876
+              protocol: TCP
+          env:
+            - name: PORT
+              value: "9876"
+            - name: MAIN_SESSION
+              value: "agent:main:main"
+            - name: HA_URL
+              value: "https://home.brandwhisper.cloud"
+            - name: HA_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: ptt-server-secret
+                  key: ha-token
+            - name: BERMUDA_ENTITY
+              value: "sensor.bermuda_952259c0553c46c2b1870c091fcb182a_100_40004_area"
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ptt-server-secret
+                  key: openai-api-key
+            - name: OPENCLAW_GATEWAY_URL
+              value: "ws://192.168.1.201:18789"
+            - name: OPENCLAW_GATEWAY_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: ptt-server-secret
+                  key: gateway-token
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9876
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 9876
+            initialDelaySeconds: 5
+            periodSeconds: 10

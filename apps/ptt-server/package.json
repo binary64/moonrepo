@@ -1,0 +1,16 @@
+{
+  "name": "ptt-server",
+  "version": "1.0.0",
+  "description": "Watch PTT voice receiver — streams voice from Galaxy Watch, transcribes via Whisper, routes to Arthur main session with HA location context",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@ricky0123/vad-node": "^0.0.3",
+    "express": "^4.21.0",
+    "express-rate-limit": "^7.5.0",
+    "onnxruntime-node": "^1.24.1",
+    "ws": "^8.19.0"
+  }
+}
