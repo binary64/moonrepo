@@ -4,7 +4,9 @@ resources:
   - namespace.yaml
   - icecast-deployment.yaml
   - icecast-service.yaml
+  - liquidsoap-secret.yaml
   - liquidsoap-deployment.yaml
   - liquidsoap-service.yaml
+  - dj-brain-secret.yaml
   - dj-brain-deployment.yaml
   - dj-brain-service.yaml
