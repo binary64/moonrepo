@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: watch-adb-discover
+  namespace: watch-adb-discover
+  labels:
+    app: watch-adb-discover
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: watch-adb-discover
+  template:
+    metadata:
+      labels:
+        app: watch-adb-discover
+    spec:
+      # hostNetwork required to reach LAN devices (Galaxy Watch at 192.168.1.141)
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      imagePullSecrets:
+        - name: ghcr-pull
+      # Pin to master (NUC) — only node with home LAN access
+      nodeSelector:
+        kubernetes.io/hostname: master
+      containers:
+        - name: watch-adb-discover
+          image: ghcr.io/binary64/watch-adb-discover:latest
+          ports:
+            - containerPort: 3200
+              protocol: TCP
+          env:
+            - name: HTTP_PORT
+              value: "3200"
+            - name: WATCH_IP
+              value: "192.168.1.141"
+            - name: PORT_MIN
+              value: "30000"
+            - name: PORT_MAX
+              value: "49000"
+            - name: SCAN_INTERVAL_MS
+              value: "60000"
+            - name: CONNECT_TIMEOUT_MS
+              value: "500"
+            - name: CHUNK_SIZE
+              value: "200"
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3200
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3200
+            initialDelaySeconds: 3
+            periodSeconds: 10
