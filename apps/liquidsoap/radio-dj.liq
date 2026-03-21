@@ -1,12 +1,18 @@
 #!/usr/bin/liquidsoap
 
-# Arthur Radio — BPM-Aware DJ Transitions (Container version)
+# Arthur Radio — BPM-Aware DJ Transitions (Liquidsoap microservice)
 # Uses BPM tags from bpm-tools for beat-aligned crossfades
 # TTS injection via request queue with music ducking
+# Icecast host configured via ICECAST_HOST env var
 
 settings.server.telnet.set(true)
 settings.server.telnet.port.set(1234)
-settings.server.telnet.bind_addr.set("127.0.0.1")
+# Binds to 0.0.0.0 within the pod because dj-brain (separate pod) connects
+# via the liquidsoap ClusterIP service on port 1234. Network-level access is
+# restricted by Kubernetes — the service is ClusterIP only (no NodePort or
+# LoadBalancer), so the telnet interface is not exposed outside the cluster.
+# announce-track.sh (same container) also uses this via 127.0.0.1.
+settings.server.telnet.bind_addr.set("0.0.0.0")
 
 # Separate voice queues — Arthur and Cara have independent volume
 queue_arthur = request.queue(id="queue_arthur")
@@ -64,15 +70,15 @@ end)
 def beat_crossfade(a, b)
   bpm_a_str = if a.metadata["tbpm"] != "" then a.metadata["tbpm"] else a.metadata["bpm"] end
   bpm_b_str = if b.metadata["tbpm"] != "" then b.metadata["tbpm"] else b.metadata["bpm"] end
-  
+
   bpm_a = float_of_string(default=120., bpm_a_str)
   bpm_b = float_of_string(default=120., bpm_b_str)
-  
+
   diff = abs(bpm_a - bpm_b)
   half_diff = abs(bpm_a - (bpm_b * 2.))
   double_diff = abs((bpm_a * 2.) - bpm_b)
   effective_diff = min(diff, min(half_diff, double_diff))
-  
+
   beat_dur_a = 60. / bpm_a
 
   if effective_diff < 8. then
@@ -136,7 +142,10 @@ end)
 
 # Song request — skip current track to trigger crossfade into requested song
 server.register("request.song", usage="request.song <path>", description="Request a song (crossfades immediately)", fun (path) -> begin
-  file.write(data='{"path": "' ^ path ^ '"}', "/state/radio-request.json")
+  # Escape backslashes and double-quotes to produce valid JSON
+  escaped = string.replace(pattern="\\\\", fun (_) -> "\\\\\\\\", path)
+  escaped = string.replace(pattern="\"", fun (_) -> "\\\\\"", escaped)
+  file.write(data='{"path": "' ^ escaped ^ '"}', "/state/radio-request.json")
   source.skip(music)
   "OK: Requesting #{path}"
 end)
@@ -144,7 +153,7 @@ end)
 # Output to Icecast
 output.icecast(
   %mp3(bitrate=192),
-  host="localhost",
+  host=environment.get(default="icecast.radio-dj.svc.cluster.local", "ICECAST_HOST"),
   port=8100,
   password=environment.get(default="changeme", "ICECAST_SOURCE_PASSWORD"),
   mount="/stream",

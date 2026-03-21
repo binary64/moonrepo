@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: icecast
+  namespace: radio-dj
+  labels:
+    app: icecast
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: icecast
+  template:
+    metadata:
+      labels:
+        app: icecast
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: vmi3137202
+      containers:
+        - name: icecast
+          # TODO: pin to SHA digest after first CI build (e.g. ghcr.io/binary64/icecast@sha256:...)
+          image: ghcr.io/binary64/icecast:v1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8100
+              protocol: TCP
+          env:
+            - name: ICECAST_SOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: icecast-secret
+                  key: source-password
+            - name: ICECAST_RELAY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: icecast-secret
+                  key: relay-password
+            - name: ICECAST_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: icecast-secret
+                  key: admin-password
+            - name: TZ
+              value: "Europe/London"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /status-json.xsl
+              port: 8100
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5

@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dj-brain
+  namespace: radio-dj
+  labels:
+    app: dj-brain
+spec:
+  replicas: 0
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: dj-brain
+  template:
+    metadata:
+      labels:
+        app: dj-brain
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: vmi3137202
+      containers:
+        - name: dj-brain
+          image: ghcr.io/binary64/dj-brain:latest
+          imagePullPolicy: Always
+          env:
+            - name: LIQUIDSOAP_HOST
+              value: "liquidsoap.radio-dj.svc.cluster.local"
+            - name: LIQUIDSOAP_PORT
+              value: "1234"
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: dj-brain-secret
+                  key: openai-api-key
+            - name: TTS_SERVER_URL
+              # Plain HTTP is intentional — same-node pod traffic, TLS at ingress
+              value: "http://tts-server.tts-server.svc.cluster.local:3090"
+            - name: TTS_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: dj-brain-secret
+                  key: tts-auth-token
+                  optional: true
+            - name: HUME_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: dj-brain-secret
+                  key: hume-api-key
+                  optional: true
+            - name: ZAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: dj-brain-secret
+                  key: zai-api-key
+                  optional: true
+            - name: TZ
+              value: "Europe/London"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          volumeMounts:
+            - name: state
+              mountPath: /state
+            - name: dj-override
+              mountPath: /data/music/dj-override.json
+              readOnly: true
+            - name: schedule
+              mountPath: /config/schedule.json
+              readOnly: true
+      volumes:
+        - name: state
+          hostPath:
+            path: /tmp/radio-state
+            type: DirectoryOrCreate
+        - name: dj-override
+          hostPath:
+            path: /mnt/arthur/clawd/data/music/dj-override.json
+            type: File
+        - name: schedule
+          hostPath:
+            path: /mnt/arthur/clawd/memory/schedule.json
+            type: File

@@ -11,9 +11,13 @@ DJ_NAME="${1:?Usage: dj-commentary.sh <dj_name> <track_name> <text>}"
 TRACK_NAME="${2:?Usage: dj-commentary.sh <dj_name> <track_name> <text>}"
 TEXT="${3:?Usage: dj-commentary.sh <dj_name> <track_name> <text>}"
 
-TTS_SERVER_URL="${TTS_SERVER_URL:-http://192.168.1.201:3090}"
+# TTS server URL — plain HTTP is intentional: the cluster runs on a single node
+# (vmi3137202) so dj-brain → tts-server traffic stays on localhost/pod network.
+# TLS termination is handled by Istio at the ingress layer for external access.
+# If the TTS server moves off-node, switch this to HTTPS.
+TTS_SERVER_URL="${TTS_SERVER_URL:-http://tts-server.tts-server.svc.cluster.local:3090}"
 TTS_AUTH_TOKEN="${TTS_AUTH_TOKEN:-}"
-LIQUIDSOAP_HOST="${LIQUIDSOAP_HOST:-127.0.0.1}"
+LIQUIDSOAP_HOST="${LIQUIDSOAP_HOST:-liquidsoap.radio-dj.svc.cluster.local}"
 LIQUIDSOAP_PORT="${LIQUIDSOAP_PORT:-1234}"
 
 # Voice IDs
@@ -103,7 +107,7 @@ ffmpeg -y -loglevel error \
 }
 
 # Step 4: Push to Liquidsoap queue via telnet
-echo "[dj-commentary] Pushing to ${QUEUE_NAME}..."
+echo "[dj-commentary] Pushing to ${QUEUE_NAME} via ${LIQUIDSOAP_HOST}:${LIQUIDSOAP_PORT}..."
 PUSH_RESPONSE=$(echo "${QUEUE_NAME}.push ${PADDED_FILE}" | nc -w2 "$LIQUIDSOAP_HOST" "$LIQUIDSOAP_PORT" 2>&1) || {
     echo "[dj-commentary] ERROR: Failed to push to Liquidsoap queue" >&2
     exit 1
