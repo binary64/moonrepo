@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: watch-adb-discover
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/binary64/moonrepo.git
+    path: infra/manifests/watch-adb-discover
+    targetRevision: HEAD
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: watch-adb-discover
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
