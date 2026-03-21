@@ -38,8 +38,12 @@ echo "meta.update $PRETTY_NAME" | nc -w1 127.0.0.1 1234 >/dev/null 2>&1 || true
 
 # ─── Write new-track-event for dj-brain to consume ───
 TMP_EVENT="/state/new-track-event.tmp.$$"
-printf '{"path":"%s","bpm":"%s","name":"%s","timestamp":"%s"}\n' \
-    "$TRACK_PATH" "$TRACK_BPM" "$PRETTY_NAME" "$TIMESTAMP" > "$TMP_EVENT"
+jq -n \
+    --arg path "$TRACK_PATH" \
+    --arg bpm "$TRACK_BPM" \
+    --arg name "$PRETTY_NAME" \
+    --arg timestamp "$TIMESTAMP" \
+    '{path: $path, bpm: $bpm, name: $name, timestamp: $timestamp}' > "$TMP_EVENT"
 mv "$TMP_EVENT" /state/new-track-event
 
 exit 0

@@ -34,7 +34,8 @@ spec:
                   name: dj-brain-secret
                   key: openai-api-key
             - name: TTS_SERVER_URL
-              value: "http://158.220.90.28:3090"
+              # Plain HTTP is intentional — same-node pod traffic, TLS at ingress
+              value: "http://tts-server.tts-server.svc.cluster.local:3090"
             - name: TTS_AUTH_TOKEN
               valueFrom:
                 secretKeyRef:

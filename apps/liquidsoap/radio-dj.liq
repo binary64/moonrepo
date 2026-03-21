@@ -7,6 +7,11 @@
 
 settings.server.telnet.set(true)
 settings.server.telnet.port.set(1234)
+# Binds to 0.0.0.0 within the pod because dj-brain (separate pod) connects
+# via the liquidsoap ClusterIP service on port 1234. Network-level access is
+# restricted by Kubernetes — the service is ClusterIP only (no NodePort or
+# LoadBalancer), so the telnet interface is not exposed outside the cluster.
+# announce-track.sh (same container) also uses this via 127.0.0.1.
 settings.server.telnet.bind_addr.set("0.0.0.0")
 
 # Separate voice queues — Arthur and Cara have independent volume
@@ -137,7 +142,10 @@ end)
 
 # Song request — skip current track to trigger crossfade into requested song
 server.register("request.song", usage="request.song <path>", description="Request a song (crossfades immediately)", fun (path) -> begin
-  file.write(data='{"path": "' ^ path ^ '"}', "/state/radio-request.json")
+  # Escape backslashes and double-quotes to produce valid JSON
+  escaped = string.replace(pattern="\\\\", fun (_) -> "\\\\\\\\", path)
+  escaped = string.replace(pattern="\"", fun (_) -> "\\\\\"", escaped)
+  file.write(data='{"path": "' ^ escaped ^ '"}', "/state/radio-request.json")
   source.skip(music)
   "OK: Requesting #{path}"
 end)
