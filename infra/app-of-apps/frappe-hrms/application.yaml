@@ -1,0 +1,135 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: frappe-hrms
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://helm.erpnext.com
+    targetRevision: "8.0.36"
+    chart: erpnext
+    helm:
+      releaseName: frappe-hrms
+      values: |
+        # Image — using community image with HRMS pre-installed
+        image:
+          repository: arnadeem/erpnext-hrms
+          tag: latest
+          pullPolicy: IfNotPresent
+
+        # External DB — MariaDB subchart
+        mariadb:
+          enabled: true
+        mariadb-subchart:
+          enabled: true
+          auth:
+            rootPassword: "frappe-hrms-root-2026"
+            database: frappe_hrms
+          primary:
+            nodeSelector:
+              kubernetes.io/hostname: vmi3137202
+            persistence:
+              enabled: true
+              storageClass: local-path
+              size: 4Gi
+
+        # Redis subcharts
+        redis-cache:
+          enabled: true
+          master:
+            nodeSelector:
+              kubernetes.io/hostname: vmi3137202
+            persistence:
+              enabled: false
+          replica:
+            replicaCount: 0
+
+        redis-queue:
+          enabled: true
+          master:
+            nodeSelector:
+              kubernetes.io/hostname: vmi3137202
+            persistence:
+              enabled: false
+          replica:
+            replicaCount: 0
+
+        # Pin all workloads to Jupiter
+        nginx:
+          replicaCount: 1
+          nodeSelector:
+            kubernetes.io/hostname: vmi3137202
+
+        worker:
+          gunicorn:
+            replicaCount: 1
+            nodeSelector:
+              kubernetes.io/hostname: vmi3137202
+          default:
+            replicaCount: 1
+            nodeSelector:
+              kubernetes.io/hostname: vmi3137202
+          short:
+            replicaCount: 1
+            nodeSelector:
+              kubernetes.io/hostname: vmi3137202
+          long:
+            replicaCount: 1
+            nodeSelector:
+              kubernetes.io/hostname: vmi3137202
+          scheduler:
+            replicaCount: 1
+            nodeSelector:
+              kubernetes.io/hostname: vmi3137202
+
+        socketio:
+          replicaCount: 1
+          nodeSelector:
+            kubernetes.io/hostname: vmi3137202
+
+        # Persistence — local-path (RWO)
+        persistence:
+          worker:
+            enabled: true
+            size: 8Gi
+            storageClass: local-path
+            accessModes:
+              - ReadWriteOnce
+
+        # Site creation
+        jobs:
+          configure:
+            enabled: true
+            fixVolume: true
+          createSite:
+            enabled: true
+            siteName: "hrms.brandwhisper.cloud"
+            adminPassword: "fjd890sfjeionreiojfreiolkrnekrjelk"
+            installApps:
+              - erpnext
+              - hrms
+            dbType: mariadb
+
+        # Ingress/HTTPRoute — we manage our own HTTPRoute separately
+        ingress:
+          enabled: false
+        httproute:
+          enabled: false
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: frappe-hrms
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
