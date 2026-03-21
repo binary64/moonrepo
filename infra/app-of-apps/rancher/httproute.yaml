@@ -9,6 +9,7 @@ spec:
   parentRefs:
     - name: gateway
       namespace: istio-system
+      sectionName: https
   hostnames:
     - rancher.brandwhisper.cloud
   rules:

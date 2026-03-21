@@ -211,6 +211,7 @@ extraResources:
       parentRefs:
         - name: gateway
           namespace: istio-system
+          sectionName: https
       hostnames:
         - "llm.brandwhisper.cloud"
       rules:
