@@ -15,9 +15,12 @@ fi
 
 
 # Template Icecast config with environment variables
+# Use mktemp (mode 600) so the rendered config with passwords is not world-readable
+TMPCONFIG=$(mktemp)
+chmod 600 "$TMPCONFIG"
 envsubst '${ICECAST_SOURCE_PASSWORD} ${ICECAST_RELAY_PASSWORD} ${ICECAST_ADMIN_PASSWORD}' \
-    < /etc/icecast2/icecast.xml > /tmp/icecast2.xml
-cp /tmp/icecast2.xml /etc/icecast2/icecast.xml
+    < /etc/icecast2/icecast.xml > "$TMPCONFIG"
+mv "$TMPCONFIG" /etc/icecast2/icecast.xml
 
 echo "Starting Icecast on port 8100..."
 exec icecast2 -c /etc/icecast2/icecast.xml
