@@ -28,6 +28,7 @@ Use when working in `infra/`.
 6. Commit, push, let ArgoCD deploy
 
 ### HTTPRoute Template
+
 ```yaml
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
