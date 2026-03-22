@@ -163,6 +163,7 @@ export default function Home() {
     const raw = nowPlaying?.raw || "";
     if (prevTrackRef.current && raw !== prevTrackRef.current) {
       setTrackChanged(true);
+      prevTrackRef.current = raw;
       const timer = setTimeout(() => setTrackChanged(false), 1000);
       return () => clearTimeout(timer);
     }

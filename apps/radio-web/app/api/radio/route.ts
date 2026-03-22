@@ -156,8 +156,9 @@ export async function GET() {
       headers: { "Cache-Control": "no-store" },
     });
   } catch (error) {
+    console.error("Radio API error:", error);
     return NextResponse.json(
-      { error: "Failed to fetch radio data", details: String(error) },
+      { error: "Failed to fetch radio data" },
       { status: 500 },
     );
   }
