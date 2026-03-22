@@ -15,7 +15,7 @@ function WaveformRing({ active }: { active: boolean }) {
     <div className="absolute inset-[-20px] pointer-events-none">
       {[...Array(3)].map((_, i) => (
         <div
-          key={i}
+          key={`ring-${i}`}
           className="absolute inset-0 rounded-full border-2 border-violet-500/20"
           style={{
             animation: `wave-ring ${1.5 + i * 0.4}s ease-out infinite`,

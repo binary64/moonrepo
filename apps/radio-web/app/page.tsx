@@ -27,7 +27,7 @@ function EQBars({ active }: { active: boolean }) {
       <div className="flex items-end gap-[3px] h-6 opacity-30">
         {[4, 8, 6, 10, 5].map((h, i) => (
           <div
-            key={i}
+            key={`bar-${i}`}
             className="w-[3px] rounded-full bg-violet-400"
             style={{ height: `${h}px` }}
           />
@@ -101,7 +101,7 @@ function LoadingSkeleton() {
     <div className="flex flex-col items-center justify-center min-h-screen px-4">
       <div className="w-full max-w-2xl space-y-3">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-16 rounded-xl shimmer" />
+          <div key={`bar-${i}`} className="h-16 rounded-xl shimmer" />
         ))}
         <div className="h-48 rounded-2xl shimmer mt-6" />
         <div className="h-16 rounded-xl shimmer mt-6" />
