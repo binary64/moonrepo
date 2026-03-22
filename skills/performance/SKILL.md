@@ -23,7 +23,7 @@ Prioritised by impact. These apply to client-side React with static export — n
 ## HIGH — Re-render Prevention
 
 - **Don't subscribe to unused state:** If state is only used inside a callback, read it there via ref, don't subscribe the component.
-- **Memoize expensive children:** Extract expensive subtrees into separate components — React can skip re-rendering them when parent state changes.
+- **Isolate expensive children:** Extract expensive subtrees into separate components first — React can skip re-rendering them when parent state changes. Use manual memoisation (`React.memo`) only when profiling confirms a bottleneck.
 - **Primitive dependencies:** Use primitive values (not objects) as `useEffect` dependencies. Derive a boolean or string from complex state.
 - **Derived state:** Subscribe to a derived boolean (`const isActive = status === 'active'`), not the raw object.
 - **Functional setState:** `setItems(prev => [...prev, item])` — creates a stable callback identity, prevents child re-renders.

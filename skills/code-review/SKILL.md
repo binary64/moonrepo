@@ -26,7 +26,7 @@ Run through this before every commit and PR.
 
 - [ ] No manual `React.memo`, `useMemo`, `useCallback` unless profiling justifies it (React Compiler handles this).
 - [ ] Server Components by default — `'use client'` only where required.
-- [ ] Named exports, not default exports.
+- [ ] Named exports, not default exports — except Next.js route files (`page.tsx`, `layout.tsx`, `loading.tsx`, `error.tsx`, `template.tsx`, `not-found.tsx`, `default.tsx`) which require default exports.
 - [ ] Dynamic imports for heavy components (`next/dynamic`).
 - [ ] Accessible: semantic HTML, ARIA labels on interactive elements, keyboard navigable.
 
