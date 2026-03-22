@@ -17,12 +17,8 @@ spec:
       labels:
         app: tts-server
     spec:
-      hostNetwork: true
-      dnsPolicy: ClusterFirstWithHostNet
       imagePullSecrets:
         - name: ghcr-pull
-      nodeSelector:
-        kubernetes.io/hostname: master
       containers:
         - name: tts-server
           image: ghcr.io/binary64/tts-server:latest
