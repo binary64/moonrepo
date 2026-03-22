@@ -4,10 +4,9 @@ const config: CodegenConfig = {
   schema: [
     {
       [process.env.NEXT_PUBLIC_HASURA_HTTP_URL ||
-      "http://hasura.hasura.svc.cluster.local:8080/v1/graphql"]: {
+        "http://hasura.hasura.svc.cluster.local:8080/v1/graphql"]: {
         headers: {
-          "x-hasura-admin-secret":
-            process.env.HASURA_ADMIN_SECRET || "",
+          "x-hasura-admin-secret": process.env.HASURA_ADMIN_SECRET || "",
         },
       },
     },

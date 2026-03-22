@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const STREAM_URL = "http://158.220.90.28:30100/stream";
 const RETRY_CAP_MS = 10000;
@@ -27,7 +27,11 @@ function WaveformRing({ active }: { active: boolean }) {
   );
 }
 
-export default function RadioPlayer({ currentTrack }: { currentTrack?: string }) {
+export default function RadioPlayer({
+  currentTrack,
+}: {
+  currentTrack?: string;
+}) {
   const [state, setState] = useState<PlayerState>("idle");
   const [skipping, setSkipping] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -68,21 +72,27 @@ export default function RadioPlayer({ currentTrack }: { currentTrack?: string })
 
     const onCanPlay = () => {
       if (!mountedRef.current) return;
-      audio.play().then(() => {
-        if (mountedRef.current) {
-          setState("playing");
-          retryDelayRef.current = 1000;
-        }
-      }).catch(() => {
-        // Autoplay blocked
-      });
+      audio
+        .play()
+        .then(() => {
+          if (mountedRef.current) {
+            setState("playing");
+            retryDelayRef.current = 1000;
+          }
+        })
+        .catch(() => {
+          // Autoplay blocked
+        });
     };
 
     const handleError = () => {
       if (!mountedRef.current) return;
       setState("buffering");
       retryRef.current = setTimeout(() => {
-        retryDelayRef.current = Math.min(retryDelayRef.current * 2, RETRY_CAP_MS);
+        retryDelayRef.current = Math.min(
+          retryDelayRef.current * 2,
+          RETRY_CAP_MS,
+        );
         startStream();
       }, retryDelayRef.current);
     };
@@ -140,14 +150,28 @@ export default function RadioPlayer({ currentTrack }: { currentTrack?: string })
         <WaveformRing active={state === "playing"} />
 
         {state === "buffering" && (
-          <svg className="absolute inset-0 w-[80px] h-[80px] animate-spin-slow" viewBox="0 0 80 80">
+          <svg
+            className="absolute inset-0 w-[80px] h-[80px] animate-spin-slow"
+            viewBox="0 0 80 80"
+          >
             <circle
-              cx="40" cy="40" r="36" fill="none"
-              stroke="url(#spinner-gradient)" strokeWidth="3"
-              strokeLinecap="round" strokeDasharray="180 90"
+              cx="40"
+              cy="40"
+              r="36"
+              fill="none"
+              stroke="url(#spinner-gradient)"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeDasharray="180 90"
             />
             <defs>
-              <linearGradient id="spinner-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <linearGradient
+                id="spinner-gradient"
+                x1="0%"
+                y1="0%"
+                x2="100%"
+                y2="0%"
+              >
                 <stop offset="0%" stopColor="#a78bfa" stopOpacity="1" />
                 <stop offset="100%" stopColor="#a78bfa" stopOpacity="0" />
               </linearGradient>
@@ -160,28 +184,46 @@ export default function RadioPlayer({ currentTrack }: { currentTrack?: string })
         )}
 
         <button
+          type="button"
           onClick={toggle}
           className={`relative z-10 w-[56px] h-[56px] rounded-full flex items-center justify-center transition-all duration-300 ${
             state === "playing"
               ? "bg-violet-600 hover:bg-violet-500 shadow-lg shadow-violet-600/30"
               : state === "buffering"
-              ? "bg-slate-700 hover:bg-slate-600"
-              : "bg-slate-800 hover:bg-violet-600 border border-slate-600 hover:border-violet-500"
+                ? "bg-slate-700 hover:bg-slate-600"
+                : "bg-slate-800 hover:bg-violet-600 border border-slate-600 hover:border-violet-500"
           }`}
           aria-label={state === "playing" ? "Pause" : "Play"}
         >
           {state === "playing" ? (
-            <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="w-5 h-5 text-white"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
             </svg>
           ) : state === "buffering" ? (
             <div className="flex gap-1">
-              <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" style={{ animationDelay: "0ms" }} />
-              <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" style={{ animationDelay: "150ms" }} />
-              <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" style={{ animationDelay: "300ms" }} />
+              <div
+                className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse"
+                style={{ animationDelay: "0ms" }}
+              />
+              <div
+                className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse"
+                style={{ animationDelay: "150ms" }}
+              />
+              <div
+                className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse"
+                style={{ animationDelay: "300ms" }}
+              />
             </div>
           ) : (
-            <svg className="w-6 h-6 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="w-6 h-6 text-white ml-0.5"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path d="M8 5v14l11-7z" />
             </svg>
           )}
@@ -191,6 +233,7 @@ export default function RadioPlayer({ currentTrack }: { currentTrack?: string })
       {/* Skip button */}
       {state === "playing" && (
         <button
+          type="button"
           onClick={skip}
           disabled={skipping}
           className={`w-[44px] h-[44px] rounded-full flex items-center justify-center transition-all duration-300 ${

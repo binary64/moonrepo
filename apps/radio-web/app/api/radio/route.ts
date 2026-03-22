@@ -1,13 +1,12 @@
+import { ApolloClient, HttpLink, InMemoryCache } from "@apollo/client";
 import { NextResponse } from "next/server";
-import { ApolloClient, InMemoryCache, HttpLink } from "@apollo/client";
-import { RadioStateDocument } from "../../graphql/generated/graphql";
 import type { RadioStateQuery } from "../../graphql/generated/graphql";
+import { RadioStateDocument } from "../../graphql/generated/graphql";
 
 const HASURA_HTTP =
   process.env.NEXT_PUBLIC_HASURA_HTTP_URL ||
   "http://hasura.hasura.svc.cluster.local:8080/v1/graphql";
-const ADMIN_SECRET =
-  process.env.HASURA_ADMIN_SECRET ?? "";
+const ADMIN_SECRET = process.env.HASURA_ADMIN_SECRET ?? "";
 
 // Server-side Apollo client (no caching for API route)
 function getServerClient() {
@@ -88,7 +87,9 @@ export async function GET() {
     let streamStart = "";
 
     try {
-      const { data } = await client.query<RadioStateQuery>({ query: RadioStateDocument });
+      const { data } = await client.query<RadioStateQuery>({
+        query: RadioStateDocument,
+      });
 
       const playHistory = data?.radio_play_history || [];
       if (playHistory.length > 0) {
@@ -101,13 +102,11 @@ export async function GET() {
         };
 
         // Rest is history (already newest first)
-        history = playHistory.slice(1).map(
-          (h: { played_at: string; artist: string; title: string }) => ({
-            timestamp: h.played_at,
-            artist: h.artist,
-            title: h.title,
-          })
-        );
+        history = playHistory.slice(1).map((h) => ({
+          timestamp: h.played_at ?? "",
+          artist: h.artist,
+          title: h.title,
+        }));
       }
 
       const snap = data?.radio_listener_snapshots?.[0];
@@ -156,7 +155,7 @@ export async function GET() {
   } catch (error) {
     return NextResponse.json(
       { error: "Failed to fetch radio data", details: String(error) },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -7,7 +7,15 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**", "!node_modules", "!.next", "!dist", "!build"]
+    "includes": [
+      "**",
+      "!node_modules",
+      "!.next",
+      "!dist",
+      "!build",
+      "!app/graphql/generated",
+      "!**/*.css"
+    ]
   },
   "formatter": {
     "enabled": true,
@@ -17,7 +25,13 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true
+      "recommended": true,
+      "a11y": {
+        "noSvgWithoutTitle": "warn"
+      },
+      "suspicious": {
+        "noArrayIndexKey": "warn"
+      }
     },
     "domains": {
       "next": "recommended",

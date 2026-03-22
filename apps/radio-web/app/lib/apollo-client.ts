@@ -1,4 +1,4 @@
-import { ApolloClient, InMemoryCache, HttpLink, split } from "@apollo/client";
+import { ApolloClient, HttpLink, InMemoryCache, split } from "@apollo/client";
 import { GraphQLWsLink } from "@apollo/client/link/subscriptions";
 import { getMainDefinition } from "@apollo/client/utilities";
 import { createClient } from "graphql-ws";
@@ -35,7 +35,7 @@ function makeClient() {
       connectionParams: ADMIN_SECRET
         ? { headers: { "x-hasura-admin-secret": ADMIN_SECRET } }
         : {},
-    })
+    }),
   );
 
   const splitLink = split(
@@ -46,7 +46,7 @@ function makeClient() {
       );
     },
     wsLink,
-    httpLink
+    httpLink,
   );
 
   return new ApolloClient({

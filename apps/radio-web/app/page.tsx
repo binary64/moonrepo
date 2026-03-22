@@ -1,17 +1,18 @@
 "use client";
 
+import { useQuery, useSubscription } from "@apollo/client/react";
 import { useEffect, useRef, useState } from "react";
-import { useSubscription, useQuery } from "@apollo/client/react";
 import RadioPlayer from "./components/RadioPlayer";
+import type {
+  Radio_Listener_Snapshots,
+  Radio_Play_History,
+} from "./graphql/generated/graphql";
 import {
+  GetListenerCountDocument,
+  GetPlayHistoryDocument,
+  SubscribeListenersDocument,
   SubscribeNowPlayingDocument,
   SubscribePlayHistoryDocument,
-  SubscribeListenersDocument,
-  GetPlayHistoryDocument,
-  GetListenerCountDocument,
-} from "./graphql/generated/graphql";
-import type {
-  Radio_Play_History,
 } from "./graphql/generated/graphql";
 
 interface TrackEntry {
@@ -68,13 +69,7 @@ function formatStreamDuration(iso: string): string {
   return `${mins}m`;
 }
 
-function HistoryTrack({
-  track,
-  index,
-}: {
-  track: TrackEntry;
-  index: number;
-}) {
+function HistoryTrack({ track, index }: { track: TrackEntry; index: number }) {
   const isRecent = index < 3;
   return (
     <div
@@ -124,9 +119,12 @@ export default function Home() {
 
   // Apollo subscriptions for live data
   const { data: nowPlayingData } = useSubscription(SubscribeNowPlayingDocument);
-  const { data: historySubData } = useSubscription(SubscribePlayHistoryDocument, {
-    variables: { limit: 50 },
-  });
+  const { data: historySubData } = useSubscription(
+    SubscribePlayHistoryDocument,
+    {
+      variables: { limit: 50 },
+    },
+  );
   const { data: listenerSubData } = useSubscription(SubscribeListenersDocument);
 
   // Initial query fallback (in case subscriptions aren't ready)
@@ -142,11 +140,9 @@ export default function Home() {
     [];
 
   const nowPlayingRow: Radio_Play_History | null =
-    nowPlayingData?.radio_play_history?.[0] ||
-    playHistory[0] ||
-    null;
+    nowPlayingData?.radio_play_history?.[0] || playHistory[0] || null;
 
-  const listenerSnap: ListenerRow | null =
+  const listenerSnap: Radio_Listener_Snapshots | null =
     listenerSubData?.radio_listener_snapshots?.[0] ||
     listenerQueryData?.radio_listener_snapshots?.[0] ||
     null;
@@ -173,6 +169,7 @@ export default function Home() {
   }, [nowPlaying?.raw]);
 
   // Auto-scroll history to bottom
+  // biome-ignore lint/correctness/useExhaustiveDependencies: scroll on history length change
   useEffect(() => {
     if (historyEndRef.current) {
       historyEndRef.current.scrollIntoView({ behavior: "smooth" });
@@ -200,13 +197,11 @@ export default function Home() {
   if (loading && playHistory.length === 0) return <LoadingSkeleton />;
 
   // Build history: skip first entry (now playing), reverse for oldest-first display
-  const historyEntries: TrackEntry[] = playHistory
-    .slice(1)
-    .map((h) => ({
-      timestamp: h.played_at,
-      artist: h.artist,
-      title: h.title,
-    }));
+  const historyEntries: TrackEntry[] = playHistory.slice(1).map((h) => ({
+    timestamp: h.played_at,
+    artist: h.artist,
+    title: h.title,
+  }));
 
   // Displayed oldest-first (newest at bottom, nearest to now-playing)
   const displayHistory = [...historyEntries].reverse();
@@ -324,12 +319,8 @@ export default function Home() {
 
       {/* Footer */}
       <div className="mt-8 text-xs text-slate-700 text-center">
-        <span>
-          Updated {new Date().toLocaleTimeString("en-GB")}
-        </span>
-        {listenerPeak > 0 && (
-          <span className="ml-3">Peak: {listenerPeak}</span>
-        )}
+        <span>Updated {new Date().toLocaleTimeString("en-GB")}</span>
+        {listenerPeak > 0 && <span className="ml-3">Peak: {listenerPeak}</span>}
       </div>
     </main>
   );

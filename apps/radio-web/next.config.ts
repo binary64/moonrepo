@@ -1,9 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: 'standalone',
+  output: "standalone",
   devIndicators: {
-    position: 'bottom-right',
+    position: "bottom-right",
   },
 };
 
