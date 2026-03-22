@@ -21,7 +21,7 @@ Use when working in `infra/`.
 ## Adding a New Service
 
 1. Create ArgoCD Application manifest in `infra/app-of-apps/<name>/`
-2. Add HTTPRoute for `<name>.home.brandwhisper.cloud` — wildcard cert covers it automatically
+2. Add HTTPRoute for `<name>.brandwhisper.cloud` — wildcard cert covers it automatically
 3. Set `sync-wave` annotation for deployment ordering
 4. Include resource requests AND limits on all containers
 5. Pin to a specific node with `nodeSelector` if the workload needs it
@@ -39,7 +39,7 @@ spec:
   - name: gateway
     namespace: istio-system
   hostnames:
-  - "myservice.home.brandwhisper.cloud"
+  - "myservice.brandwhisper.cloud"
   rules:
   - backendRefs:
     - name: myservice
