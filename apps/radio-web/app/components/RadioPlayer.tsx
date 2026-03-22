@@ -13,13 +13,19 @@ function WaveformRing({ active }: { active: boolean }) {
   // CSS-driven pulsing ring bars — no Web Audio needed
   return (
     <div className="absolute inset-[-20px] pointer-events-none">
-      {[...Array(3)].map((_, i) => (
+      {(
+        [
+          { id: "ring-slow", duration: 1.5, delay: 0 },
+          { id: "ring-mid", duration: 1.9, delay: 0.3 },
+          { id: "ring-fast", duration: 2.3, delay: 0.6 },
+        ] as const
+      ).map(({ id, duration, delay }) => (
         <div
-          key={`ring-${i}`}
+          key={id}
           className="absolute inset-0 rounded-full border-2 border-violet-500/20"
           style={{
-            animation: `wave-ring ${1.5 + i * 0.4}s ease-out infinite`,
-            animationDelay: `${i * 0.3}s`,
+            animation: `wave-ring ${duration}s ease-out infinite`,
+            animationDelay: `${delay}s`,
           }}
         />
       ))}

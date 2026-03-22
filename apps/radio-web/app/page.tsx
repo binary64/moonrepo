@@ -25,9 +25,9 @@ function EQBars({ active }: { active: boolean }) {
   if (!active) {
     return (
       <div className="flex items-end gap-[3px] h-6 opacity-30">
-        {[4, 8, 6, 10, 5].map((h, i) => (
+        {[4, 8, 6, 10, 5].map((h) => (
           <div
-            key={`bar-${i}`}
+            key={`bar-${h}`}
             className="w-[3px] rounded-full bg-violet-400"
             style={{ height: `${h}px` }}
           />
