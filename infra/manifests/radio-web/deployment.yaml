@@ -40,7 +40,6 @@ spec:
                 secretKeyRef:
                   name: radio-web-skip-secret
                   key: secret
-                  optional: true
           resources:
             requests:
               cpu: 50m

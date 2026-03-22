@@ -6,11 +6,16 @@ const execAsync = promisify(exec);
 
 export async function POST(request: Request) {
   const skipSecret = process.env.SKIP_SECRET;
-  if (skipSecret) {
-    const provided = request.headers.get("x-skip-secret");
-    if (!provided || provided !== skipSecret) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  if (!skipSecret) {
+    return NextResponse.json(
+      { error: "Skip endpoint not configured" },
+      { status: 503 },
+    );
+  }
+
+  const provided = request.headers.get("x-skip-secret");
+  if (!provided || provided !== skipSecret) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {

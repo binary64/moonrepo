@@ -115,6 +115,11 @@ export default function RadioPlayer({
     audio.addEventListener("canplay", onCanPlay, { once: true });
     audio.addEventListener("error", handleError);
     audio.addEventListener("stalled", () => {
+      // Clear any existing stalled timer to avoid orphaned timers causing duplicate retries
+      if (stalledTimeoutRef.current !== null) {
+        clearTimeout(stalledTimeoutRef.current);
+        stalledTimeoutRef.current = null;
+      }
       // Only retry if we haven't started playing yet, or if actually stuck
       stalledTimeoutRef.current = setTimeout(() => {
         stalledTimeoutRef.current = null;
