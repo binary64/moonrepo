@@ -169,12 +169,12 @@ export default function Home() {
   }, [nowPlaying?.raw]);
 
   // Auto-scroll history to bottom
-  // biome-ignore lint/correctness/useExhaustiveDependencies: scroll on history length change
+  // biome-ignore lint/correctness/useExhaustiveDependencies: scroll on new track id
   useEffect(() => {
     if (historyEndRef.current) {
       historyEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [playHistory.length]);
+  }, [playHistory[0]?.id]);
 
   // Fetch stream start from Icecast (not in GraphQL)
   // Clear streamStart on failure so stale data isn't advertised

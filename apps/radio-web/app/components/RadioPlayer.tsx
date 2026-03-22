@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const STREAM_URL = "http://158.220.90.28:30100/stream";
+const STREAM_URL =
+  process.env.NEXT_PUBLIC_STREAM_URL ?? "http://158.220.90.28:30100/stream";
 const RETRY_CAP_MS = 10000;
 const SKIP_TIMEOUT_MS = 15000;
 
@@ -142,8 +143,12 @@ export default function RadioPlayer({
     }, SKIP_TIMEOUT_MS);
 
     try {
-      await fetch("/api/skip", { method: "POST" });
-    } catch {}
+      const res = await fetch("/api/skip", { method: "POST" });
+      if (!res.ok) throw new Error(`Skip failed: ${res.status}`);
+    } catch (err) {
+      console.error("Skip error:", err);
+      setSkipping(false);
+    }
   }, [skipping, state, currentTrack]);
 
   useEffect(() => {
