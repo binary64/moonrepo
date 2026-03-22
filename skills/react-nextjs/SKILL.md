@@ -22,7 +22,7 @@ Use when working in `apps/app/`.
 - Server Components by default. Add `'use client'` only when you need hooks, event handlers, or browser APIs.
 - React Compiler handles memoization — do NOT manually add `React.memo`, `useMemo`, or `useCallback` unless profiling proves a bottleneck. The compiler does this better.
 - Co-locate files: `Component.tsx`, `Component.test.tsx`, `Component.module.css` in the same directory.
-- Export components as named exports, never default exports.
+- Export components as named exports, never default exports — except Next.js route files (`page.tsx`, `layout.tsx`, `route.tsx`, `loading.tsx`, `error.tsx`, etc.) which require default exports.
 - Props get a TypeScript interface — `interface ButtonProps { ... }`, not inline types.
 
 ### Imports

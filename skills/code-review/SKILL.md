@@ -35,7 +35,7 @@ Run through this before every commit and PR.
 - [ ] Resource `requests` and `limits` set on all containers.
 - [ ] `namespace` explicitly specified in manifests.
 - [ ] ArgoCD Application has `sync-wave` annotation.
-- [ ] HTTPRoute has correct `parentRef` (gateway/istio-system) and `sectionName`.
+- [ ] HTTPRoute has correct `parentRefs` (gateway in `istio-system`); include `sectionName` only when targeting a specific listener.
 - [ ] No plaintext secrets — SealedSecrets only.
 - [ ] Container images pinned to specific tag or digest, never `latest`.
 
