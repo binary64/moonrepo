@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: radio-web
   namespace: radio-web
+  annotations:
+    moonrepo.dev/skip-local: "true"
   labels:
     app: radio-web
 spec:
