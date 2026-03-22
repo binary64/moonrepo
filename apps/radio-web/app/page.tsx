@@ -155,8 +155,8 @@ export default function Home() {
       }
     : null;
 
-  const listeners = listenerSnap?.count ?? 0;
-  const listenerPeak = listenerSnap?.peak ?? 0;
+  const listeners = listenerSnap?.count;
+  const listenerPeak = listenerSnap?.peak;
 
   // Detect track changes for animation
   useEffect(() => {
@@ -177,16 +177,23 @@ export default function Home() {
   }, [playHistory.length]);
 
   // Fetch stream start from Icecast (not in GraphQL)
+  // Clear streamStart on failure so stale data isn't advertised
   useEffect(() => {
     async function fetchStreamStart() {
       try {
         const res = await fetch("/api/radio", { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
-          if (data.streamStart) setStreamStart(data.streamStart);
+          if (data.streamStart) {
+            setStreamStart(data.streamStart);
+          } else {
+            setStreamStart("");
+          }
+        } else {
+          setStreamStart("");
         }
       } catch {
-        // ignore
+        setStreamStart("");
       }
     }
     fetchStreamStart();
@@ -197,11 +204,18 @@ export default function Home() {
   if (loading && playHistory.length === 0) return <LoadingSkeleton />;
 
   // Build history: skip first entry (now playing), reverse for oldest-first display
-  const historyEntries: TrackEntry[] = playHistory.slice(1).map((h) => ({
-    timestamp: h.played_at,
-    artist: h.artist,
-    title: h.title,
-  }));
+  // Filter out entries without played_at to keep TrackEntry.timestamp non-nullable
+  const historyEntries: TrackEntry[] = playHistory
+    .slice(1)
+    .filter(
+      (h): h is Radio_Play_History & { played_at: string } =>
+        h.played_at != null,
+    )
+    .map((h) => ({
+      timestamp: h.played_at,
+      artist: h.artist,
+      title: h.title,
+    }));
 
   // Displayed oldest-first (newest at bottom, nearest to now-playing)
   const displayHistory = [...historyEntries].reverse();
@@ -322,7 +336,9 @@ export default function Home() {
       {/* Footer */}
       <div className="mt-8 text-xs text-slate-700 text-center">
         <span>Updated {new Date().toLocaleTimeString("en-GB")}</span>
-        {listenerPeak > 0 && <span className="ml-3">Peak: {listenerPeak}</span>}
+        {listenerPeak != null && listenerPeak > 0 && (
+          <span className="ml-3">Peak: {listenerPeak}</span>
+        )}
       </div>
     </main>
   );

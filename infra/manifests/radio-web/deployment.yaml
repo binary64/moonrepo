@@ -23,11 +23,16 @@ spec:
           ports:
             - containerPort: 3004
               protocol: TCP
+          # NOTE: NEXT_PUBLIC_* variables are inlined at build time by Next.js and
+          # cannot be overridden at container runtime. Pass them as Docker build-args
+          # during CI (--build-arg NEXT_PUBLIC_HASURA_HTTP_URL=... etc.).
+          # Only server-side / runtime env vars belong here.
           env:
-            - name: NEXT_PUBLIC_HASURA_HTTP_URL
-              value: "http://hasura.hasura.svc.cluster.local:8080/v1/graphql"
-            - name: NEXT_PUBLIC_HASURA_WS_URL
-              value: "ws://hasura.hasura.svc.cluster.local:8080/v1/graphql"
+            - name: HASURA_ADMIN_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: hasura-admin-secret
+                  key: secret
           resources:
             requests:
               cpu: 50m

@@ -86,8 +86,14 @@ export default function RadioPlayer({
             retryDelayRef.current = 1000;
           }
         })
-        .catch(() => {
-          // Autoplay blocked
+        .catch((err: unknown) => {
+          // Autoplay may be blocked by browser policy — route into retry flow
+          if (!mountedRef.current) return;
+          const message = err instanceof Error ? err.message : String(err);
+          // AbortError means the element was replaced before play() resolved — ignore
+          if (message.includes("AbortError") || message.includes("interrupted"))
+            return;
+          handleError();
         });
     };
 
