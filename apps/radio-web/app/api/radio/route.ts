@@ -50,7 +50,10 @@ async function fetchIcecastFallback(): Promise<{
   nowPlaying: { artist: string; title: string; raw: string } | null;
 }> {
   try {
-    const res = await fetch("http://localhost:30100/status-json.xsl", {
+    const icecastUrl =
+      process.env.ICECAST_URL ||
+      "http://icecast.radio-dj.svc.cluster.local:8100";
+    const res = await fetch(`${icecastUrl}/status-json.xsl`, {
       signal: AbortSignal.timeout(3000),
     });
     const icecast = await res.json();

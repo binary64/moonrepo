@@ -32,9 +32,7 @@ export async function POST() {
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    return NextResponse.json(
-      { error: "Skip failed", details: String(error) },
-      { status: 500 },
-    );
+    console.error("Skip failed:", error);
+    return NextResponse.json({ error: "Skip failed" }, { status: 500 });
   }
 }
