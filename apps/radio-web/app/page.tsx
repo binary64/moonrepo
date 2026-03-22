@@ -4,17 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import { useSubscription, useQuery } from "@apollo/client/react";
 import RadioPlayer from "./components/RadioPlayer";
 import {
-  SUBSCRIBE_NOW_PLAYING,
-  SUBSCRIBE_PLAY_HISTORY,
-  SUBSCRIBE_LISTENERS,
-} from "./graphql/subscriptions";
-import { GET_PLAY_HISTORY, GET_LISTENER_COUNT } from "./graphql/queries";
+  SubscribeNowPlayingDocument,
+  SubscribePlayHistoryDocument,
+  SubscribeListenersDocument,
+  GetPlayHistoryDocument,
+  GetListenerCountDocument,
+} from "./graphql/generated/graphql";
 import type {
-  NowPlayingData,
-  PlayHistoryData,
-  ListenerData,
-  PlayHistoryRow,
-} from "./graphql/types";
+  Radio_Play_History,
+} from "./graphql/generated/graphql";
 
 interface TrackEntry {
   timestamp: string;
@@ -125,25 +123,25 @@ export default function Home() {
   const historyContainerRef = useRef<HTMLDivElement>(null);
 
   // Apollo subscriptions for live data
-  const { data: nowPlayingData } = useSubscription(SUBSCRIBE_NOW_PLAYING);
-  const { data: historySubData } = useSubscription(SUBSCRIBE_PLAY_HISTORY, {
+  const { data: nowPlayingData } = useSubscription(SubscribeNowPlayingDocument);
+  const { data: historySubData } = useSubscription(SubscribePlayHistoryDocument, {
     variables: { limit: 50 },
   });
-  const { data: listenerSubData } = useSubscription(SUBSCRIBE_LISTENERS);
+  const { data: listenerSubData } = useSubscription(SubscribeListenersDocument);
 
   // Initial query fallback (in case subscriptions aren't ready)
-  const { data: historyQueryData, loading } = useQuery(GET_PLAY_HISTORY, {
+  const { data: historyQueryData, loading } = useQuery(GetPlayHistoryDocument, {
     variables: { limit: 50 },
   });
-  const { data: listenerQueryData } = useQuery(GET_LISTENER_COUNT);
+  const { data: listenerQueryData } = useQuery(GetListenerCountDocument);
 
   // Derive state from subscriptions with query fallback
-  const playHistory: PlayHistoryRow[] =
+  const playHistory: Radio_Play_History[] =
     historySubData?.radio_play_history ||
     historyQueryData?.radio_play_history ||
     [];
 
-  const nowPlayingRow: PlayHistoryRow | null =
+  const nowPlayingRow: Radio_Play_History | null =
     nowPlayingData?.radio_play_history?.[0] ||
     playHistory[0] ||
     null;

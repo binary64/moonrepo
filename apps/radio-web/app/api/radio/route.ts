@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { ApolloClient, InMemoryCache, HttpLink, gql } from "@apollo/client";
+import { ApolloClient, InMemoryCache, HttpLink } from "@apollo/client";
+import { RadioStateDocument } from "../../graphql/generated/graphql";
+import type { RadioStateQuery } from "../../graphql/generated/graphql";
 
 const HASURA_HTTP =
   process.env.NEXT_PUBLIC_HASURA_HTTP_URL ||
@@ -21,23 +23,6 @@ function getServerClient() {
     },
   });
 }
-
-const QUERY = gql`
-  query RadioState {
-    radio_play_history(limit: 51, order_by: { played_at: desc }) {
-      id
-      artist
-      title
-      dj
-      played_at
-    }
-    radio_listener_snapshots(limit: 1, order_by: { recorded_at: desc }) {
-      count
-      peak
-      recorded_at
-    }
-  }
-`;
 
 export interface TrackEntry {
   timestamp: string;
@@ -103,20 +88,7 @@ export async function GET() {
     let streamStart = "";
 
     try {
-      const { data } = await client.query<{
-        radio_play_history: Array<{
-          id: number;
-          artist: string;
-          title: string;
-          dj: string | null;
-          played_at: string;
-        }>;
-        radio_listener_snapshots: Array<{
-          count: number;
-          peak: number;
-          recorded_at: string;
-        }>;
-      }>({ query: QUERY });
+      const { data } = await client.query<RadioStateQuery>({ query: RadioStateDocument });
 
       const playHistory = data?.radio_play_history || [];
       if (playHistory.length > 0) {

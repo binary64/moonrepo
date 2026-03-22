@@ -1,0 +1,30 @@
+subscription SubscribeNowPlaying {
+  radio_play_history(limit: 1, order_by: { played_at: desc }) {
+    id
+    artist
+    title
+    dj
+    played_at
+    track_id
+  }
+}
+
+subscription SubscribeListeners {
+  radio_listener_snapshots(limit: 1, order_by: { recorded_at: desc }) {
+    id
+    count
+    peak
+    recorded_at
+  }
+}
+
+subscription SubscribePlayHistory($limit: Int = 50) {
+  radio_play_history(limit: $limit, order_by: { played_at: desc }) {
+    id
+    artist
+    title
+    dj
+    played_at
+    track_id
+  }
+}

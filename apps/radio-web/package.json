@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev -H 0.0.0.0 -p 3004",
     "build": "next build",
-    "start": "next start -H 0.0.0.0 -p 3004"
+    "start": "next start -H 0.0.0.0 -p 3004",
+    "codegen": "graphql-codegen --config codegen.ts"
   },
   "dependencies": {
     "@apollo/client": "^4.1.6",
@@ -17,6 +18,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.13",
+    "@graphql-codegen/cli": "^5.0.6",
+    "@graphql-codegen/client-preset": "^4.8.2",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
