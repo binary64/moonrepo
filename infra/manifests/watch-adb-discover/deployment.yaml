@@ -27,7 +27,7 @@ spec:
         kubernetes.io/hostname: master
       containers:
         - name: watch-adb-discover
-          image: ghcr.io/binary64/watch-adb-discover:latest
+          image: ghcr.io/binary64/watch-adb-discover:4b320d5
           ports:
             - containerPort: 3200
               protocol: TCP
