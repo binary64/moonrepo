@@ -14,7 +14,8 @@
       "!dist",
       "!build",
       "!app/graphql/generated",
-      "!**/*.css"
+      "!**/*.css",
+      "!tsconfig.json"
     ]
   },
   "formatter": {
