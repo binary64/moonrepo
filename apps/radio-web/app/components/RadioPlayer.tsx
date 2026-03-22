@@ -147,6 +147,10 @@ export default function RadioPlayer({
       if (!res.ok) throw new Error(`Skip failed: ${res.status}`);
     } catch (err) {
       console.error("Skip error:", err);
+      if (skipTimeoutRef.current) {
+        clearTimeout(skipTimeoutRef.current);
+        skipTimeoutRef.current = null;
+      }
       setSkipping(false);
     }
   }, [skipping, state, currentTrack]);
