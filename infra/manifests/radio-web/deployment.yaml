@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: radio-web
+  namespace: radio-web
+  annotations:
+    moonrepo.dev/skip-local: "true"
+  labels:
+    app: radio-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: radio-web
+  template:
+    metadata:
+      labels:
+        app: radio-web
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: vmi3137202
+      containers:
+        - name: radio-web
+          image: ghcr.io/binary64/radio-web:latest
+          ports:
+            - containerPort: 3004
+              protocol: TCP
+          # NOTE: NEXT_PUBLIC_* variables are inlined at build time by Next.js and
+          # cannot be overridden at container runtime. Pass them as Docker build-args
+          # during CI (--build-arg NEXT_PUBLIC_HASURA_HTTP_URL=... etc.).
+          # Only server-side / runtime env vars belong here.
+          env:
+            - name: HASURA_ADMIN_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: hasura-admin-secret
+                  key: secret
+            - name: SKIP_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: radio-web-skip-secret
+                  key: secret
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3004
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3004
+            initialDelaySeconds: 5
+            periodSeconds: 10

@@ -1,0 +1,45 @@
+query GetNowPlaying {
+  radio_play_history(limit: 1, order_by: { played_at: desc }) {
+    id
+    artist
+    title
+    dj
+    played_at
+    track_id
+  }
+}
+
+query GetPlayHistory($limit: Int = 50) {
+  radio_play_history(limit: $limit, order_by: { played_at: desc }) {
+    id
+    artist
+    title
+    dj
+    played_at
+    track_id
+  }
+}
+
+query GetListenerCount {
+  radio_listener_snapshots(limit: 1, order_by: { recorded_at: desc }) {
+    id
+    count
+    peak
+    recorded_at
+  }
+}
+
+query RadioState {
+  radio_play_history(limit: 51, order_by: { played_at: desc }) {
+    id
+    artist
+    title
+    dj
+    played_at
+  }
+  radio_listener_snapshots(limit: 1, order_by: { recorded_at: desc }) {
+    count
+    peak
+    recorded_at
+  }
+}
