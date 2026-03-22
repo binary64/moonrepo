@@ -29,12 +29,13 @@ function makeClient() {
     });
   }
 
+  // Never send the admin secret from the browser — it would be visible in
+  // client-side bundles and DevTools. Public/anonymous WebSocket connections
+  // only; server-side HTTP requests carry the secret via httpLink above.
   const wsLink = new GraphQLWsLink(
     createClient({
       url: HASURA_WS,
-      connectionParams: ADMIN_SECRET
-        ? { headers: { "x-hasura-admin-secret": ADMIN_SECRET } }
-        : {},
+      connectionParams: {},
     }),
   );
 

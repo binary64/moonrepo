@@ -45,6 +45,7 @@ export default function RadioPlayer({
   const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryDelayRef = useRef(1000);
   const skipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stalledTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const trackAtSkipRef = useRef<string>("");
   const mountedRef = useRef(true);
 
@@ -58,6 +59,7 @@ export default function RadioPlayer({
 
   const cleanup = useCallback(() => {
     if (retryRef.current) clearTimeout(retryRef.current);
+    if (stalledTimeoutRef.current) clearTimeout(stalledTimeoutRef.current);
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.removeAttribute("src");
@@ -114,7 +116,8 @@ export default function RadioPlayer({
     audio.addEventListener("error", handleError);
     audio.addEventListener("stalled", () => {
       // Only retry if we haven't started playing yet, or if actually stuck
-      setTimeout(() => {
+      stalledTimeoutRef.current = setTimeout(() => {
+        stalledTimeoutRef.current = null;
         if (audioRef.current && audioRef.current.readyState < 3) {
           handleError();
         }

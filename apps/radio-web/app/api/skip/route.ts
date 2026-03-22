@@ -4,7 +4,15 @@ import { NextResponse } from "next/server";
 
 const execAsync = promisify(exec);
 
-export async function POST() {
+export async function POST(request: Request) {
+  const skipSecret = process.env.SKIP_SECRET;
+  if (skipSecret) {
+    const provided = request.headers.get("x-skip-secret");
+    if (!provided || provided !== skipSecret) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  }
+
   try {
     const kubectl = process.env.KUBECTL_PATH || "kubectl";
     const kubeEnv = process.env.KUBECONFIG

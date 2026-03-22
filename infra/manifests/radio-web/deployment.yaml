@@ -35,6 +35,12 @@ spec:
                 secretKeyRef:
                   name: hasura-admin-secret
                   key: secret
+            - name: SKIP_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: radio-web-skip-secret
+                  key: secret
+                  optional: true
           resources:
             requests:
               cpu: 50m
