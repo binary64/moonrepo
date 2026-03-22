@@ -5,11 +5,11 @@ import { createClient } from "graphql-ws";
 
 const HASURA_HTTP =
   process.env.NEXT_PUBLIC_HASURA_HTTP_URL ||
-  "http://hasura.hasura.svc.cluster.local:8080/v1/graphql";
+  "https://hasura.brandwhisper.cloud/v1/graphql";
 
 const HASURA_WS =
   process.env.NEXT_PUBLIC_HASURA_WS_URL ||
-  "ws://hasura.hasura.svc.cluster.local:8080/v1/graphql";
+  "wss://hasura.brandwhisper.cloud/v1/graphql";
 
 const ADMIN_SECRET = process.env.HASURA_ADMIN_SECRET ?? "";
 

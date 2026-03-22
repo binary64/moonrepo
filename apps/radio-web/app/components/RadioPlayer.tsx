@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const STREAM_URL =
-  process.env.NEXT_PUBLIC_STREAM_URL ?? "http://158.220.90.28:30100/stream";
+  process.env.NEXT_PUBLIC_STREAM_URL ?? "https://stream.brandwhisper.cloud/stream";
 const RETRY_CAP_MS = 10000;
 const SKIP_TIMEOUT_MS = 15000;
 
