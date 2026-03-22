@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: radio-web
+  namespace: radio-web
+  labels:
+    app: radio-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: radio-web
+  template:
+    metadata:
+      labels:
+        app: radio-web
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: vmi3137202
+      containers:
+        - name: radio-web
+          image: ghcr.io/binary64/radio-web:latest
+          ports:
+            - containerPort: 3004
+              protocol: TCP
+          env:
+            - name: NEXT_PUBLIC_HASURA_HTTP_URL
+              value: "http://hasura.hasura.svc.cluster.local:8080/v1/graphql"
+            - name: NEXT_PUBLIC_HASURA_WS_URL
+              value: "ws://hasura.hasura.svc.cluster.local:8080/v1/graphql"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3004
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3004
+            initialDelaySeconds: 5
+            periodSeconds: 10

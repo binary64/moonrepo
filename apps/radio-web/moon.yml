@@ -1,0 +1,13 @@
+$schema: "../../.moon/cache/schemas/workspace.json"
+
+language: 'node'
+type: 'application'
+
+tags:
+  - next
+
+tasks:
+  lint:
+    command: "biome check ."
+  type-check:
+    command: "tsc --noEmit"
