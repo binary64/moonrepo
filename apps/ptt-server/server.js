@@ -29,6 +29,12 @@ const GATEWAY_URL = process.env.OPENCLAW_GATEWAY_URL || 'ws://127.0.0.1:18789';
 const GATEWAY_TOKEN = process.env.OPENCLAW_GATEWAY_TOKEN || '';
 const OPENAI_KEY = process.env.OPENAI_API_KEY || '';
 
+// Fail-fast: validate required env vars before starting
+if (!OPENAI_KEY) {
+  console.error('FATAL: OPENAI_API_KEY is not set. Cannot transcribe audio — exiting.');
+  process.exit(1);
+}
+
 // Quick command registry — container mounts at /config/registry.json
 const QUICK_COMMANDS_PATH = process.env.QUICK_COMMANDS_PATH || '/config/registry.json';
 let quickCommands = {};
@@ -45,12 +51,12 @@ const metrics = {
   totalUtterances: 0,
   totalQuickCommands: 0,
   totalHallucinations: 0,
-  avgWhisperMs: 0,
+  avgTranscriptionMs: 0,   // end-to-end latency (Whisper API + network)
   avgVadSpeechMs: 0,
   avgEndToEndMs: 0,
-  p95WhisperMs: 0,
+  p95TranscriptionMs: 0,
   p95EndToEndMs: 0,
-  recentLatencies: [],     // last 100 entries: { ts, whisperMs, vadSpeechMs, endToEndMs, text }
+  recentLatencies: [],     // last 100 entries: { ts, transcriptionMs, vadSpeechMs, endToEndMs, text }
   lastUpdated: null
 };
 
@@ -67,13 +73,13 @@ function recordMetric(entry) {
   metrics.lastUpdated = new Date().toISOString();
 
   const latencies = metrics.recentLatencies;
-  const whisperArr = latencies.map(l => l.whisperMs).filter(Boolean).sort((a,b) => a-b);
+  const transcriptionArr = latencies.map(l => l.transcriptionMs).filter(Boolean).sort((a,b) => a-b);
   const e2eArr = latencies.map(l => l.endToEndMs).filter(Boolean).sort((a,b) => a-b);
   const vadArr = latencies.map(l => l.vadSpeechMs).filter(Boolean);
 
-  if (whisperArr.length > 0) {
-    metrics.avgWhisperMs = Math.round(whisperArr.reduce((a,b) => a+b, 0) / whisperArr.length);
-    metrics.p95WhisperMs = whisperArr[Math.floor(whisperArr.length * 0.95)] || 0;
+  if (transcriptionArr.length > 0) {
+    metrics.avgTranscriptionMs = Math.round(transcriptionArr.reduce((a,b) => a+b, 0) / transcriptionArr.length);
+    metrics.p95TranscriptionMs = transcriptionArr[Math.floor(transcriptionArr.length * 0.95)] || 0;
   }
   if (e2eArr.length > 0) {
     metrics.avgEndToEndMs = Math.round(e2eArr.reduce((a,b) => a+b, 0) / e2eArr.length);
@@ -83,7 +89,9 @@ function recordMetric(entry) {
     metrics.avgVadSpeechMs = Math.round(vadArr.reduce((a,b) => a+b, 0) / vadArr.length);
   }
 
-  try { fs.writeFileSync(METRICS_FILE, JSON.stringify(metrics, null, 2)); } catch {}
+  fs.writeFile(METRICS_FILE, JSON.stringify(metrics, null, 2), (err) => {
+    if (err) console.error(`[${ts()}] Failed to persist metrics: ${err.message}`);
+  });
 }
 
 // Audio config
@@ -188,7 +196,7 @@ function checkBatteryAlert(level, charging) {
 }
 
 function sendBatteryAlert(message) {
-  sendViaGateway(message, 'agent:main:main', (err) => {
+  sendViaGateway(message, MAIN_SESSION, (err) => {
     if (err) console.error(`[${ts()}] Battery alert error: ${err.message}`);
     else console.log(`[${ts()}] 🔔 Battery alert sent: ${message}`);
   });
@@ -244,7 +252,7 @@ app.get('/metrics', (req, res) => {
   const { recentLatencies, ...summary } = metrics;
   summary.recentCount = recentLatencies.length;
   summary.last5 = recentLatencies.slice(-5).map(l => ({
-    ts: l.ts, whisperMs: l.whisperMs, endToEndMs: l.endToEndMs, text: (l.text || '').slice(0, 40)
+    ts: l.ts, transcriptionMs: l.transcriptionMs, endToEndMs: l.endToEndMs, text: (l.text || '').slice(0, 40)
   }));
   res.json(summary);
 });
@@ -329,7 +337,7 @@ wss.on('connection', (ws, req) => {
         if (text) {
           recordMetric({
             ts: new Date().toISOString(),
-            whisperMs: endToEndMs,
+            transcriptionMs: endToEndMs,
             vadSpeechMs,
             endToEndMs,
             text: (typeof text === 'string' ? text : '').slice(0, 80),
@@ -345,7 +353,14 @@ wss.on('connection', (ws, req) => {
         send({ event: 'result', status: 'error', text: '', error: err.message });
       })
       .finally(() => {
-        state.transcribing = false;
+        // Reset session state here (after async work completes) to avoid
+        // a race condition where resetSessionState clears state.transcribing
+        // before the transcription promise resolves.
+        resetSessionState(state);
+        // Drain any audio that was buffered while transcribing
+        if (state.frameBuffer.length >= FRAME_BYTES && !processing) {
+          drainFrames();
+        }
       });
   }
 
@@ -391,10 +406,21 @@ wss.on('connection', (ws, req) => {
     const pcmData = data.subarray(4);
 
     let state = sessionStates.get(chunkIndex);
-    if (!state) state = sessionStates.get(targetIndex);
-    if (!state || state.transcribing) return;
+    if (!state) {
+      // chunkIndex not recognised — fall back to current target session
+      console.debug(`[${ts()}] Unknown chunkIndex ${chunkIndex}, falling back to targetIndex ${targetIndex}`);
+      state = sessionStates.get(targetIndex);
+    }
+    if (!state) return;
 
+    // Buffer incoming frames even while transcribing so no speech is dropped.
+    // resetSessionState preserves frameBuffer, so buffered audio is processed
+    // by drainFrames once the transcription completes and state is reset.
     state.frameBuffer = Buffer.concat([state.frameBuffer, pcmData]);
+
+    // Don't run the drain loop while transcribing — frames are queued in
+    // frameBuffer and will be drained when transcribing is cleared.
+    if (state.transcribing) return;
 
     if (!processing) {
       drainFrames();
@@ -471,8 +497,9 @@ wss.on('connection', (ws, req) => {
               console.log(`[${ts()}] ⏰ Max speech timeout [${index}]`);
               send({ event: 'vad_end', index });
               state.transcribing = true;
+              // resetSessionState is called inside finishUtteranceForState's finally
+              // block to avoid a race condition with the async transcription.
               finishUtteranceForState(state);
-              resetSessionState(state);
               continue;
             }
 
@@ -480,8 +507,9 @@ wss.on('connection', (ws, req) => {
               console.log(`[${ts()}] 🔴 End (${Math.round(state.speechMs)}ms speech, ${Math.round(state.silenceMs)}ms silence) [${index}]`);
               send({ event: 'vad_end', index });
               state.transcribing = true;
+              // resetSessionState is called inside finishUtteranceForState's finally
+              // block to avoid a race condition with the async transcription.
               finishUtteranceForState(state);
-              resetSessionState(state);
               continue;
             }
           }
@@ -559,10 +587,11 @@ function matchQuickCommand(text) {
   return null;
 }
 
-// Execute a quick command via gateway (send as chat message, Arthur handles it)
-function executeQuickCommand(entry, text) {
+// Execute a quick command via gateway (send as chat message, Arthur handles it).
+// Routing is fully handled by Arthur based on the message text — the matched
+// registry entry is not needed here, so only `text` is accepted as a parameter.
+function executeQuickCommand(text) {
   return new Promise((resolve, reject) => {
-    // Quick commands are sent to the main session — Arthur handles the action
     sendViaGateway(`⌚ ${text}`, MAIN_SESSION, (err) => {
       if (err) return reject(err);
       resolve(text);
@@ -612,7 +641,7 @@ function transcribeAndSend(wavBuffer, sessionKey) {
         const quickMatch = matchQuickCommand(text);
         if (quickMatch) {
           console.log(`[${ts()}] 🎯 Quick command match: "${text}" → ${quickMatch.skill}.${quickMatch.action}`);
-          executeQuickCommand(quickMatch, text)
+          executeQuickCommand(text)
             .then(() => resolve({ text, quickCommand: true }))
             .catch((err) => {
               console.error(`[${ts()}] Quick command failed, falling back to LLM: ${err.message}`);
@@ -629,7 +658,10 @@ function transcribeAndSend(wavBuffer, sessionKey) {
   });
 }
 
-// Send message to OpenClaw gateway via WebSocket
+// Send message to OpenClaw gateway via WebSocket.
+// Note: the gateway token is passed as a URL query parameter — this is acceptable
+// because the connection is always to the local loopback (127.0.0.1) over the
+// internal pod network, so the token is never transmitted over a public network.
 function sendViaGateway(message, sessionKey, cb) {
   const wsUrl = `${GATEWAY_URL}/gateway?token=${GATEWAY_TOKEN}`;
   const idempotencyKey = `watch-ptt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -673,6 +705,16 @@ function sendViaGateway(message, sessionKey, cb) {
       clearTimeout(timeout);
       console.error(`[${ts()}] Gateway WS error: ${err.message}`);
       if (cb) cb(err);
+    }
+  });
+
+  ws.on('close', (code, reason) => {
+    if (!resolved) {
+      resolved = true;
+      clearTimeout(timeout);
+      const reasonStr = reason ? reason.toString() : 'none';
+      console.error(`[${ts()}] Gateway WS closed unexpectedly (code: ${code}, reason: ${reasonStr})`);
+      if (cb) cb(new Error(`Gateway WebSocket closed unexpectedly (code: ${code})`));
     }
   });
 }

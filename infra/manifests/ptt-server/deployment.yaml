@@ -3,6 +3,9 @@ kind: Deployment
 metadata:
   name: ptt-server
   namespace: ptt-server
+  annotations:
+    # Skip local execution — uses hostNetwork, which would bind host ports
+    moonrepo.dev/skip-local: "true"
   labels:
     app: ptt-server
 spec:
@@ -24,7 +27,9 @@ spec:
       dnsPolicy: ClusterFirstWithHostNet
       containers:
         - name: ptt-server
-          image: ghcr.io/binary64/ptt-server:latest
+          # Tag is replaced by the docker.yml GHA workflow on every master push.
+          # Do not push this manifest with :latest — use a pinned SHA or semver tag.
+          image: ghcr.io/binary64/ptt-server:PLACEHOLDER_TAG
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 9876
