@@ -1,0 +1,1 @@
+{"name":"watch-adb-discover","version":"1.0.0","description":"Watch ADB device discovery service","main":"index.js","scripts":{"start":"node index.js"},"license":"MIT"}
