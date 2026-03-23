@@ -58,6 +58,12 @@ spec:
                 secretKeyRef:
                   name: ptt-server-secret
                   key: gateway-token
+            - name: PTT_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: ptt-server-secret
+                  key: ptt-api-token
+                  optional: true
           resources:
             requests:
               cpu: 100m

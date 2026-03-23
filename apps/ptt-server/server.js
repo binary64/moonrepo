@@ -60,7 +60,7 @@ const metrics = {
   avgEndToEndMs: 0,
   p95TranscriptionMs: 0,
   p95EndToEndMs: 0,
-  recentLatencies: [],     // last 100 entries: { ts, transcriptionMs, vadSpeechMs, endToEndMs, text }
+  recentLatencies: [],     // last 100 entries: { ts, transcriptionMs, vadSpeechMs, endToEndMs, quickCommand }
   lastUpdated: null
 };
 
@@ -186,6 +186,17 @@ const sessionsLimiter = rateLimit({ windowMs: 60000, max: 30, standardHeaders: t
 const textLimiter = rateLimit({ windowMs: 60000, max: 60, standardHeaders: true, legacyHeaders: false });
 const batteryLimiter = rateLimit({ windowMs: 60000, max: 60, standardHeaders: true, legacyHeaders: false });
 
+// Auth token for write endpoints — prevents untrusted clients on the NodePort
+// from injecting battery events or arbitrary chat messages into OpenClaw.
+// Set PTT_API_TOKEN in the deployment secret; if unset, auth is disabled (dev mode).
+const PTT_API_TOKEN = process.env.PTT_API_TOKEN || '';
+function verifyApiToken(req, res, next) {
+  if (!PTT_API_TOKEN) return next(); // token not configured — open (dev/internal mode)
+  const auth = req.headers['authorization'] || '';
+  if (auth === `Bearer ${PTT_API_TOKEN}`) return next();
+  return res.status(401).json({ error: 'Unauthorized' });
+}
+
 let lastBatteryUpdate = 0;
 
 // Battery alert thresholds
@@ -261,20 +272,22 @@ app.get('/health', (req, res) => {
 app.get('/metrics', (req, res) => {
   const { recentLatencies, ...summary } = metrics;
   summary.recentCount = recentLatencies.length;
+  // Transcript text is intentionally omitted — this is an operational endpoint only.
+  // Exposing user speech here would be an avoidable personal-data leak.
   summary.last5 = recentLatencies.slice(-5).map(l => ({
-    ts: l.ts, transcriptionMs: l.transcriptionMs, endToEndMs: l.endToEndMs, text: (l.text || '').slice(0, 40)
+    ts: l.ts, transcriptionMs: l.transcriptionMs, endToEndMs: l.endToEndMs, quickCommand: !!l.quickCommand
   }));
   res.json(summary);
 });
 
-app.post('/battery', batteryLimiter, (req, res) => {
+app.post('/battery', verifyApiToken, batteryLimiter, (req, res) => {
   const level = req.body?.level ?? -1;
   const charging = req.body?.charging ?? false;
   if (level >= 0) updateHABattery(level, charging);
   res.json({ status: 'ok' });
 });
 
-app.post('/text', textLimiter, (req, res) => {
+app.post('/text', verifyApiToken, textLimiter, (req, res) => {
   const text = req.body?.text?.trim();
   const sessionKey = req.body?.sessionKey;
   if (!text) return res.status(400).json({ error: 'No text' });
@@ -354,7 +367,6 @@ wss.on('connection', (ws, req) => {
             transcriptionMs: endToEndMs,
             vadSpeechMs,
             endToEndMs,
-            text: (typeof text === 'string' ? text : '').slice(0, 80),
             quickCommand: typeof result === 'object' ? !!result.quickCommand : false
           });
         }
@@ -646,6 +658,11 @@ function transcribeAndSend(wavBuffer, sessionKey) {
         if (isHallucination(text)) {
           console.log(`[${ts()}] 🚫 Filtered hallucination: "${text}"`);
           metrics.totalHallucinations++;
+          // Persist the updated hallucination count through the serialised write queue
+          const snapshot = JSON.stringify(metrics, null, 2);
+          metricsWrite = metricsWrite
+            .then(() => fs.promises.writeFile(METRICS_FILE, snapshot))
+            .catch((err) => console.error(`[${ts()}] Failed to persist hallucination count: ${err.message}`));
           return resolve('');
         }
 
@@ -706,18 +723,27 @@ function sendViaGateway(message, sessionKey, cb) {
   });
 
   ws.on('message', (data) => {
+    const raw = data.toString();
+    let msg;
     try {
-      const msg = JSON.parse(data.toString());
-      if (msg.runId === idempotencyKey || msg.status) {
-        if (!resolved) {
-          resolved = true;
-          clearTimeout(timeout);
-          ws.close();
-          console.log(`[${ts()}] → Gateway send OK [${sessionKey}]`);
-          if (cb) cb(null);
-        }
+      msg = JSON.parse(raw);
+    } catch (parseErr) {
+      console.error(`[${ts()}] Gateway WS malformed frame: ${parseErr.message} — raw: ${raw.slice(0, 200)}`);
+      return;
+    }
+    // Only treat an ack correlated by idempotency key as success.
+    // Require both runId match AND a truthy status — this prevents any stray
+    // gateway broadcast (e.g. a different session's event with msg.status set)
+    // from marking this delivery as complete.
+    if (msg.runId === idempotencyKey && msg.status) {
+      if (!resolved) {
+        resolved = true;
+        clearTimeout(timeout);
+        ws.close();
+        console.log(`[${ts()}] → Gateway send OK [${sessionKey}]`);
+        if (cb) cb(null);
       }
-    } catch (_) {}
+    }
   });
 
   ws.on('error', (err) => {
