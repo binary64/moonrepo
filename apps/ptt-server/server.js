@@ -743,10 +743,9 @@ function sendViaGateway(message, sessionKey, cb) {
       return;
     }
     // Only treat an ack correlated by idempotency key as success.
-    // Require both runId match AND a truthy status — this prevents any stray
-    // gateway broadcast (e.g. a different session's event with msg.status set)
-    // from marking this delivery as complete.
-    if (msg.runId === idempotencyKey && msg.status) {
+    // Compare against the concrete gateway success value ("ok") rather than
+    // relying on truthiness — prevents "error" status frames from resolving.
+    if (msg.runId === idempotencyKey && msg.status === 'ok') {
       if (!resolved) {
         resolved = true;
         clearTimeout(timeout);
