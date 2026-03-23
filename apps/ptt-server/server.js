@@ -339,7 +339,7 @@ wss.on('connection', (ws, req) => {
   console.log(`[${ts()}] 🎙️ WS connected (session: ${initialSessionKey}, index: ${targetIndex})`);
 
   function send(event) {
-    if (ws.readyState === 1) ws.send(JSON.stringify(event));
+    if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(event));
   }
 
   send({ event: 'session_switched', session: initialSessionKey, index: targetIndex });

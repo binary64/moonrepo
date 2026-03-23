@@ -63,7 +63,6 @@ spec:
                 secretKeyRef:
                   name: ptt-server-secret
                   key: ptt-api-token
-                  optional: true
           resources:
             requests:
               cpu: 100m
