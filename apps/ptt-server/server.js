@@ -191,7 +191,11 @@ const batteryLimiter = rateLimit({ windowMs: 60000, max: 60, standardHeaders: tr
 // Set PTT_API_TOKEN in the deployment secret; if unset, auth is disabled (dev mode).
 const PTT_API_TOKEN = process.env.PTT_API_TOKEN || '';
 function verifyApiToken(req, res, next) {
-  if (!PTT_API_TOKEN) return next(); // token not configured — open (dev/internal mode)
+  if (!PTT_API_TOKEN) {
+    // Fail-closed: require explicit opt-in for dev bypass when token is unset
+    if (process.env.PTT_AUTH_DEV_BYPASS === '1') return next();
+    return res.status(401).json({ error: 'Unauthorized: PTT_API_TOKEN not configured' });
+  }
   const auth = req.headers['authorization'] || '';
   if (auth === `Bearer ${PTT_API_TOKEN}`) return next();
   return res.status(401).json({ error: 'Unauthorized' });
@@ -291,8 +295,13 @@ app.post('/text', verifyApiToken, textLimiter, (req, res) => {
   const text = req.body?.text?.trim();
   const sessionKey = req.body?.sessionKey;
   if (!text) return res.status(400).json({ error: 'No text' });
-  sendToOpenClaw(text, null, sessionKey);
-  res.json({ status: 'ok' });
+  sendToOpenClaw(text, (err) => {
+    if (err) {
+      console.error(`[${ts()}] /text send failed: ${err.message}`);
+      return res.status(502).json({ error: 'Gateway send failed' });
+    }
+    return res.json({ status: 'ok' });
+  }, sessionKey);
 });
 
 // Curated session list for watch pager
@@ -354,7 +363,7 @@ wss.on('connection', (ws, req) => {
       .then((result) => {
         const endToEndMs = Date.now() - e2eStart;
         const text = typeof result === 'object' ? result.text : result;
-        console.log(`[${ts()}] ✅ "${text}" [${state.sessionKey}] (e2e: ${endToEndMs}ms)`);
+        console.log(`[${ts()}] ✅ [${state.sessionKey}] (e2e: ${endToEndMs}ms, len: ${text?.length ?? 0})`);
         send({ event: 'result', status: 'ok', text });
 
         if (text) {
@@ -603,7 +612,9 @@ function isHallucination(text) {
 
 // Match transcribed text against quick command registry
 function matchQuickCommand(text) {
-  const normalized = text.toLowerCase().trim();
+  const normalized = text.toLowerCase().trim()
+    .replace(/\s+/g, ' ')          // collapse consecutive whitespace
+    .replace(/[.?!;:]+$/, '');     // strip trailing punctuation
   if (quickCommands[normalized]) {
     return { command: normalized, ...quickCommands[normalized] };
   }
@@ -653,10 +664,10 @@ function transcribeAndSend(wavBuffer, sessionKey) {
         clearTimeout(whisperTimeout);
         if (apiRes.statusCode !== 200) return reject(new Error(`Whisper ${apiRes.statusCode}: ${data}`));
         const text = data.trim();
-        console.log(`[${ts()}] 🗣️ Whisper: "${text}"`);
+        console.log(`[${ts()}] 🗣️ Whisper: [len:${text.length}]`);
         if (!text || text.length < 2) return resolve('');
         if (isHallucination(text)) {
-          console.log(`[${ts()}] 🚫 Filtered hallucination: "${text}"`);
+          console.log(`[${ts()}] 🚫 Filtered hallucination: [len:${text.length}]`);
           metrics.totalHallucinations++;
           // Persist the updated hallucination count through the serialised write queue
           const snapshot = JSON.stringify(metrics, null, 2);
@@ -669,7 +680,7 @@ function transcribeAndSend(wavBuffer, sessionKey) {
         // Check for quick command match
         const quickMatch = matchQuickCommand(text);
         if (quickMatch) {
-          console.log(`[${ts()}] 🎯 Quick command match: "${text}" → ${quickMatch.skill}.${quickMatch.action}`);
+          console.log(`[${ts()}] 🎯 Quick command match: [len:${text.length}] → ${quickMatch.skill}.${quickMatch.action}`);
           executeQuickCommand(text)
             .then(() => resolve({ text, quickCommand: true }))
             .catch((err) => {

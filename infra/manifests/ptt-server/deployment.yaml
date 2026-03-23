@@ -21,8 +21,10 @@ spec:
         app: ptt-server
     spec:
       # Run on Jupiter — needs localhost access to OpenClaw gateway (:18789)
+      # Uses stable custom label rather than hostname so pod survives VM replacement.
+      # Label the node: kubectl label node vmi3137202 brandwhisper.cloud/node-role=jupiter
       nodeSelector:
-        kubernetes.io/hostname: vmi3137202
+        brandwhisper.cloud/node-role: jupiter
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
       containers:
