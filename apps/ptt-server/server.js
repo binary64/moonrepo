@@ -1,24 +1,22 @@
 #!/usr/bin/env node
-// PTT Server v8 — Watch Voice → Main Session Router
+// PTT Server v9 — Containerised Watch Voice Receiver
 //
 // Protocol: Each binary chunk has a 4-byte prefix (session index, uint32 LE)
 // This ensures in-flight audio always routes to the correct session even
 // after rapid session switches.
 //
 // Watch connects via WebSocket, streams tagged binary PCM frames continuously.
-// Server runs Silero VAD per-frame, transcribes via Whisper, then sends to
-// the main Arthur session with HA location context. Arthur decides routing.
-//
-// Events sent back to watch:
+// Session switching happens via JSON messages — no reconnection needed.
+// Server runs Silero VAD per-frame per-session, sends JSON events back:
 //   {"event":"speech_start"}               — voice activity detected
 //   {"event":"vad_end"}                    — speech endpoint detected
 //   {"event":"result","status":"ok","text":"..."} — transcription done
+//   {"event":"session_switched","session":"xxx"}  — session switch confirmed
 
 const express = require('express');
-const { exec } = require('child_process');
 const http = require('http');
 const https = require('https');
-const { WebSocketServer } = require('ws');
+const { WebSocketServer, WebSocket } = require('ws');
 const fs = require('fs');
 const path = require('path');
 const ort = require('onnxruntime-node');
@@ -27,12 +25,25 @@ const PORT = process.env.PORT || 9876;
 const MAIN_SESSION = process.env.MAIN_SESSION || 'agent:main:main';
 const HA_URL = process.env.HA_URL || 'https://home.brandwhisper.cloud';
 const HA_TOKEN = process.env.HA_TOKEN || '';
-const BERMUDA_ENTITY = process.env.BERMUDA_ENTITY || 'sensor.bermuda_952259c0553c46c2b1870c091fcb182a_100_40004_area';
+const GATEWAY_URL = process.env.OPENCLAW_GATEWAY_URL || 'ws://127.0.0.1:18789';
+const GATEWAY_TOKEN = process.env.OPENCLAW_GATEWAY_TOKEN || '';
+const OPENAI_KEY = process.env.OPENAI_API_KEY || '';
+
+// Quick command registry — container mounts at /config/registry.json
+const QUICK_COMMANDS_PATH = process.env.QUICK_COMMANDS_PATH || '/config/registry.json';
+let quickCommands = {};
+try {
+  quickCommands = JSON.parse(fs.readFileSync(QUICK_COMMANDS_PATH, 'utf-8')).commands || {};
+  console.log(`Loaded ${Object.keys(quickCommands).length} quick commands`);
+} catch (e) {
+  console.warn('⚠️ Quick commands registry not found — skipping');
+}
 
 // ── Latency Metrics ──
 const METRICS_FILE = path.join(__dirname, 'metrics.json');
 const metrics = {
   totalUtterances: 0,
+  totalQuickCommands: 0,
   totalHallucinations: 0,
   avgWhisperMs: 0,
   avgVadSpeechMs: 0,
@@ -55,7 +66,6 @@ function recordMetric(entry) {
   metrics.totalUtterances++;
   metrics.lastUpdated = new Date().toISOString();
 
-  // Recompute averages from recent entries
   const latencies = metrics.recentLatencies;
   const whisperArr = latencies.map(l => l.whisperMs).filter(Boolean).sort((a,b) => a-b);
   const e2eArr = latencies.map(l => l.endToEndMs).filter(Boolean).sort((a,b) => a-b);
@@ -73,16 +83,8 @@ function recordMetric(entry) {
     metrics.avgVadSpeechMs = Math.round(vadArr.reduce((a,b) => a+b, 0) / vadArr.length);
   }
 
-  // Persist (debounced via write-through)
   try { fs.writeFileSync(METRICS_FILE, JSON.stringify(metrics, null, 2)); } catch {}
 }
-
-const GATEWAY_URL = process.env.OPENCLAW_GATEWAY_URL || 'ws://127.0.0.1:18789';
-const GATEWAY_TOKEN = process.env.OPENCLAW_GATEWAY_TOKEN || '';
-const OPENAI_KEY = process.env.OPENAI_API_KEY || (() => {
-  try { return fs.readFileSync(path.join(process.env.HOME, '.config', 'openai', 'api_key'), 'utf-8').trim(); }
-  catch { return ''; }
-})();
 
 // Audio config
 const SAMPLE_RATE = 16000;
@@ -92,8 +94,8 @@ const BYTES_PER_SAMPLE = 2;
 const SPEECH_THRESHOLD = 0.85;
 const SILENCE_AFTER_SPEECH_MS = 1600;
 const MIN_SPEECH_MS = 400;
-const MIN_SPEECH_FRAMES = 3;  // Need 3 consecutive frames above threshold before triggering
-const MAX_SPEECH_MS = 20000;  // Safety: force-end after 20s of continuous speech
+const MIN_SPEECH_FRAMES = 3;
+const MAX_SPEECH_MS = 20000;
 const PRE_SPEECH_BUFFER_MS = 300;
 const FRAME_SAMPLES = 1536;
 const FRAME_BYTES = FRAME_SAMPLES * BYTES_PER_SAMPLE;
@@ -126,7 +128,6 @@ async function runVADFrame(state, float32Frame) {
   return result.output.data[0];
 }
 
-// Create per-session VAD + buffer state
 function createSessionState(sessionKey) {
   const preSpeechFrames = Math.ceil(PRE_SPEECH_BUFFER_MS / FRAME_MS);
   return {
@@ -144,7 +145,6 @@ function createSessionState(sessionKey) {
   };
 }
 
-// Reset a session's VAD state (keep sessionKey and buffered audio)
 function resetSessionState(state) {
   state.vadState = createVADState();
   // Preserve frameBuffer — audio may have arrived during transcription
@@ -162,16 +162,41 @@ function resetSessionState(state) {
 const app = express();
 app.use(express.json());
 
-// Rate limiters — defined before routes so middleware runs on every matching request
+// Rate limiters
 const rateLimit = require('express-rate-limit');
 const sessionsLimiter = rateLimit({ windowMs: 60000, max: 30, standardHeaders: true, legacyHeaders: false });
 const textLimiter = rateLimit({ windowMs: 60000, max: 60, standardHeaders: true, legacyHeaders: false });
 const batteryLimiter = rateLimit({ windowMs: 60000, max: 60, standardHeaders: true, legacyHeaders: false });
 
-// HA battery reporting (optional)
 let lastBatteryUpdate = 0;
 
+// Battery alert thresholds
+const BATTERY_LOW = 22;
+const BATTERY_HIGH = 85;
+let lastAlertType = null;
+
+function checkBatteryAlert(level, charging) {
+  if (level <= BATTERY_LOW && !charging && lastAlertType !== 'low') {
+    lastAlertType = 'low';
+    sendBatteryAlert(`🪫 Watch battery low: ${level}% — stick it on the charger`);
+  } else if (level >= BATTERY_HIGH && charging && lastAlertType !== 'high') {
+    lastAlertType = 'high';
+    sendBatteryAlert(`🔋 Watch battery at ${level}% — good to unplug`);
+  } else if (level > BATTERY_LOW && level < BATTERY_HIGH) {
+    lastAlertType = null;
+  }
+}
+
+function sendBatteryAlert(message) {
+  sendViaGateway(message, 'agent:main:main', (err) => {
+    if (err) console.error(`[${ts()}] Battery alert error: ${err.message}`);
+    else console.log(`[${ts()}] 🔔 Battery alert sent: ${message}`);
+  });
+}
+
 function updateHABattery(level, charging) {
+  checkBatteryAlert(level, charging);
+
   if (!HA_TOKEN) return;
   const now = Date.now();
   if (now - lastBatteryUpdate < 5 * 60 * 1000 && level > 0) return;
@@ -189,9 +214,9 @@ function updateHABattery(level, charging) {
   };
 
   const data = JSON.stringify(state);
-  const url = new URL('/api/states/sensor.galaxy_watch_battery', HA_URL);
-  const mod = url.protocol === 'https:' ? https : http;
-  const req = mod.request(url, {
+  const url = new URL(`${HA_URL}/api/states/sensor.galaxy_watch_battery`);
+  const transport = url.protocol === 'https:' ? https : http;
+  const req = transport.request(url, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${HA_TOKEN}`,
@@ -212,7 +237,7 @@ function updateHABattery(level, charging) {
 }
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', service: 'ptt-server', version: 8 });
+  res.json({ status: 'ok', service: 'ptt-server', version: 9 });
 });
 
 app.get('/metrics', (req, res) => {
@@ -256,23 +281,16 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: '/ws' });
 
 wss.on('connection', (ws, req) => {
-  // Extract initial target session from query string: /ws?session=agent:main:...
   const url = new URL(req.url, `http://${req.headers.host}`);
-  const initialSessionKey = url.searchParams.get('session') || 'default';
+  const initialSessionKey = url.searchParams.get('session') || MAIN_SESSION;
 
-  // Per-session state storage: index -> session state
   const sessionStates = new Map();
-  // Map session key -> index (for looking up index on switch)
   const sessionKeyToIndex = new Map();
-  // Next available index
   let nextIndex = 0;
-  // Current target index (for backwards compat with untagged chunks)
   let targetIndex = 0;
-  // Global processing lock (only one drain at a time)
   let processing = false;
   let pendingData = false;
 
-  // Get or create session state by key
   function getOrCreateSession(sessionKey) {
     if (sessionKeyToIndex.has(sessionKey)) {
       return { index: sessionKeyToIndex.get(sessionKey), state: sessionStates.get(sessionKeyToIndex.get(sessionKey)) };
@@ -284,22 +302,17 @@ wss.on('connection', (ws, req) => {
     return { index, state };
   }
 
-  // Initialize first session
   const initial = getOrCreateSession(initialSessionKey);
   targetIndex = initial.index;
 
   console.log(`[${ts()}] 🎙️ WS connected (session: ${initialSessionKey}, index: ${targetIndex})`);
 
   function send(event) {
-    if (ws.readyState === 1) {  // OPEN
-      ws.send(JSON.stringify(event));
-    }
+    if (ws.readyState === 1) ws.send(JSON.stringify(event));
   }
 
-  // Send initial session index to watch so it tags chunks correctly
   send({ event: 'session_switched', session: initialSessionKey, index: targetIndex });
 
-  // Finish utterance for a specific session state
   function finishUtteranceForState(state) {
     const pcmData = Buffer.concat(state.speechChunks);
     const wavBuffer = buildWav(pcmData);
@@ -309,19 +322,22 @@ wss.on('connection', (ws, req) => {
     transcribeAndSend(wavBuffer, state.sessionKey)
       .then((result) => {
         const endToEndMs = Date.now() - e2eStart;
-        const text = result?.text || '';
-        const whisperMs = result?.whisperMs || endToEndMs;
-        console.log(`[${ts()}] ✅ "${text}" (whisper: ${whisperMs}ms, e2e: ${endToEndMs}ms)`);
+        const text = typeof result === 'object' ? result.text : result;
+        console.log(`[${ts()}] ✅ "${text}" [${state.sessionKey}] (e2e: ${endToEndMs}ms)`);
         send({ event: 'result', status: 'ok', text });
 
         if (text) {
           recordMetric({
             ts: new Date().toISOString(),
-            whisperMs,
+            whisperMs: endToEndMs,
             vadSpeechMs,
             endToEndMs,
-            text: text.slice(0, 80)
+            text: (typeof text === 'string' ? text : '').slice(0, 80),
+            quickCommand: typeof result === 'object' ? !!result.quickCommand : false
           });
+          if (typeof result === 'object' && result.quickCommand) {
+            metrics.totalQuickCommands++;
+          }
         }
       })
       .catch((err) => {
@@ -329,30 +345,20 @@ wss.on('connection', (ws, req) => {
         send({ event: 'result', status: 'error', text: '', error: err.message });
       })
       .finally(() => {
-        resetSessionState(state);
-        // Drain any audio that arrived while we were transcribing
-        if (state.frameBuffer.length >= FRAME_BYTES && !processing) {
-          drainFrames();
-        } else if (state.frameBuffer.length >= FRAME_BYTES) {
-          pendingData = true;
-        }
+        state.transcribing = false;
       });
   }
 
-  // Handle session switch — just update target index
-  // Old audio will still route correctly via its tag
   function handleSessionSwitch(newSessionKey) {
     const oldIndex = targetIndex;
     const { index, state } = getOrCreateSession(newSessionKey);
     console.log(`[${ts()}] 🔄 Session switch: index ${oldIndex} → ${index} (${newSessionKey})`);
 
-    // Finish any pending speech on old session if it has enough audio
     const oldState = sessionStates.get(oldIndex);
     if (oldState && oldState.speechStarted && oldState.speechMs >= MIN_SPEECH_MS && !oldState.transcribing) {
       oldState.transcribing = true;
       send({ event: 'vad_end' });
       const pcmData = Buffer.concat(oldState.speechChunks);
-      const wavBuffer = buildWav(pcmData);
       const durationMs = Math.round(pcmData.length / BYTES_PER_SAMPLE / SAMPLE_RATE * 1000);
       console.log(`[${ts()}] 📤 ${durationMs}ms (switch-triggered) → Whisper [${oldState.sessionKey}]`);
       finishUtteranceForState(oldState);
@@ -368,7 +374,6 @@ wss.on('connection', (ws, req) => {
 
   ws.on('message', (data, isBinary) => {
     if (!isBinary) {
-      // Text message — JSON command
       try {
         const msg = JSON.parse(data.toString());
         if (msg.type === 'battery') {
@@ -380,38 +385,26 @@ wss.on('connection', (ws, req) => {
       return;
     }
 
-    // Binary message — tagged PCM audio
-    // First 4 bytes = session index (uint32 LE), rest = PCM data
-    if (data.length < 4) return;  // Too short
+    if (data.length < 4) return;
 
     const chunkIndex = data.readUInt32LE(0);
     const pcmData = data.subarray(4);
 
-    // Look up session state (fallback to target if index unknown)
     let state = sessionStates.get(chunkIndex);
-    if (!state) {
-      // Unknown index — use current target (backwards compat)
-      state = sessionStates.get(targetIndex);
-    }
+    if (!state) state = sessionStates.get(targetIndex);
+    if (!state || state.transcribing) return;
 
-    if (!state) return;
-
-    // Always buffer audio — even while transcribing, so we don't drop frames
     state.frameBuffer = Buffer.concat([state.frameBuffer, pcmData]);
 
-    // Only kick off VAD processing if not transcribing (drainFrames skips transcribing sessions)
-    if (!state.transcribing) {
-      if (!processing) {
-        drainFrames();
-      } else {
-        pendingData = true;
-      }
+    if (!processing) {
+      drainFrames();
+    } else {
+      pendingData = true;
     }
   });
 
   ws.on('close', (code, reason) => {
     console.log(`[${ts()}] 🔚 WS closed (code: ${code}, reason: ${reason || 'none'})`);
-    // Finish any pending utterances across all sessions
     for (const [index, state] of sessionStates) {
       if (state.speechStarted && state.speechMs >= MIN_SPEECH_MS && !state.transcribing) {
         state.transcribing = true;
@@ -428,7 +421,6 @@ wss.on('connection', (ws, req) => {
   async function drainFrames() {
     processing = true;
     try {
-      // Process frames from all sessions that have buffered data
       let hadWork = true;
       while (hadWork) {
         hadWork = false;
@@ -471,17 +463,16 @@ wss.on('connection', (ws, req) => {
               state.silenceMs += FRAME_MS;
             }
 
-            // Periodic diagnostic log
             if (Math.round(state.speechMs + state.silenceMs) % 4992 < FRAME_MS) {
               console.log(`[${ts()}] 📊 [${index}] Speech: ${Math.round(state.speechMs)}ms, silence: ${Math.round(state.silenceMs)}ms`);
             }
 
-            // Safety: force-end after MAX_SPEECH_MS
             if (state.speechMs >= MAX_SPEECH_MS) {
               console.log(`[${ts()}] ⏰ Max speech timeout [${index}]`);
               send({ event: 'vad_end', index });
               state.transcribing = true;
               finishUtteranceForState(state);
+              resetSessionState(state);
               continue;
             }
 
@@ -490,6 +481,7 @@ wss.on('connection', (ws, req) => {
               send({ event: 'vad_end', index });
               state.transcribing = true;
               finishUtteranceForState(state);
+              resetSessionState(state);
               continue;
             }
           }
@@ -502,7 +494,6 @@ wss.on('connection', (ws, req) => {
       processing = false;
       if (pendingData) {
         pendingData = false;
-        // Check if any session has pending data and isn't transcribing
         for (const [index, state] of sessionStates) {
           if (state.frameBuffer.length >= FRAME_BYTES && !state.transcribing) {
             drainFrames();
@@ -537,43 +528,21 @@ function buildWav(pcm) {
 // ── Whisper hallucination filter ──
 
 const HALLUCINATION_PATTERNS = [
-  /sound of keyboard/i,
-  /keyboard typing/i,
-  /typing sound/i,
-  /background noise/i,
-  /silence/i,
-  /music playing/i,
-  /\[.*\]/,                    // Whisper meta-descriptions: [music], [noise], etc.
-  /^\s*\.+\s*$/,               // Just dots/periods
-  /thank you for watching/i,
-  /thanks for watching/i,
-  /please subscribe/i,
-  /like and subscribe/i,
-  /bye\.?\s*bye\.?\s*bye/i,
-  /thanks\.?\s*bye\.?\s*bye/i,
-  /thank you\.?\s*$/i,         // Just "thank you" — classic hallucination
-  /thanks\.?\s*$/i,            // Just "thanks"
-  /you$/i,                     // Just "you"
-  /yeah\.?\s*$/i,              // Just "yeah"
-  /okay\.?\s*$/i,              // Just "okay"
-  /oh\.?\s*$/i,                // Just "oh"
-  /so\.?\s*$/i,                // Just "so"
-  /the end\.?\s*$/i,
-  /goodbye\.?\s*$/i,
-  /good night\.?\s*$/i,
-  /see you next time/i,
-  /see you later/i,
-  /i'll see you/i,
-  /♪/,                         // Musical notes
-  /🎵/,
-  /^\s*\.\.\.\s*$/,            // Ellipsis
-  /^\W+$/,                     // Only non-word characters
+  /sound of keyboard/i, /keyboard typing/i, /typing sound/i,
+  /background noise/i, /silence/i, /music playing/i,
+  /\[.*\]/, /^\s*\.+\s*$/, /thank you for watching/i,
+  /thanks for watching/i, /please subscribe/i, /like and subscribe/i,
+  /bye\.?\s*bye\.?\s*bye/i, /thanks\.?\s*bye\.?\s*bye/i,
+  /thank you\.?\s*$/i, /thanks\.?\s*$/i, /you$/i,
+  /yeah\.?\s*$/i, /okay\.?\s*$/i, /oh\.?\s*$/i, /so\.?\s*$/i,
+  /the end\.?\s*$/i, /goodbye\.?\s*$/i, /good night\.?\s*$/i,
+  /see you next time/i, /see you later/i, /i'll see you/i,
+  /♪/, /🎵/, /^\s*\.\.\.\s*$/, /^\W+$/,
 ];
 
 function isHallucination(text) {
   const trimmed = text.trim();
   if (trimmed.length < 2) return true;
-  // Single word under 5 chars is almost always noise
   if (trimmed.split(/\s+/).length === 1 && trimmed.length < 5) return true;
   for (const pat of HALLUCINATION_PATTERNS) {
     if (pat.test(trimmed)) return true;
@@ -581,7 +550,25 @@ function isHallucination(text) {
   return false;
 }
 
+// Match transcribed text against quick command registry
+function matchQuickCommand(text) {
+  const normalized = text.toLowerCase().trim();
+  if (quickCommands[normalized]) {
+    return { command: normalized, ...quickCommands[normalized] };
+  }
+  return null;
+}
 
+// Execute a quick command via gateway (send as chat message, Arthur handles it)
+function executeQuickCommand(entry, text) {
+  return new Promise((resolve, reject) => {
+    // Quick commands are sent to the main session — Arthur handles the action
+    sendViaGateway(`⌚ ${text}`, MAIN_SESSION, (err) => {
+      if (err) return reject(err);
+      resolve(text);
+    });
+  });
+}
 
 function transcribeAndSend(wavBuffer, sessionKey) {
   return new Promise((resolve, reject) => {
@@ -600,7 +587,6 @@ function transcribeAndSend(wavBuffer, sessionKey) {
     );
     const body = Buffer.concat([pre, wavBuffer, post]);
 
-    const whisperStart = Date.now();
     const apiReq = https.request({
       hostname: 'api.openai.com', path: '/v1/audio/transcriptions', method: 'POST',
       headers: {
@@ -612,19 +598,30 @@ function transcribeAndSend(wavBuffer, sessionKey) {
       let data = '';
       apiRes.on('data', (c) => data += c);
       apiRes.on('end', () => {
-        const whisperMs = Date.now() - whisperStart;
         if (apiRes.statusCode !== 200) return reject(new Error(`Whisper ${apiRes.statusCode}: ${data}`));
         const text = data.trim();
-        console.log(`[${ts()}] 🗣️ Whisper: "${text}" (${whisperMs}ms)`);
-        if (!text || text.length < 2) return resolve({ text: '', whisperMs });
+        console.log(`[${ts()}] 🗣️ Whisper: "${text}"`);
+        if (!text || text.length < 2) return resolve('');
         if (isHallucination(text)) {
           console.log(`[${ts()}] 🚫 Filtered hallucination: "${text}"`);
           metrics.totalHallucinations++;
-          return resolve({ text: '', whisperMs });
+          return resolve('');
         }
 
-        // Send to main session with location context — Arthur routes it
-        sendToOpenClaw(text, (err) => err ? reject(err) : resolve({ text, whisperMs }));
+        // Check for quick command match
+        const quickMatch = matchQuickCommand(text);
+        if (quickMatch) {
+          console.log(`[${ts()}] 🎯 Quick command match: "${text}" → ${quickMatch.skill}.${quickMatch.action}`);
+          executeQuickCommand(quickMatch, text)
+            .then(() => resolve({ text, quickCommand: true }))
+            .catch((err) => {
+              console.error(`[${ts()}] Quick command failed, falling back to LLM: ${err.message}`);
+              sendToOpenClaw(text, (err) => err ? reject(err) : resolve({ text, quickCommand: false }), sessionKey);
+            });
+          return;
+        }
+
+        sendToOpenClaw(text, (err) => err ? reject(err) : resolve({ text, quickCommand: false }), sessionKey);
       });
     });
     apiReq.on('error', reject);
@@ -632,77 +629,60 @@ function transcribeAndSend(wavBuffer, sessionKey) {
   });
 }
 
-// Fetch James's current room from HA Bermuda BLE tracker
-function getLocation() {
-  return new Promise((resolve) => {
-    if (!HA_TOKEN) return resolve('unknown');
-    const url = new URL(`/api/states/${BERMUDA_ENTITY}`, HA_URL);
-    const mod = url.protocol === 'https:' ? https : http;
-    const req = mod.request(url, {
-      method: 'GET',
-      headers: { 'Authorization': `Bearer ${HA_TOKEN}` },
-      timeout: 3000
-    }, (res) => {
-      let data = '';
-      res.on('data', c => data += c);
-      res.on('end', () => {
-        try {
-          const state = JSON.parse(data).state;
-          resolve(state || 'unknown');
-        } catch { resolve('unknown'); }
-      });
-    });
-    req.on('error', () => resolve('unknown'));
-    req.on('timeout', () => { req.destroy(); resolve('unknown'); });
-    req.end();
+// Send message to OpenClaw gateway via WebSocket
+function sendViaGateway(message, sessionKey, cb) {
+  const wsUrl = `${GATEWAY_URL}/gateway?token=${GATEWAY_TOKEN}`;
+  const idempotencyKey = `watch-ptt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+  let resolved = false;
+  const ws = new WebSocket(wsUrl);
+  const timeout = setTimeout(() => {
+    if (!resolved) {
+      resolved = true;
+      ws.close();
+      console.error(`[${ts()}] Gateway WS timeout`);
+      if (cb) cb(new Error('timeout'));
+    }
+  }, 30000);
+
+  ws.on('open', () => {
+    ws.send(JSON.stringify({
+      method: 'chat.send',
+      params: { message, sessionKey, idempotencyKey }
+    }));
   });
-}
 
-// Send transcription to Arthur's main session via Gateway WebSocket RPC
-function gatewayRPC(method, params) {
-  return new Promise((resolve, reject) => {
-    const WebSocket = require('ws');
-    const wsUrl = GATEWAY_TOKEN ? `${GATEWAY_URL}?token=${GATEWAY_TOKEN}` : GATEWAY_URL;
-    const gwWs = new WebSocket(wsUrl);
-    const id = `ptt-${Date.now()}`;
-    const timeout = setTimeout(() => {
-      gwWs.close();
-      reject(new Error('Gateway RPC timeout'));
-    }, 10000);
-
-    gwWs.on('open', () => {
-      gwWs.send(JSON.stringify({ jsonrpc: '2.0', id, method, params }));
-    });
-    gwWs.on('message', (data) => {
-      try {
-        const msg = JSON.parse(data.toString());
-        if (msg.id === id) {
+  ws.on('message', (data) => {
+    try {
+      const msg = JSON.parse(data.toString());
+      if (msg.runId === idempotencyKey || msg.status) {
+        if (!resolved) {
+          resolved = true;
           clearTimeout(timeout);
-          gwWs.close();
-          if (msg.error) reject(new Error(msg.error.message || JSON.stringify(msg.error)));
-          else resolve(msg.result);
+          ws.close();
+          console.log(`[${ts()}] → Gateway send OK [${sessionKey}]`);
+          if (cb) cb(null);
         }
-      } catch {}
-    });
-    gwWs.on('error', (err) => { clearTimeout(timeout); reject(err); });
+      }
+    } catch (_) {}
+  });
+
+  ws.on('error', (err) => {
+    if (!resolved) {
+      resolved = true;
+      clearTimeout(timeout);
+      console.error(`[${ts()}] Gateway WS error: ${err.message}`);
+      if (cb) cb(err);
+    }
   });
 }
 
-async function sendToOpenClaw(text, cb, sessionKey) {
-  try {
-    const location = await getLocation();
-    const messageText = `⌚ User spoke into his watch from the ${location}: "${text}"`;
-    await gatewayRPC('chat.send', {
-      message: messageText,
-      sessionKey: sessionKey || MAIN_SESSION,
-      idempotencyKey: `ptt-${Date.now()}`
-    });
-    console.log(`[${ts()}] → Main session: "${text}" (location: ${location})`);
-    if (cb) cb(null);
-  } catch (err) {
-    console.error(`[${ts()}] OpenClaw error: ${err.message}`);
-    if (cb) cb(err);
-  }
+function sendToOpenClaw(text, cb, customSessionKey) {
+  const targetSession = customSessionKey || MAIN_SESSION;
+  const isDM = targetSession.includes(':direct:');
+  const messageText = isDM ? `⌚ ${text}` : text;
+
+  sendViaGateway(messageText, targetSession, cb);
 }
 
 function ts() { return new Date().toISOString().replace('T', ' ').slice(0, -4); }
@@ -711,11 +691,10 @@ function ts() { return new Date().toISOString().replace('T', ' ').slice(0, -4); 
 
 initVAD().then(() => {
   server.listen(PORT, '0.0.0.0', () => {
-    console.log(`PTT Server v8 — Watch Voice → Main Session Router`);
+    console.log(`PTT Server v9 — Containerised`);
     console.log(`  WS: ws://0.0.0.0:${PORT}/ws`);
     console.log(`  HTTP: health, battery, text on :${PORT}`);
-    console.log(`  Target: ${MAIN_SESSION}`);
-    console.log(`  HA: ${HA_URL} (location: ${BERMUDA_ENTITY})`);
+    console.log(`  Gateway: ${GATEWAY_URL}`);
     console.log(`  Speech: >${SPEECH_THRESHOLD} | Silence: ${SILENCE_AFTER_SPEECH_MS}ms | Min: ${MIN_SPEECH_MS}ms`);
   });
 }).catch(err => { console.error('VAD init failed:', err); process.exit(1); });

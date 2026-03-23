@@ -3,6 +3,7 @@
 # Dependencies:
 # - onnxruntime-node: native ONNX bindings for Silero VAD
 # - ws: WebSocket for watch connection + gateway RPC
+# - express-rate-limit: rate limiting for HTTP endpoints
 
 FROM node:22-slim
 

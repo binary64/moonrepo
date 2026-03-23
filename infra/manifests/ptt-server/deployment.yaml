@@ -17,17 +17,14 @@ spec:
       labels:
         app: ptt-server
     spec:
-      # Run on NUC (master) — close to LAN for low-latency watch comms
+      # Run on Jupiter — needs localhost access to OpenClaw gateway (:18789)
       nodeSelector:
-        node-role.kubernetes.io/master: "true"
-      tolerations:
-        - key: node-role.kubernetes.io/master
-          effect: NoSchedule
-        - key: node-role.kubernetes.io/control-plane
-          effect: NoSchedule
+        kubernetes.io/hostname: vmi3137202
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       containers:
         - name: ptt-server
-          image: ghcr.io/binary64/ptt-server:5483390
+          image: ghcr.io/binary64/ptt-server:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 9876
@@ -44,15 +41,13 @@ spec:
                 secretKeyRef:
                   name: ptt-server-secret
                   key: ha-token
-            - name: BERMUDA_ENTITY
-              value: "sensor.bermuda_952259c0553c46c2b1870c091fcb182a_100_40004_area"
             - name: OPENAI_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: ptt-server-secret
                   key: openai-api-key
             - name: OPENCLAW_GATEWAY_URL
-              value: "ws://192.168.1.201:18789"
+              value: "ws://127.0.0.1:18789"
             - name: OPENCLAW_GATEWAY_TOKEN
               valueFrom:
                 secretKeyRef:
