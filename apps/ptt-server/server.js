@@ -148,20 +148,20 @@ async function initVAD() {
 }
 
 function createVADState() {
+  // Silero v6.2 uses a single state tensor [2, batch, 128] instead of
+  // separate h/c tensors [2, 1, 64] used in v4/v5.
   return {
-    h: new ort.Tensor('float32', new Float32Array(128), [2, 1, 64]),
-    c: new ort.Tensor('float32', new Float32Array(128), [2, 1, 64]),
-    sr: new ort.Tensor('int64', BigInt64Array.from([16000n]), [1])
+    state: new ort.Tensor('float32', new Float32Array(256), [2, 1, 128]),
+    sr: new ort.Tensor('int64', BigInt64Array.from([16000n]), [])
   };
 }
 
-async function runVADFrame(state, float32Frame) {
+async function runVADFrame(vadState, float32Frame) {
   const input = new ort.Tensor('float32', float32Frame, [1, float32Frame.length]);
   const result = await ortSession.run({
-    input, sr: state.sr, h: state.h, c: state.c
+    input, sr: vadState.sr, state: vadState.state
   });
-  state.h = result.hn;
-  state.c = result.cn;
+  vadState.state = result.stateN;
   return result.output.data[0];
 }
 
