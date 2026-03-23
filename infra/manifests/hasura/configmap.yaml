@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hasura-remote-schema
+  namespace: hasura
+data:
+  REMOTE_SCHEMA_URL: "https://api.pabau.com/v1/graphql"
