@@ -1,6 +1,23 @@
 ## ArgoCD Helm Values
 ## Resource limits to prevent OOM and ensure stability
 
+## Cluster-wide ignoreDifferences for resources that are mutated by controllers.
+## Istio ambient mode writes status conditions to HTTPRoute and Gateway resources
+## on every reconcile, causing ArgoCD to detect spurious drift and re-sync every
+## 1-3 seconds (burning ~841m CPU and 1.3GB RAM on the NUC).
+## See: https://argo-cd.readthedocs.io/en/stable/user-guide/diffing/#system-level-configuration
+configs:
+  cm:
+    resource.customizations.ignoreDifferences.gateway.networking.k8s.io_HTTPRoute: |
+      jsonPointers:
+        - /status
+    resource.customizations.ignoreDifferences.gateway.networking.k8s.io_Gateway: |
+      jsonPointers:
+        - /status
+    resource.customizations.ignoreDifferences.gateway.networking.k8s.io_GatewayClass: |
+      jsonPointers:
+        - /status
+
 repoServer:
   resources:
     requests:

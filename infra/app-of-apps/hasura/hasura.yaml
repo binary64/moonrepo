@@ -12,6 +12,12 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: hasura
+  ignoreDifferences:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      jsonPointers:
+        - /status
+
   syncPolicy:
     automated:
       prune: true
@@ -19,6 +25,7 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
+      - RespectIgnoreDifferences=true
     retry:
       limit: 5
       backoff:
