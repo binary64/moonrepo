@@ -558,6 +558,18 @@ wss.on('connection', (ws, req) => {
             if (isSpeech) {
               state.speechMs += FRAME_MS;
               state.silenceMs = 0;
+              // Extend stale-speech timer on each active speech frame so it only
+              // fires 5s after the LAST speech frame, not the first.
+              if (state.staleSpeechTimer) clearTimeout(state.staleSpeechTimer);
+              state.staleSpeechTimer = setTimeout(() => {
+                state.staleSpeechTimer = null;
+                if (state.speechStarted && !state.transcribing) {
+                  console.warn(`[${ts()}] ⏳ Stale speech timeout (${Math.round(state.speechMs)}ms) — force-ending [index ${index}]`);
+                  send({ event: 'vad_end', index });
+                  state.transcribing = true;
+                  finishUtteranceForState(state);
+                }
+              }, STALE_SPEECH_TIMEOUT_MS);
             } else {
               state.silenceMs += FRAME_MS;
             }
