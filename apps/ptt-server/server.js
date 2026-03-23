@@ -41,8 +41,12 @@ let quickCommands = {};
 try {
   quickCommands = JSON.parse(fs.readFileSync(QUICK_COMMANDS_PATH, 'utf-8')).commands || {};
   console.log(`Loaded ${Object.keys(quickCommands).length} quick commands`);
-} catch (e) {
-  console.warn('⚠️ Quick commands registry not found — skipping');
+} catch (err) {
+  if (err && err.code === 'ENOENT') {
+    console.warn('⚠️ Quick commands registry not found — skipping');
+  } else {
+    console.error(`Failed to load quick commands from ${QUICK_COMMANDS_PATH}: ${err.message}`);
+  }
 }
 
 // ── Latency Metrics ──
@@ -65,6 +69,9 @@ try {
   const saved = JSON.parse(fs.readFileSync(METRICS_FILE, 'utf-8'));
   Object.assign(metrics, saved);
 } catch {}
+
+// Serialise metrics writes — prevents concurrent calls from persisting stale data
+let metricsWrite = Promise.resolve();
 
 function recordMetric(entry) {
   metrics.recentLatencies.push(entry);
@@ -89,9 +96,12 @@ function recordMetric(entry) {
     metrics.avgVadSpeechMs = Math.round(vadArr.reduce((a,b) => a+b, 0) / vadArr.length);
   }
 
-  fs.writeFile(METRICS_FILE, JSON.stringify(metrics, null, 2), (err) => {
-    if (err) console.error(`[${ts()}] Failed to persist metrics: ${err.message}`);
-  });
+  const snapshot = JSON.stringify(metrics, null, 2);
+  metricsWrite = metricsWrite
+    .then(() => fs.promises.writeFile(METRICS_FILE, snapshot))
+    .catch((err) => {
+      console.error(`[${ts()}] Failed to persist metrics: ${err.message}`);
+    });
 }
 
 // Audio config
@@ -335,6 +345,10 @@ wss.on('connection', (ws, req) => {
         send({ event: 'result', status: 'ok', text });
 
         if (text) {
+          // Increment before recordMetric so the count is included in the persisted snapshot
+          if (typeof result === 'object' && result.quickCommand) {
+            metrics.totalQuickCommands++;
+          }
           recordMetric({
             ts: new Date().toISOString(),
             transcriptionMs: endToEndMs,
@@ -343,9 +357,6 @@ wss.on('connection', (ws, req) => {
             text: (typeof text === 'string' ? text : '').slice(0, 80),
             quickCommand: typeof result === 'object' ? !!result.quickCommand : false
           });
-          if (typeof result === 'object' && result.quickCommand) {
-            metrics.totalQuickCommands++;
-          }
         }
       })
       .catch((err) => {
@@ -627,6 +638,7 @@ function transcribeAndSend(wavBuffer, sessionKey) {
       let data = '';
       apiRes.on('data', (c) => data += c);
       apiRes.on('end', () => {
+        clearTimeout(whisperTimeout);
         if (apiRes.statusCode !== 200) return reject(new Error(`Whisper ${apiRes.statusCode}: ${data}`));
         const text = data.trim();
         console.log(`[${ts()}] 🗣️ Whisper: "${text}"`);
@@ -653,7 +665,16 @@ function transcribeAndSend(wavBuffer, sessionKey) {
         sendToOpenClaw(text, (err) => err ? reject(err) : resolve({ text, quickCommand: false }), sessionKey);
       });
     });
-    apiReq.on('error', reject);
+    // 30-second application-level timeout — if Whisper stalls, destroy the request
+    // so state.transcribing is cleared and the frameBuffer doesn't grow unbounded.
+    const whisperTimeout = setTimeout(() => {
+      apiReq.destroy(new Error('Whisper API timeout after 30s'));
+    }, 30000);
+
+    apiReq.on('error', (err) => {
+      clearTimeout(whisperTimeout);
+      reject(err);
+    });
     apiReq.end(body);
   });
 }
