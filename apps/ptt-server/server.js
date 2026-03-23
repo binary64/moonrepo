@@ -112,7 +112,14 @@ const BYTES_PER_SAMPLE = 2;
 const SPEECH_THRESHOLD = 0.85;
 const SILENCE_AFTER_SPEECH_MS = 1600;
 const MIN_SPEECH_MS = 400;
-const MIN_SPEECH_FRAMES = 3;
+// MIN_SPEECH_FRAMES must satisfy: MIN_SPEECH_FRAMES × FRAME_MS ≥ MIN_SPEECH_MS
+// With FRAME_SAMPLES=1536 @ 16kHz, FRAME_MS ≈ 96ms:
+//   3 frames = ~288ms < 400ms  → deadlock: speech_start fires but speechMs<400 never ends
+//   5 frames = ~480ms ≥ 400ms  → safe: speech_start implies speechMs is already ≥ MIN_SPEECH_MS
+const MIN_SPEECH_FRAMES = 5;
+// Stale-speech safety valve: if speech_start fired but no vad_end within this window,
+// force-finish the utterance. Prevents silent hangs when silence never accumulates.
+const STALE_SPEECH_TIMEOUT_MS = 5000;
 const MAX_SPEECH_MS = 20000;
 const PRE_SPEECH_BUFFER_MS = 300;
 const FRAME_SAMPLES = 1536;
@@ -120,12 +127,24 @@ const FRAME_BYTES = FRAME_SAMPLES * BYTES_PER_SAMPLE;
 const FRAME_MS = (FRAME_SAMPLES / SAMPLE_RATE) * 1000;
 
 // Silero ONNX model
+// We ship the v6.2 model (Dec 2025) directly in the image for better low-quality
+// mic audio detection. The model is API-compatible with prior versions — same
+// input/output tensors, just improved weights.
+// Fallback: if the bundled model is missing, use the one from @ricky0123/vad-node.
 let ortSession = null;
 
 async function initVAD() {
-  const modelPath = require.resolve('@ricky0123/vad-node/dist/silero_vad.onnx');
+  const bundledModelPath = path.join(__dirname, 'silero_vad_v6.2.onnx');
+  let modelPath;
+  if (fs.existsSync(bundledModelPath)) {
+    modelPath = bundledModelPath;
+    console.log('Silero VAD v6.2 model found — using bundled weights');
+  } else {
+    modelPath = require.resolve('@ricky0123/vad-node/dist/silero_vad.onnx');
+    console.warn('⚠️ silero_vad_v6.2.onnx not found — falling back to @ricky0123/vad-node bundled model');
+  }
   ortSession = await ort.InferenceSession.create(modelPath);
-  console.log('Silero VAD model loaded');
+  console.log(`Silero VAD model loaded: ${path.basename(modelPath)}`);
 }
 
 function createVADState() {
@@ -159,11 +178,18 @@ function createSessionState(sessionKey) {
     preSpeechRing: [],
     speechChunks: [],
     transcribing: false,
-    preSpeechFrames
+    preSpeechFrames,
+    staleSpeechTimer: null   // cleared by resetSessionState; set when speech_start fires
   };
 }
 
 function resetSessionState(state) {
+  // Cancel any pending stale-speech timer before clearing speechStarted.
+  // This is important in both normal and error paths.
+  if (state.staleSpeechTimer) {
+    clearTimeout(state.staleSpeechTimer);
+    state.staleSpeechTimer = null;
+  }
   state.vadState = createVADState();
   // Preserve frameBuffer — audio may have arrived during transcription
   state.speechStarted = false;
@@ -507,6 +533,21 @@ wss.on('connection', (ws, req) => {
                 state.speechChunks.push(Buffer.from(frame));
                 console.log(`[${ts()}] 🟢 Speech (prob: ${prob.toFixed(2)}, ${state.consecutiveSpeechFrames} frames) [index ${index}]`);
                 send({ event: 'speech_start', index });
+
+                // Arm stale-speech safety valve: if this utterance never reaches a
+                // natural end (silence ≥ SILENCE_AFTER_SPEECH_MS or MAX_SPEECH_MS)
+                // within STALE_SPEECH_TIMEOUT_MS, force-finish it so the session
+                // doesn't hang indefinitely waiting for an end condition that won't fire.
+                if (state.staleSpeechTimer) clearTimeout(state.staleSpeechTimer);
+                state.staleSpeechTimer = setTimeout(() => {
+                  state.staleSpeechTimer = null;
+                  if (state.speechStarted && !state.transcribing) {
+                    console.warn(`[${ts()}] ⏳ Stale speech timeout (${Math.round(state.speechMs)}ms) — force-ending [index ${index}]`);
+                    send({ event: 'vad_end', index });
+                    state.transcribing = true;
+                    finishUtteranceForState(state);
+                  }
+                }, STALE_SPEECH_TIMEOUT_MS);
               }
             } else {
               state.consecutiveSpeechFrames = 0;
@@ -527,6 +568,7 @@ wss.on('connection', (ws, req) => {
 
             if (state.speechMs >= MAX_SPEECH_MS) {
               console.log(`[${ts()}] ⏰ Max speech timeout [${index}]`);
+              if (state.staleSpeechTimer) { clearTimeout(state.staleSpeechTimer); state.staleSpeechTimer = null; }
               send({ event: 'vad_end', index });
               state.transcribing = true;
               // resetSessionState is called inside finishUtteranceForState's finally
@@ -537,6 +579,7 @@ wss.on('connection', (ws, req) => {
 
             if (state.silenceMs >= SILENCE_AFTER_SPEECH_MS && state.speechMs >= MIN_SPEECH_MS) {
               console.log(`[${ts()}] 🔴 End (${Math.round(state.speechMs)}ms speech, ${Math.round(state.silenceMs)}ms silence) [${index}]`);
+              if (state.staleSpeechTimer) { clearTimeout(state.staleSpeechTimer); state.staleSpeechTimer = null; }
               send({ event: 'vad_end', index });
               state.transcribing = true;
               // resetSessionState is called inside finishUtteranceForState's finally
@@ -794,6 +837,6 @@ initVAD().then(() => {
     console.log(`  WS: ws://0.0.0.0:${PORT}/ws`);
     console.log(`  HTTP: health, battery, text on :${PORT}`);
     console.log(`  Gateway: ${GATEWAY_URL}`);
-    console.log(`  Speech: >${SPEECH_THRESHOLD} | Silence: ${SILENCE_AFTER_SPEECH_MS}ms | Min: ${MIN_SPEECH_MS}ms`);
+    console.log(`  Speech: >${SPEECH_THRESHOLD} | Silence: ${SILENCE_AFTER_SPEECH_MS}ms | Min: ${MIN_SPEECH_MS}ms | MinFrames: ${MIN_SPEECH_FRAMES} | StaleTimeout: ${STALE_SPEECH_TIMEOUT_MS}ms`);
   });
 }).catch(err => { console.error('VAD init failed:', err); process.exit(1); });
