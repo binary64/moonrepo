@@ -24,6 +24,12 @@ jobs:
       matrix: ${{ steps.changes.outputs.matrix }}
       any_changed: ${{ steps.changes.outputs.any_changed }}
     steps:
+      - name: Enforce master-only dispatch
+        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/master'
+        run: |
+          echo "::error::workflow_dispatch is only permitted from the master branch."
+          exit 1
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
