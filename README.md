@@ -205,6 +205,8 @@ Managed via proto in `.prototools`:
 
 ## 🚢 Deployment Workflow
 
+Images are built by CI on push to master, pinned to immutable SHA tags in manifests, and rolled out by ArgoCD automatically. See [`docs/VERSIONING.md`](docs/VERSIONING.md) for the full release flow, tag strategy, and conventions.
+
 ### Production Setup (First Time)
 
 1. **Deploy Bootstrap Stack:**

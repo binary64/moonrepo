@@ -19,7 +19,7 @@ Every app in `apps/` with a `Dockerfile` gets three tags on each build:
 
 ## Deployment Flow
 
-```
+```text
 1. Developer pushes to master (apps/ change)
          ↓
 2. CI: docker.yml detects changed apps
@@ -29,7 +29,7 @@ Every app in `apps/` with a `Dockerfile` gets three tags on each build:
 4. CI: pin job updates infra/manifests/<app>/deployment.yaml
        with the new :<sha-short> tag
          ↓
-5. CI: Commits "[skip ci] deploy(<app>): pin image to <sha>"
+5. CI: Commits "deploy: pin images to <sha> [skip ci]"
          ↓
 6. ArgoCD: detects manifest change, rolls out new pods
 ```
@@ -66,13 +66,13 @@ Renovate or manual PRs handle third-party version bumps.
 
 The CI pin commit uses `[skip ci]` to prevent infinite loops:
 
-```
-deploy(radio-web): pin image to 399b0b4 [skip ci]
+```text
+deploy: pin images to 399b0b4 [skip ci]
 ```
 
 App code changes use conventional commits:
 
-```
+```text
 feat(radio-web): add skip button
 fix(tts-server): handle timeout on Hume API
 chore(ptt-server): bump dependencies
@@ -97,6 +97,6 @@ chore(ptt-server): bump dependencies
 
 Rebuild a specific app without code changes:
 
-```
+```bash
 gh workflow run docker.yml -f app=radio-web
 ```
