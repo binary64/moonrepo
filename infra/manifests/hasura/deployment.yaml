@@ -20,9 +20,43 @@ spec:
     spec:
       nodeSelector:
         kubernetes.io/hostname: vmi3137202
+      initContainers:
+        - name: fetch-remote-schema
+          env:
+            - name: REMOTE_SCHEMA_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: hasura-remote-schema
+                  key: REMOTE_SCHEMA_URL
+          image: python:3.12-slim
+          command:
+            - /bin/sh
+            - -c
+            - |
+              pip install -q requests 2>/dev/null
+              python3 -c "
+              import json, urllib.request, os
+              query = '{\"query\":\"{ __schema { queryType { name } mutationType { name } subscriptionType { name } types { kind name description fields(includeDeprecated:true) { name description args { name description type { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name } } } } } } } defaultValue } type { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name } } } } } } } isDeprecated deprecationReason } inputFields { name description type { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name } } } } } } } defaultValue } interfaces { kind name ofType { kind name ofType { kind name } } } enumValues(includeDeprecated:true) { name description isDeprecated deprecationReason } possibleTypes { kind name ofType { kind name } } } directives { name description locations args { name description type { kind name ofType { kind name ofType { kind name ofType { kind name } } } } defaultValue } } } }\"}'
+              req = urllib.request.Request(os.environ['REMOTE_SCHEMA_URL'], data=query.encode(), headers={'Content-Type': 'application/json'})
+              data = json.loads(urllib.request.urlopen(req, timeout=120).read())
+              schema = data['data']['__schema']
+              schema['types'] = [t for t in schema['types'] if t['kind'] != 'INPUT_OBJECT']
+              for t in schema['types']:
+                  if t.get('fields'):
+                      for f in t['fields']:
+                          f['args'] = []
+              schema['mutationType'] = None
+              schema['subscriptionType'] = None
+              with open('/schema/remote-schema.json', 'w') as f:
+                  json.dump(data, f)
+              print(f'Schema: {len(schema[\"types\"])} types')
+              "
+          volumeMounts:
+            - name: schema-vol
+              mountPath: /schema
       containers:
         - name: hasura
-          image: hasura/graphql-engine:v2.48.13
+          image: ghcr.io/binary64/graphql-engine:remote-schema-local-file
           ports:
             - name: http
               containerPort: 8080
@@ -44,6 +78,10 @@ spec:
               value: "false"
             - name: HASURA_GRAPHQL_ENABLED_LOG_TYPES
               value: "startup, http-log, webhook-log, websocket-log, query-log"
+          volumeMounts:
+            - name: schema-vol
+              mountPath: /schema
+              readOnly: true
           livenessProbe:
             httpGet:
               path: /healthz
@@ -63,3 +101,6 @@ spec:
             limits:
               cpu: 500m
               memory: 512Mi
+      volumes:
+        - name: schema-vol
+          emptyDir: {}
