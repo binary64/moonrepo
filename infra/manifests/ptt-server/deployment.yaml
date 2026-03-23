@@ -27,8 +27,8 @@ spec:
           effect: NoSchedule
       containers:
         - name: ptt-server
-          image: ghcr.io/binary64/ptt-server:latest
-          imagePullPolicy: Always
+          image: ghcr.io/binary64/ptt-server:5483390
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 9876
               protocol: TCP
