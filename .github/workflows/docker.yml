@@ -14,8 +14,7 @@ on:
         type: string
 
 permissions:
-  contents: write
-  packages: write
+  contents: read
 
 jobs:
   detect:
@@ -58,11 +57,15 @@ jobs:
     runs-on: ubuntu-latest
     needs: detect
     if: needs.detect.outputs.any_changed == 'true'
+    permissions:
+      contents: read
+      packages: write
     strategy:
       matrix:
         app: ${{ fromJson(needs.detect.outputs.matrix) }}
     outputs:
       image_tags: ${{ steps.meta.outputs.tags }}
+      sha_short: ${{ steps.version.outputs.sha_short }}
     steps:
       - uses: actions/checkout@v4
 
@@ -70,7 +73,7 @@ jobs:
         id: version
         run: |
           VERSION=$(jq -r '.version // "0.0.0"' "apps/${{ matrix.app }}/package.json")
-          SHA_SHORT=$(echo "${{ github.sha }}" | cut -c1-7)
+          SHA_SHORT=$(git rev-parse --short=7 HEAD)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "sha_short=$SHA_SHORT" >> "$GITHUB_OUTPUT"
           echo "Version: $VERSION, SHA: $SHA_SHORT"
@@ -117,7 +120,12 @@ jobs:
     name: Pin images in manifests
     runs-on: ubuntu-latest
     needs: [detect, build]
-    if: needs.detect.outputs.any_changed == 'true'
+    if: needs.detect.outputs.any_changed == 'true' && github.ref == 'refs/heads/master'
+    permissions:
+      contents: write
+    concurrency:
+      group: pin-manifests
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
         with:
@@ -126,7 +134,7 @@ jobs:
 
       - name: Update deployment manifests
         run: |
-          SHA_SHORT=$(echo "${{ github.sha }}" | cut -c1-7)
+          SHA_SHORT="${{ needs.build.outputs.sha_short }}"
           APPS='${{ needs.detect.outputs.matrix }}'
           CHANGED=""
 
@@ -148,7 +156,7 @@ jobs:
 
       - name: Commit and push
         run: |
-          SHA_SHORT=$(echo "${{ github.sha }}" | cut -c1-7)
+          SHA_SHORT="${{ needs.build.outputs.sha_short }}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
@@ -161,4 +169,17 @@ jobs:
           git commit -m "deploy: pin images to ${SHA_SHORT} [skip ci]
 
           Apps:${pinned_apps}"
-          git push origin master
+
+          # Rebase and retry to handle concurrent pushes
+          for attempt in 1 2 3; do
+            if git push origin master; then
+              echo "Push succeeded on attempt $attempt"
+              exit 0
+            fi
+            echo "Push failed (attempt $attempt/3) — rebasing..."
+            git fetch origin master
+            git rebase origin/master
+          done
+
+          echo "Push failed after 3 attempts"
+          exit 1
