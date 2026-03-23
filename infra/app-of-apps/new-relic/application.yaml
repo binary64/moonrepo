@@ -19,56 +19,53 @@ spec:
       values: |
         global:
           cluster: binary64
-          licenseKeySecret: newrelic-secret
+          customSecretName: newrelic-secret
+          customSecretLicenseKey: licenseKey
           lowDataMode: true
 
         # --------------------------------
         # Infrastructure Agent (DaemonSet)
+        # nri-bundle V3 requires per-component resources
         # --------------------------------
         newrelic-infrastructure:
           enabled: true
-          resources:
-            requests:
-              cpu: 50m
-              memory: 96Mi
-            limits:
-              cpu: 200m
-              memory: 256Mi
-
-        # --------------------------------
-        # Kubernetes Integration
-        # --------------------------------
-        newrelic-kubernetes:
-          enabled: true
-
-          clusterAgent:
-            enabled: true
-            replicas: 1
+          kubelet:
             resources:
               requests:
                 cpu: 50m
-                memory: 128Mi
+                memory: 96Mi
               limits:
-                cpu: 300m
-                memory: 384Mi
-
-          # kube-state-metrics (enabled)
-          kubeStateMetrics:
-            enabled: true
-
-          # Kubernetes events (enabled)
-          eventCollection:
-            enabled: true
-
-          # Prometheus scraping (enabled)
-          prometheus:
-            enabled: true
+                cpu: 200m
+                memory: 256Mi
+          ksm:
+            resources:
+              requests:
+                cpu: 50m
+                memory: 96Mi
+              limits:
+                cpu: 200m
+                memory: 256Mi
+          controlPlane:
+            resources:
+              requests:
+                cpu: 50m
+                memory: 96Mi
+              limits:
+                cpu: 200m
+                memory: 256Mi
 
         # --------------------------------
-        # Logging (enabled)
+        # Kube State Metrics
+        # --------------------------------
+        kube-state-metrics:
+          enabled: true
+
+        # --------------------------------
+        # Logging (EU endpoint)
         # --------------------------------
         newrelic-logging:
           enabled: true
+          endpoint: https://log-api.eu.newrelic.com/log/v1
           resources:
             requests:
               cpu: 30m
@@ -78,15 +75,27 @@ spec:
               memory: 256Mi
 
         # --------------------------------
-        # Metadata Injection (enabled)
+        # Metadata Injection
         # --------------------------------
-        webhook:
+        nri-metadata-injection:
+          enabled: true
+
+        # --------------------------------
+        # Kubernetes Events
+        # --------------------------------
+        nri-kube-events:
+          enabled: true
+
+        # --------------------------------
+        # Prometheus Scraping
+        # --------------------------------
+        nri-prometheus:
           enabled: true
 
         # --------------------------------
         # Pixie (explicitly disabled)
         # --------------------------------
-        pixie:
+        pixie-chart:
           enabled: false
 
   destination:
