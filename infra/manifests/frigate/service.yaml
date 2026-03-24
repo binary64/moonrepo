@@ -8,13 +8,14 @@ metadata:
   labels:
     app: frigate
 spec:
-  type: ClusterIP
+  type: NodePort
   selector:
     app: frigate
   ports:
     - name: web
       port: 5000
       targetPort: 5000
+      nodePort: 30500
       protocol: TCP
     - name: rtsp
       port: 8554
