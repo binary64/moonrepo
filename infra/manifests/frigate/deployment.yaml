@@ -28,6 +28,10 @@ spec:
         - key: node-role.kubernetes.io/control-plane
           effect: NoSchedule
       dnsPolicy: ClusterFirst
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: frigate
           image: ghcr.io/blakeblackshear/frigate:0.14.1@sha256:656301bd28c08f15a778f1fe37b8332e0ae8189c6311e0fcc58b1e7a8f8ab310
@@ -41,7 +45,10 @@ spec:
               name: rtsp
             - containerPort: 8555
               protocol: TCP
-              name: webrtc
+              name: webrtc-tcp
+            - containerPort: 8555
+              protocol: UDP
+              name: webrtc-udp
             - containerPort: 1984
               protocol: TCP
               name: go2rtc-api

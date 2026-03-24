@@ -20,10 +20,14 @@ spec:
       port: 8554
       targetPort: 8554
       protocol: TCP
-    - name: webrtc
+    - name: webrtc-tcp
       port: 8555
       targetPort: 8555
       protocol: TCP
+    - name: webrtc-udp
+      port: 8555
+      targetPort: 8555
+      protocol: UDP
     - name: go2rtc-api
       port: 1984
       targetPort: 1984
