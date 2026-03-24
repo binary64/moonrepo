@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gha-runner
+  namespace: gha-runner
+  annotations:
+    # Skip local execution — mounts host Docker socket, not available in dev clusters
+    moonrepo.dev/skip-local: "true"
+  labels:
+    app: gha-runner
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: gha-runner
+  template:
+    metadata:
+      labels:
+        app: gha-runner
+    spec:
+      # Run on Jupiter — needs the host Docker socket for build containers
+      # Label the node: kubectl label node vmi3137202 brandwhisper.cloud/node-role=jupiter
+      nodeSelector:
+        brandwhisper.cloud/node-role: jupiter
+      containers:
+        - name: runner
+          image: myoung34/github-runner:latest
+          imagePullPolicy: Always
+          env:
+            - name: REPO_URL
+              value: "https://github.com/binary64/ocdesktop"
+            - name: RUNNER_NAME_PREFIX
+              value: "jupiter"
+            - name: LABELS
+              value: "self-hosted,linux,x64,jupiter"
+            - name: RUNNER_SCOPE
+              value: "repo"
+            - name: EPHEMERAL
+              value: "false"
+            - name: DISABLE_AUTO_UPDATE
+              value: "false"
+            - name: DOCKER_ENABLED
+              value: "true"
+            # GitHub PAT with repo scope — stored in sealed secret
+            - name: ACCESS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: gha-runner-secret
+                  key: access-token
+          volumeMounts:
+            - name: docker-sock
+              mountPath: /var/run/docker.sock
+          resources:
+            requests:
+              cpu: "2"
+              memory: 4Gi
+            limits:
+              cpu: "12"
+              memory: 32Gi
+      volumes:
+        - name: docker-sock
+          hostPath:
+            path: /var/run/docker.sock
+            type: Socket
