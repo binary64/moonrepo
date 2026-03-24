@@ -58,6 +58,6 @@ sensor:
     name: "phone2_rssi"
 
   # Dog tracker (BLE tag — MAC address to be configured when tracker purchased)
-  - platform: ble_rssi
+  # - platform: ble_rssi
   #   service_uuid: "PLACEHOLDER"
   #   name: "dog_rssi"
