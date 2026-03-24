@@ -135,34 +135,61 @@ const FRAME_MS = (FRAME_SAMPLES / SAMPLE_RATE) * 1000;
 let ortSession = null;
 
 async function initVAD() {
-  const bundledModelPath = path.join(__dirname, 'silero_vad_v6.2.onnx');
   let modelPath;
-  if (fs.existsSync(bundledModelPath)) {
-    modelPath = bundledModelPath;
-    console.log('Silero VAD v6.2 model found — using bundled weights');
-  } else {
+  // Prefer @ricky0123/vad-node bundled model (v4/v5 — proven compatible with onnxruntime)
+  try {
     modelPath = require.resolve('@ricky0123/vad-node/dist/silero_vad.onnx');
-    console.warn('⚠️ silero_vad_v6.2.onnx not found — falling back to @ricky0123/vad-node bundled model');
+    vadModelVersion = 'v4';
+    console.log('Using @ricky0123/vad-node bundled Silero model (v4/v5)');
+  } catch (_) {
+    // Fall back to bundled v6.2 if @ricky0123 not available
+    const bundledModelPath = path.join(__dirname, 'silero_vad_v6.2.onnx');
+    if (fs.existsSync(bundledModelPath)) {
+      modelPath = bundledModelPath;
+      vadModelVersion = 'v6';
+      console.log('Using bundled Silero VAD v6.2');
+    } else {
+      throw new Error('No Silero VAD model found — install @ricky0123/vad-node or provide silero_vad_v6.2.onnx');
+    }
   }
   ortSession = await ort.InferenceSession.create(modelPath);
-  console.log(`Silero VAD model loaded: ${path.basename(modelPath)}`);
+  console.log(`Silero VAD model loaded: ${path.basename(modelPath)} (${vadModelVersion})`);
 }
 
+// Detect model version at load time
+let vadModelVersion = 'v4'; // default to v4/v5 (separate h/c tensors)
+
 function createVADState() {
-  // Silero v6.2 uses a single state tensor [2, batch, 128] instead of
-  // separate h/c tensors [2, 1, 64] used in v4/v5.
+  if (vadModelVersion === 'v6') {
+    // Silero v6.2 uses a single state tensor [2, batch, 128]
+    return {
+      state: new ort.Tensor('float32', new Float32Array(256), [2, 1, 128]),
+      sr: new ort.Tensor('int64', BigInt64Array.from([16000n]), [])
+    };
+  }
+  // Silero v4/v5 uses separate h/c tensors [2, 1, 64]
   return {
-    state: new ort.Tensor('float32', new Float32Array(256), [2, 1, 128]),
-    sr: new ort.Tensor('int64', BigInt64Array.from([16000n]), [])
+    h: new ort.Tensor('float32', new Float32Array(128), [2, 1, 64]),
+    c: new ort.Tensor('float32', new Float32Array(128), [2, 1, 64]),
+    sr: new ort.Tensor('int64', BigInt64Array.from([16000n]), [1])
   };
 }
 
 async function runVADFrame(vadState, float32Frame) {
   const input = new ort.Tensor('float32', float32Frame, [1, float32Frame.length]);
+  if (vadModelVersion === 'v6') {
+    const result = await ortSession.run({
+      input, sr: vadState.sr, state: vadState.state
+    });
+    vadState.state = result.stateN;
+    return result.output.data[0];
+  }
+  // v4/v5 path
   const result = await ortSession.run({
-    input, sr: vadState.sr, state: vadState.state
+    input, sr: vadState.sr, h: vadState.h, c: vadState.c
   });
-  vadState.state = result.stateN;
+  vadState.h = result.hn;
+  vadState.c = result.cn;
   return result.output.data[0];
 }
 
