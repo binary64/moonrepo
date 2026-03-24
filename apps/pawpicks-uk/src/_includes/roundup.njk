@@ -1,0 +1,136 @@
+---
+layout: base.njk
+ogType: article
+---
+
+{% block schema %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "{{ title }}",
+  "description": "{{ description }}",
+  "author": { "@type": "Organization", "name": "{{ site.name }}" },
+  "publisher": { "@type": "Organization", "name": "{{ site.name }}" },
+  "datePublished": "{{ date | dateFormat }}",
+  "dateModified": "{{ lastUpdated or date | dateFormat }}"
+}
+</script>
+{% if products %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "{{ title }}",
+  "numberOfItems": {{ products.length }},
+  "itemListElement": [
+    {% for product in products %}
+    {
+      "@type": "ListItem",
+      "position": {{ loop.index }},
+      "item": {
+        "@type": "Product",
+        "name": "{{ product.name }}",
+        "brand": "{{ product.brand }}",
+        {% if product.rating %}"aggregateRating": { "@type": "AggregateRating", "ratingValue": "{{ product.rating }}", "bestRating": "5" },{% endif %}
+        {% if product.price %}"offers": { "@type": "Offer", "price": "{{ product.price }}", "priceCurrency": "GBP", "availability": "https://schema.org/InStock" }{% endif %}
+      }
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
+{% endif %}
+{% endblock %}
+
+<div class="container">
+  <nav class="breadcrumbs" aria-label="Breadcrumb">
+    <a href="/">Home</a> <span>›</span>
+    {% if category %}<a href="/{{ category | slug }}/">{{ category }}</a> <span>›</span>{% endif %}
+    <span>{{ title }}</span>
+  </nav>
+</div>
+
+<article class="article">
+  <h1>{{ title }}</h1>
+  <p class="meta">
+    Last updated: {{ lastUpdated or date | dateFormat }}
+    {% if readingTime %} · {{ readingTime }} min read{% endif %}
+  </p>
+
+  {% if tldr %}
+  <div class="info-box">
+    <strong>🏆 Quick Answer:</strong> {{ tldr | safe }}
+  </div>
+  {% endif %}
+
+  {{ content | safe }}
+
+  {% if products %}
+  <h2>{{ productsHeading or 'Our Top Picks' }}</h2>
+
+  {% for product in products %}
+  <div class="product-review" id="{{ product.name | slug }}">
+    <h3>{{ loop.index }}. {{ product.name }}</h3>
+    {% if product.topPick %}<span class="tag tag-top">🏆 Top Pick</span>{% endif %}
+    {% if product.bestValue %}<span class="tag tag-top">💰 Best Value</span>{% endif %}
+    {% for tag in product.tags %}<span class="tag">{{ tag }}</span>{% endfor %}
+
+    <div class="rating">{{ product.rating | stars }} ({{ product.rating }}/5)</div>
+    <div class="price">{{ product.price | gbp }}</div>
+
+    <p>{{ product.summary }}</p>
+
+    {% if product.pros and product.cons %}
+    {% proscons product.pros, product.cons %}
+    {% endif %}
+
+    {% if product.keySpecs %}
+    <table class="comparison-table">
+      <thead><tr><th>Spec</th><th>Detail</th></tr></thead>
+      <tbody>
+      {% for spec in product.keySpecs %}
+        <tr><td>{{ spec.label }}</td><td>{{ spec.value }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
+    {% if product.affiliateUrl %}
+    {% affiliateButton product.affiliateUrl, product.ctaText %}
+    {% endif %}
+  </div>
+  <hr>
+  {% endfor %}
+  {% endif %}
+
+  {% if faqs %}
+  <h2>Frequently Asked Questions</h2>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {% for faq in faqs %}
+      {
+        "@type": "Question",
+        "name": "{{ faq.q }}",
+        "acceptedAnswer": { "@type": "Answer", "text": "{{ faq.a }}" }
+      }{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ]
+  }
+  </script>
+  {% for faq in faqs %}
+  <div class="faq-item">
+    <h3>{{ faq.q }}</h3>
+    <p>{{ faq.a }}</p>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  {% if buyingGuide %}
+  <h2>Buying Guide</h2>
+  {{ buyingGuide | safe }}
+  {% endif %}
+</article>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="{{ site.language }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }}{% if title %} | {% endif %}{{ site.name }}</title>
+  <meta name="description" content="{{ description or site.description }}">
+  <link rel="canonical" href="{{ site.url }}{{ page.url }}">
+  <link rel="stylesheet" href="{{ '/css/style.css' | url }}">
+
+  {# Open Graph #}
+  <meta property="og:title" content="{{ title or site.name }}">
+  <meta property="og:description" content="{{ description or site.description }}">
+  <meta property="og:type" content="{{ ogType or 'website' }}">
+  <meta property="og:url" content="{{ site.url }}{{ page.url }}">
+  {% if ogImage %}<meta property="og:image" content="{{ site.url }}{{ ogImage }}">{% endif %}
+
+  {# Schema.org structured data #}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "{{ site.name }}",
+    "url": "{{ site.url }}",
+    "description": "{{ site.description }}"
+  }
+  </script>
+
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a href="{{ '/' | url }}" class="site-logo">🐾 Paw<span>Picks</span></a>
+      <nav class="site-nav">
+        {% for item in navigation %}
+        <a href="{{ item.url | url }}">{{ item.label }}</a>
+        {% endfor %}
+      </nav>
+    </div>
+  </header>
+
+  {% block hero %}{% endblock %}
+
+  <main>
+    <div class="container">
+      {% block content %}
+      {{ content | safe }}
+      {% endblock %}
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div>
+        <p>© {{ site.lastUpdated | truncate(4, true, '') }} {{ site.name }}. Independent reviews — never sponsored.</p>
+        <p><a href="{{ '/about/' | url }}">About</a> · <a href="{{ '/affiliate-disclosure/' | url }}">Affiliate Disclosure</a> · <a href="{{ '/privacy/' | url }}">Privacy</a></p>
+      </div>
+      <div>
+        <p>🐾 Made with love by dog owners, for dog owners</p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
