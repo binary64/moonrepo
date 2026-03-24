@@ -50,14 +50,14 @@ sensor:
     ibeacon_minor: 40004
     name: "phone1_rssi"
 
-  # Phone 2 (iBeacon — UUID to be configured when BLE transmitter enabled)
-  # - platform: ble_rssi
-  #   ibeacon_uuid: "PLACEHOLDER"
-  #   ibeacon_major: 100
-  #   ibeacon_minor: 40004
-  #   name: "phone2_rssi"
+  # Phone 2 — Abi's Samsung A15 (SM-A156M)
+  - platform: ble_rssi
+    ibeacon_uuid: "f2272e9a-d2fe-43c1-b867-34be0b583516"
+    ibeacon_major: 100
+    ibeacon_minor: 40004
+    name: "phone2_rssi"
 
   # Dog tracker (BLE tag — MAC address to be configured when tracker purchased)
-  # - platform: ble_rssi
+  - platform: ble_rssi
   #   service_uuid: "PLACEHOLDER"
   #   name: "dog_rssi"
