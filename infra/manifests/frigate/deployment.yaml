@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: frigate
   namespace: frigate
+  annotations:
+    moonrepo.dev/skip-local: "true"
   labels:
     app: frigate
 spec:
@@ -28,7 +30,8 @@ spec:
       dnsPolicy: ClusterFirst
       containers:
         - name: frigate
-          image: ghcr.io/blakeblackshear/frigate:0.14.1
+          image: ghcr.io/blakeblackshear/frigate:0.14.1@sha256:656301bd28c08f15a778f1fe37b8332e0ae8189c6311e0fcc58b1e7a8f8ab310
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5000
               protocol: TCP
@@ -42,6 +45,12 @@ spec:
             - containerPort: 1984
               protocol: TCP
               name: go2rtc-api
+          securityContext:
+            runAsNonRoot: false  # Frigate requires root for ffmpeg and /dev/shm access
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           volumeMounts:
             - name: config
               mountPath: /config/config.yml
@@ -73,6 +82,9 @@ spec:
               port: 5000
             initialDelaySeconds: 15
             periodSeconds: 10
+      # hostPath volumes are intentional for a single-node NVR deployment.
+      # Recordings and runtime data are non-critical (ephemeral/overwritten by retention policy)
+      # and must live on the host filesystem for performance and persistence across pod restarts.
       volumes:
         - name: config
           configMap:
