@@ -177,37 +177,16 @@ const _awsCredentialsSecretVersion = new aws.secretsmanager.SecretVersion(
   },
 );
 
-// Vercel secrets for CI/CD deployment (GitHub Actions)
-const vercelSecretsSecret = new aws.secretsmanager.Secret(
-  "vercel-secrets",
-  {
-    name: `${prefix}/vercel-secrets`,
-    description:
-      "Vercel token + project IDs for GitHub Actions CI/CD deployments",
-    kmsKeyId: kmsKey.id,
-    recoveryWindowInDays: 30,
-  },
-);
-
 // Note: Cloudflare token must be set manually using set-secret.sh script
 // aws secretsmanager put-secret-value --secret-id moonrepo/cloudflare-api-token-pulumi --secret-string "xxx"
-//
-// Vercel secrets must be set manually:
-// aws secretsmanager put-secret-value --secret-id moonrepo/vercel-secrets \
-//   --secret-string '{"token":"vcp_...","org-id":"team_...","project-id-pawpicks":"prj_..."}'
 
 // IAM policy for secrets access (can be used by CI/CD or operators)
 const secretsAccessPolicy = new aws.iam.Policy("secrets-access-policy", {
   name: "moonrepo-secrets-access-policy",
   description: "Policy for accessing moonrepo secrets in Secrets Manager",
   policy: pulumi
-    .all([
-      cloudflareApiTokenSecret.arn,
-      awsCredentialsSecret.arn,
-      vercelSecretsSecret.arn,
-      kmsKey.arn,
-    ])
-    .apply(([cloudflareSecretArn, awsCredsSecretArn, vercelSecretArn, kmsArn]) =>
+    .all([cloudflareApiTokenSecret.arn, awsCredentialsSecret.arn, kmsKey.arn])
+    .apply(([cloudflareSecretArn, awsCredsSecretArn, kmsArn]) =>
       JSON.stringify({
         Version: "2012-10-17",
         Statement: [
@@ -218,7 +197,7 @@ const secretsAccessPolicy = new aws.iam.Policy("secrets-access-policy", {
               "secretsmanager:GetSecretValue",
               "secretsmanager:DescribeSecret",
             ],
-            Resource: [cloudflareSecretArn, awsCredsSecretArn, vercelSecretArn],
+            Resource: [cloudflareSecretArn, awsCredsSecretArn],
           },
           {
             Sid: "DecryptSecrets",
@@ -250,7 +229,6 @@ export const pulumiAccessKeyId = pulumiAccessKey.id;
 export const pulumiSecretAccessKey = pulumi.secret(pulumiAccessKey.secret);
 export const awsCredentialsSecretArn = awsCredentialsSecret.arn;
 export const cloudflareApiTokenSecretArn = cloudflareApiTokenSecret.arn;
-export const vercelSecretsSecretArn = vercelSecretsSecret.arn;
 
 // Convenience output for pulumi login command
 export const pulumiLoginCommand = pulumi.interpolate`pulumi login s3://${stateBucket.bucket}?region=eu-west-2`;
