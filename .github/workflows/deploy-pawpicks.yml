@@ -5,13 +5,17 @@ on:
     branches: [master]
     paths:
       - 'apps/pawpicks-uk/**'
-  pull_request:
-    paths:
-      - 'apps/pawpicks-uk/**'
+
+permissions:
+  contents: read
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    concurrency:
+      group: pawpicks-uk-production
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
 
