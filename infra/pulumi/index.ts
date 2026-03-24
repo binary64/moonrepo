@@ -113,11 +113,15 @@ const vercelProjectIdPawpicks = config.requireSecret(
 
 const repo = "moonrepo";
 
-const _vercelTokenSecret = new github.ActionsSecret("vercel-token", {
-  repository: repo,
-  secretName: "VERCEL_TOKEN",
-  plaintextValue: vercelToken,
-});
+const _vercelTokenSecret = new github.ActionsSecret(
+  "vercel-token",
+  {
+    repository: repo,
+    secretName: "VERCEL_TOKEN",
+    plaintextValue: vercelToken,
+  },
+  { protect: true },
+);
 
 const _vercelOrgIdSecret = new github.ActionsSecret("vercel-org-id", {
   repository: repo,
