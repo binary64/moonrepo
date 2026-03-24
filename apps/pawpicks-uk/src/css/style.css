@@ -16,13 +16,14 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { font-size: 17px; scroll-behavior: smooth; }
+html { font-size: 17px; scroll-behavior: smooth; overflow-x: hidden; }
 
 body {
   font-family: var(--font-body);
   color: var(--color-text);
   background: var(--color-bg);
   line-height: 1.7;
+  overflow-x: hidden;
 }
 
 a { color: var(--color-primary); text-decoration: none; }
@@ -123,13 +124,18 @@ main { padding: 2rem 0; }
 .product-card .cta:hover { background: var(--color-primary-light); text-decoration: none; }
 
 /* Comparison table */
+.comparison-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 2rem 0;
+}
 .comparison-table {
   width: 100%;
   border-collapse: collapse;
-  margin: 2rem 0;
   background: var(--color-bg-alt);
   border-radius: 8px;
   overflow: hidden;
+  min-width: 600px;
 }
 .comparison-table th, .comparison-table td {
   padding: 0.75rem 1rem;

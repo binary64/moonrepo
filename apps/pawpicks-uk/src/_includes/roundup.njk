@@ -86,7 +86,7 @@ ogType: article
     {% endif %}
 
     {% if product.keySpecs %}
-    <table class="comparison-table">
+    <div class="comparison-table-wrapper"><table class="comparison-table">
       <thead><tr><th>Spec</th><th>Detail</th></tr></thead>
       <tbody>
       {% for spec in product.keySpecs %}
@@ -94,6 +94,7 @@ ogType: article
       {% endfor %}
       </tbody>
     </table>
+</div>
     {% endif %}
 
     {% if product.affiliateUrl %}
