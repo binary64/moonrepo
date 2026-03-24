@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frigate
+  namespace: frigate
+  labels:
+    app: frigate
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frigate
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: frigate
+    spec:
+      # Run on master (NUC) — LAN access required for camera streams
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: "true"
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/control-plane
+          effect: NoSchedule
+      dnsPolicy: ClusterFirst
+      containers:
+        - name: frigate
+          image: ghcr.io/blakeblackshear/frigate:0.14.1
+          ports:
+            - containerPort: 5000
+              protocol: TCP
+              name: web
+            - containerPort: 8554
+              protocol: TCP
+              name: rtsp
+            - containerPort: 8555
+              protocol: TCP
+              name: webrtc
+            - containerPort: 1984
+              protocol: TCP
+              name: go2rtc-api
+          volumeMounts:
+            - name: config
+              mountPath: /config/config.yml
+              subPath: config.yml
+            - name: data
+              mountPath: /data
+            - name: media
+              mountPath: /media/frigate
+            - name: cache
+              mountPath: /tmp/cache
+            - name: shm
+              mountPath: /dev/shm
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+          livenessProbe:
+            httpGet:
+              path: /api/version
+              port: 5000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /api/version
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: frigate-config
+        - name: data
+          hostPath:
+            path: /opt/frigate/data
+            type: DirectoryOrCreate
+        - name: media
+          hostPath:
+            path: /opt/frigate/media
+            type: DirectoryOrCreate
+        - name: cache
+          emptyDir:
+            medium: Memory
+            sizeLimit: 2Gi
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 256Mi

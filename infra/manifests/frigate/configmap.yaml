@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frigate-config
+  namespace: frigate
+data:
+  config.yml: |
+    mqtt:
+      host: mosquitto.home-assistant.svc
+      port: 1883
+
+    go2rtc:
+      streams:
+        front_door:
+          - "rtsp://ring-mqtt.ring-mqtt.svc:8554/front_door"
+
+    cameras:
+      front_door:
+        enabled: true
+        ffmpeg:
+          inputs:
+            - path: rtsp://127.0.0.1:8554/front_door
+              input_args: preset-rtsp-restream
+              roles:
+                - detect
+                - record
+        detect:
+          enabled: true
+          width: 1280
+          height: 720
+          fps: 5
+        record:
+          enabled: true
+          retain:
+            days: 7
+            mode: motion
+          events:
+            retain:
+              default: 14
+        snapshots:
+          enabled: true
+          retain:
+            default: 14
+        objects:
+          track:
+            - person
+            - dog
+            - cat
+            - car
+        motion:
+          threshold: 30
+          contour_area: 10
+
+    detectors:
+      cpu1:
+        type: cpu
+        num_threads: 2
+
+    database:
+      path: /data/frigate.db
