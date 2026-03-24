@@ -50,7 +50,7 @@ sensor:
     ibeacon_minor: 40004
     name: "phone1_rssi"
 
-  # Phone 2 — Abi's Samsung A15 (SM-A156M)
+  # Phone 2 (iBeacon)
   - platform: ble_rssi
     ibeacon_uuid: "f2272e9a-d2fe-43c1-b867-34be0b583516"
     ibeacon_major: 100
