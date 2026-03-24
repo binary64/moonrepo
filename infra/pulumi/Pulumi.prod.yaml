@@ -1,1 +1,8 @@
 encryptionsalt: v1:4cl/SF3P7go=:v1:M/Bxg82IY1+/5Ys3:FlwMuMM2fCcq5nCvc1zbkVh7Ct9pNA==
+config:
+  moonrepo-cloudflare:vercel-token:
+    secure: v1:bElYqWfeeKqKo5lS:FfzBMiFCnEm1Xt+y8CK33XVAxwFgb/WUJb/wS5vhm/kHW4pnRYr8D4xW3Fz01fgxAAw7CWjcOKbCKoiP+64BHySXUlEbhAVQTOUc/A==
+  moonrepo-cloudflare:vercel-org-id:
+    secure: v1:kOP44S4S2DHcR9g1:aEtp/Aiwbw0Q7YFdIHwJte432iGLBfYiQHCpUca8RNl/2tH84ygmK3y9+xEd
+  moonrepo-cloudflare:vercel-project-id-pawpicks:
+    secure: v1:RSWSvbr9/9FoltaC:VZ28k8hLmztRnpqmKBPrNJ6CHZh1ddXLbTTjDpJymQIqthmiVhCqgksQo1mW1cgm
