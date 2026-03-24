@@ -133,6 +133,7 @@ const FRAME_MS = (FRAME_SAMPLES / SAMPLE_RATE) * 1000;
 // input/output tensors, just improved weights.
 // Fallback: if the bundled model is missing, use the one from @ricky0123/vad-node.
 let ortSession = null;
+let vadModelVersion = 'v4'; // default to v4/v5 (separate h/c tensors)
 
 async function initVAD() {
   let modelPath;
@@ -155,9 +156,6 @@ async function initVAD() {
   ortSession = await ort.InferenceSession.create(modelPath);
   console.log(`Silero VAD model loaded: ${path.basename(modelPath)} (${vadModelVersion})`);
 }
-
-// Detect model version at load time
-let vadModelVersion = 'v4'; // default to v4/v5 (separate h/c tensors)
 
 function createVADState() {
   if (vadModelVersion === 'v6') {
