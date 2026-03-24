@@ -26,7 +26,7 @@ spec:
         brandwhisper.cloud/node-role: jupiter
       containers:
         - name: runner
-          image: myoung34/github-runner:latest
+          image: myoung34/github-runner:2.333.0
           imagePullPolicy: Always
           env:
             - name: REPO_URL
@@ -38,7 +38,7 @@ spec:
             - name: RUNNER_SCOPE
               value: "repo"
             - name: EPHEMERAL
-              value: "false"
+              value: "true"
             - name: DISABLE_AUTO_UPDATE
               value: "false"
             - name: DOCKER_ENABLED
