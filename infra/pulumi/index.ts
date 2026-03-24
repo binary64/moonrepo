@@ -95,13 +95,24 @@ const _haEventRelaySecret = new k8s.core.v1.Secret(
 );
 
 // ─── Vercel CI/CD Secrets ───────────────────────────────────────────────────
-// Managed via Pulumi config (KMS-encrypted). Provisioned into GitHub Actions
-// secrets so the deploy-pawpicks workflow can deploy to Vercel.
+// Flow: AWS Secrets Manager (KMS) → sync-secrets.sh → SealedSecret → ArgoCD
+// → k8s Secret (vercel-secrets in pulumi-operator-system) → Pulumi reads here
+// → provisions into GitHub Actions secrets via @pulumi/github.
 
-const vercelToken = config.requireSecret("vercel-token");
-const vercelOrgId = config.requireSecret("vercel-org-id");
-const vercelProjectIdPawpicks = config.requireSecret(
-  "vercel-project-id-pawpicks",
+const vercelK8sSecret = k8s.core.v1.Secret.get(
+  "vercel-secrets",
+  "pulumi-operator-system/vercel-secrets",
+  { provider: k8sProvider },
+);
+
+const vercelToken = vercelK8sSecret.data.apply((d) =>
+  Buffer.from(d["token"], "base64").toString(),
+);
+const vercelOrgId = vercelK8sSecret.data.apply((d) =>
+  Buffer.from(d["org-id"], "base64").toString(),
+);
+const vercelProjectIdPawpicks = vercelK8sSecret.data.apply((d) =>
+  Buffer.from(d["project-id-pawpicks"], "base64").toString(),
 );
 
 const repo = "moonrepo";

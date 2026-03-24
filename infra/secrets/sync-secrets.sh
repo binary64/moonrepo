@@ -86,6 +86,20 @@ if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
   exit 1
 fi
 
+if ! VERCEL_SECRETS=$(aws secretsmanager get-secret-value \
+  --secret-id "${PREFIX}/vercel-secrets" \
+  --query SecretString \
+  --output text); then
+  echo "Warning: Failed to fetch vercel-secrets from AWS. Skipping Vercel secrets." >&2
+  VERCEL_SECRETS=""
+fi
+
+if [ -n "$VERCEL_SECRETS" ]; then
+  VERCEL_TOKEN=$(echo "$VERCEL_SECRETS" | jq -r '.token')
+  VERCEL_ORG_ID=$(echo "$VERCEL_SECRETS" | jq -r '.["org-id"]')
+  VERCEL_PROJECT_ID_PAWPICKS=$(echo "$VERCEL_SECRETS" | jq -r '.["project-id-pawpicks"]')
+fi
+
 echo "✓ Secrets fetched from AWS"
 
 # Generate unsealed K8s secrets
@@ -113,6 +127,22 @@ stringData:
   access-key-id: "${AWS_ACCESS_KEY_ID}"
   secret-access-key: "${AWS_SECRET_ACCESS_KEY}"
 EOF
+
+if [ -n "$VERCEL_SECRETS" ]; then
+cat >> unsealed/pulumi-secrets.unsealed.yaml <<EOF
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: vercel-secrets
+  namespace: ${PULUMI_OPERATOR_NAMESPACE}
+type: Opaque
+stringData:
+  token: "${VERCEL_TOKEN}"
+  org-id: "${VERCEL_ORG_ID}"
+  project-id-pawpicks: "${VERCEL_PROJECT_ID_PAWPICKS}"
+EOF
+fi
 
 echo "✓ Unsealed secrets generated in unsealed/"
 
