@@ -1,5 +1,0 @@
-{
-  "buildCommand": "bun run build",
-  "outputDirectory": "_site",
-  "installCommand": "bun install"
-}
