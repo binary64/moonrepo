@@ -95,8 +95,15 @@ const _haEventRelaySecret = new k8s.core.v1.Secret(
 );
 
 // ─── Vercel CI/CD Secrets ───────────────────────────────────────────────────
-// Managed via Pulumi config (KMS-encrypted). Provisioned into GitHub Actions
-// secrets so the deploy-pawpicks workflow can deploy to Vercel.
+// Encrypted via `pulumi config set --secret` → stored in S3 state (KMS).
+// No AWS Secrets Manager needed — these aren't bootstrap secrets.
+// Pulumi provisions them directly into GitHub Actions secrets.
+//
+// To set:
+//   pulumi config set --secret vercel-token "vcp_..."
+//   pulumi config set --secret vercel-org-id "team_..."
+//   pulumi config set --secret vercel-project-id-pawpicks "prj_..."
+//   pulumi up
 
 const vercelToken = config.requireSecret("vercel-token");
 const vercelOrgId = config.requireSecret("vercel-org-id");
