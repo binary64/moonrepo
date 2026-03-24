@@ -39,7 +39,7 @@ ogType: article
 
   {% if comparisonSpecs %}
   <h2>Head-to-Head Comparison</h2>
-  <table class="comparison-table">
+  <div class="comparison-table-wrapper"><table class="comparison-table">
     <thead>
       <tr>
         <th>Feature</th>
@@ -59,6 +59,7 @@ ogType: article
       {% endfor %}
     </tbody>
   </table>
+</div>
   {% endif %}
 
   {% for product in products %}
