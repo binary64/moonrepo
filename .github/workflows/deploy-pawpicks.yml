@@ -1,0 +1,35 @@
+name: Deploy PawPicks to Vercel
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'apps/pawpicks-uk/**'
+  pull_request:
+    paths:
+      - 'apps/pawpicks-uk/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.3.3'
+
+      - name: Install dependencies
+        working-directory: apps/pawpicks-uk
+        run: bun install
+
+      - name: Build
+        working-directory: apps/pawpicks-uk
+        run: bun run build
+
+      - name: Deploy to Vercel
+        working-directory: apps/pawpicks-uk
+        run: bunx vercel --prod --yes --token ${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
