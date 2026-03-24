@@ -127,11 +127,14 @@ const FRAME_SAMPLES = 1536;
 const FRAME_BYTES = FRAME_SAMPLES * BYTES_PER_SAMPLE;
 const FRAME_MS = (FRAME_SAMPLES / SAMPLE_RATE) * 1000;
 
-// Silero ONNX model
-// We ship the v6.2 model (Dec 2025) directly in the image for better low-quality
-// mic audio detection. The model is API-compatible with prior versions — same
-// input/output tensors, just improved weights.
-// Fallback: if the bundled model is missing, use the one from @ricky0123/vad-node.
+// Silero ONNX model — version-aware with layered fallback
+// Primary: @ricky0123/vad-node bundled model (Silero v4/v5, compatible with onnxruntime 1.24.x)
+//   - Uses separate "h" / "c" tensors [2,1,64]; returns "hn" / "cn"
+// Fallback: silero_vad_v6.2.onnx bundled in image (Silero v6.2)
+//   - Uses a single "state" tensor [2,1,128]; returns "stateN"
+//   - v6.2 is currently broken with onnxruntime 1.24.x (wrong output tensor shape)
+// createVADState() and runVADFrame() branch on vadModelVersion so both ONNX
+// I/O contracts are handled correctly; removing those branches would break one path.
 let ortSession = null;
 let vadModelVersion = 'v4'; // default to v4/v5 (separate h/c tensors)
 
@@ -142,7 +145,12 @@ async function initVAD() {
     modelPath = require.resolve('@ricky0123/vad-node/dist/silero_vad.onnx');
     vadModelVersion = 'v4';
     console.log('Using @ricky0123/vad-node bundled Silero model (v4/v5)');
-  } catch (_) {
+  } catch (err) {
+    // Only swallow MODULE_NOT_FOUND — surface I/O or permission errors so they
+    // don't silently fall through to an incorrect model path.
+    if (err.code !== 'MODULE_NOT_FOUND' && !err.message?.includes('Cannot find module')) {
+      throw err;
+    }
     // Fall back to bundled v6.2 if @ricky0123 not available
     const bundledModelPath = path.join(__dirname, 'silero_vad_v6.2.onnx');
     if (fs.existsSync(bundledModelPath)) {
