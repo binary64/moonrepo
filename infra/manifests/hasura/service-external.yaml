@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: hasura-external
+  namespace: hasura
+  annotations:
+    moonrepo.dev/skip-local: "true"
+    # NodePort is intentional — Android TV app (Chromecast) connects directly
+    # via LAN IP:30808, bypassing the service mesh. The Chromecast cannot
+    # resolve cluster DNS or use Istio Gateway routing.
+  labels:
+    app.kubernetes.io/name: hasura
+    app.kubernetes.io/instance: hasura
+spec:
+  type: NodePort
+  ports:
+    - port: 8080
+      targetPort: http
+      protocol: TCP
+      nodePort: 30808
+  selector:
+    app.kubernetes.io/name: hasura
+    app.kubernetes.io/instance: hasura
