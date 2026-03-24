@@ -17,6 +17,7 @@ const express = require('express');
 const http = require('http');
 const https = require('https');
 const { WebSocketServer, WebSocket } = require('ws');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const ort = require('onnxruntime-node');
@@ -771,6 +772,7 @@ function sendViaGateway(message, sessionKey, cb) {
   const idempotencyKey = `watch-ptt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
   let resolved = false;
+  let dispatched = false;
   const ws = new WebSocket(wsUrl);
   const timeout = setTimeout(() => {
     if (!resolved) {
@@ -782,10 +784,8 @@ function sendViaGateway(message, sessionKey, cb) {
   }, 30000);
 
   ws.on('open', () => {
-    ws.send(JSON.stringify({
-      method: 'chat.send',
-      params: { message, sessionKey, idempotencyKey }
-    }));
+    // Challenge handshake required — wait for connect.challenge message
+    console.log(`[${ts()}] 🔌 Gateway WS connected, awaiting challenge...`);
   });
 
   ws.on('message', (data) => {
@@ -795,6 +795,26 @@ function sendViaGateway(message, sessionKey, cb) {
       msg = JSON.parse(raw);
     } catch (parseErr) {
       console.error(`[${ts()}] Gateway WS malformed frame: ${parseErr.message} — raw: ${raw.slice(0, 200)}`);
+      return;
+    }
+    // Handle gateway challenge handshake
+    if (msg.event === 'connect.challenge' && msg.payload && msg.payload.nonce) {
+      if (!GATEWAY_TOKEN) {
+        console.error(`[${ts()}] FATAL: OPENCLAW_GATEWAY_TOKEN is not set — cannot respond to challenge`);
+        ws.close();
+        if (cb) cb(new Error('OPENCLAW_GATEWAY_TOKEN is not set'));
+        return;
+      }
+      const hmac = crypto.createHmac('sha256', GATEWAY_TOKEN).update(msg.payload.nonce).digest('hex');
+      ws.send(JSON.stringify({ type: 'event', event: 'connect.response', payload: { nonce: msg.payload.nonce, hash: hmac } }));
+      console.log(`[${ts()}] 🤝 Challenge responded`);
+      return;
+    }
+    // After challenge, send the actual message (guard against duplicate dispatch)
+    if ((msg.event === 'connect.ready' || msg.event === 'connect.ok') && !dispatched) {
+      dispatched = true;
+      ws.send(JSON.stringify({ method: 'chat.send', params: { message, sessionKey, idempotencyKey } }));
+      console.log(`[${ts()}] 📤 chat.send dispatched after handshake`);
       return;
     }
     // Only treat an ack correlated by idempotency key as success.
