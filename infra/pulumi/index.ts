@@ -1,4 +1,5 @@
 import * as cloudflare from "@pulumi/cloudflare";
+import * as github from "@pulumi/github";
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 
@@ -91,6 +92,50 @@ const _haEventRelaySecret = new k8s.core.v1.Secret(
     },
   },
   { provider: k8sProvider },
+);
+
+// ─── Vercel CI/CD Secrets ───────────────────────────────────────────────────
+// Encrypted via `pulumi config set --secret` → stored in S3 state (KMS).
+// No AWS Secrets Manager needed — these aren't bootstrap secrets.
+// Pulumi provisions them directly into GitHub Actions secrets.
+//
+// To set:
+//   pulumi config set --secret vercel-token "vcp_..."
+//   pulumi config set --secret vercel-org-id "team_..."
+//   pulumi config set --secret vercel-project-id-pawpicks "prj_..."
+//   pulumi up
+
+const vercelToken = config.requireSecret("vercel-token");
+const vercelOrgId = config.requireSecret("vercel-org-id");
+const vercelProjectIdPawpicks = config.requireSecret(
+  "vercel-project-id-pawpicks",
+);
+
+const repo = "moonrepo";
+
+const _vercelTokenSecret = new github.ActionsSecret(
+  "vercel-token",
+  {
+    repository: repo,
+    secretName: "VERCEL_TOKEN",
+    plaintextValue: vercelToken,
+  },
+  { protect: true },
+);
+
+const _vercelOrgIdSecret = new github.ActionsSecret("vercel-org-id", {
+  repository: repo,
+  secretName: "VERCEL_ORG_ID",
+  plaintextValue: vercelOrgId,
+});
+
+const _vercelProjectIdPawpicksSecret = new github.ActionsSecret(
+  "vercel-project-id-pawpicks",
+  {
+    repository: repo,
+    secretName: "VERCEL_PROJECT_ID_PAWPICKS",
+    plaintextValue: vercelProjectIdPawpicks,
+  },
 );
 
 // Exports
