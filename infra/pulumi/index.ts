@@ -1,4 +1,5 @@
 import * as cloudflare from "@pulumi/cloudflare";
+import * as github from "@pulumi/github";
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 
@@ -91,6 +92,39 @@ const _haEventRelaySecret = new k8s.core.v1.Secret(
     },
   },
   { provider: k8sProvider },
+);
+
+// ─── Vercel CI/CD Secrets ───────────────────────────────────────────────────
+// Managed via Pulumi config (KMS-encrypted). Provisioned into GitHub Actions
+// secrets so the deploy-pawpicks workflow can deploy to Vercel.
+
+const vercelToken = config.requireSecret("vercel-token");
+const vercelOrgId = config.requireSecret("vercel-org-id");
+const vercelProjectIdPawpicks = config.requireSecret(
+  "vercel-project-id-pawpicks",
+);
+
+const repo = "moonrepo";
+
+const _vercelTokenSecret = new github.ActionsSecret("vercel-token", {
+  repository: repo,
+  secretName: "VERCEL_TOKEN",
+  plaintextValue: vercelToken,
+});
+
+const _vercelOrgIdSecret = new github.ActionsSecret("vercel-org-id", {
+  repository: repo,
+  secretName: "VERCEL_ORG_ID",
+  plaintextValue: vercelOrgId,
+});
+
+const _vercelProjectIdPawpicksSecret = new github.ActionsSecret(
+  "vercel-project-id-pawpicks",
+  {
+    repository: repo,
+    secretName: "VERCEL_PROJECT_ID_PAWPICKS",
+    plaintextValue: vercelProjectIdPawpicks,
+  },
 );
 
 // Exports
