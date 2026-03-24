@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: headscale-ui
+  namespace: headscale
+  labels:
+    app.kubernetes.io/name: headscale-ui
+    app.kubernetes.io/version: "2026.03.17"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: headscale-ui
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: headscale-ui
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: headscale-ui
+          image: ghcr.io/gurucomputing/headscale-ui:2026.03.17
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          env:
+            - name: HEADSCALE_URL
+              value: "http://headscale:8080"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
