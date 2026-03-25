@@ -42,6 +42,8 @@ spec:
           volumeMounts:
             - name: config
               mountPath: /config
+            - name: build-cache
+              mountPath: /config/.esphome/build
           resources:
             requests:
               cpu: 100m
@@ -65,3 +67,9 @@ spec:
         - name: config
           persistentVolumeClaim:
             claimName: esphome-config
+        - name: build-cache
+          emptyDir: {}
+          # Build artefacts (.pioenvs, compiled objects) are ephemeral.
+          # Mounting as emptyDir prevents stale platformio cache from
+          # causing "multiple ways to build same target" failures after
+          # ESPHome or espressif32 platform version upgrades.
