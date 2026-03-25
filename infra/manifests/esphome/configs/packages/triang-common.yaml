@@ -19,8 +19,8 @@ logger:
   level: WARN
 
 mqtt:
-  broker: 192.168.1.201
-  port: 31883
+  broker: !secret mqtt_broker
+  port: !secret mqtt_port
 
 esp32_ble_tracker:
   scan_parameters:
@@ -36,28 +36,28 @@ bluetooth_proxy:
 sensor:
   # Phone 1 (iBeacon via HA companion app)
   - platform: ble_rssi
-    ibeacon_uuid: "55844613-ad05-472a-a453-40d6a485123c"
+    ibeacon_uuid: !secret phone1_ibeacon_uuid
     ibeacon_major: 100
     ibeacon_minor: 40004
     name: "phone1_rssi"
 
   # Watch 1 (iBeacon via HA companion app on Galaxy Watch)
   - platform: ble_rssi
-    ibeacon_uuid: "3fbd1b77-9213-48f6-a8e5-e51630bf0156"
+    ibeacon_uuid: !secret watch1_ibeacon_uuid
     ibeacon_major: 100
     ibeacon_minor: 40004
     name: "watch1_rssi"
 
   # Phone 2 (iBeacon)
   - platform: ble_rssi
-    ibeacon_uuid: "f2272e9a-d2fe-43c1-b867-34be0b583516"
+    ibeacon_uuid: !secret phone2_ibeacon_uuid
     ibeacon_major: 100
     ibeacon_minor: 40004
     name: "phone2_rssi"
 
   # Watch 2 (iBeacon — UUID TBD)
   # - platform: ble_rssi
-  #   ibeacon_uuid: "PLACEHOLDER"
+  #   ibeacon_uuid: !secret watch2_ibeacon_uuid
   #   ibeacon_major: 100
   #   ibeacon_minor: 40004
   #   name: "watch2_rssi"

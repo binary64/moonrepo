@@ -44,6 +44,18 @@ spec:
               echo "Syncing ESPHome device configs from ConfigMap..."
               mkdir -p /config/packages
 
+              # Prune stale managed configs so /config mirrors /config-src exactly.
+              # Preserve secrets.yaml — it lives in the PVC only (never in ConfigMap).
+              for f in /config/*.yaml; do
+                [ -f "$f" ] || continue
+                [ "$(basename "$f")" = "secrets.yaml" ] && continue
+                rm -f "$f"
+              done
+              for f in /config/packages/*.yaml; do
+                [ -f "$f" ] || continue
+                rm -f "$f"
+              done
+
               # Copy device config files to /config/
               for f in /config-src/*.yaml; do
                 [ -f "$f" ] || continue

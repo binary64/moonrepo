@@ -9,8 +9,6 @@ resources:
 
 configMapGenerator:
   - name: esphome-device-configs
-    options:
-      disableNameSuffixHash: true
     files:
       # Triangulation nodes — classic ESP32 (triang1-3)
       - configs/triang1.yaml

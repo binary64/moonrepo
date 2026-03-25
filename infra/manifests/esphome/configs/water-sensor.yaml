@@ -2,8 +2,9 @@ substitutions:
   name: water-sensor
   friendly_name: "Water Sensor"
   touch_pin: GPIO4    # GPIO1-14 valid on S3; wire probe here + second probe to GND
-  threshold: "50000"  # calibrate: set setup_mode true, observe logs dry vs wet, pick midpoint
-  setup_mode: "false"
+  threshold: "50000"  # calibrate: set setup_mode "true" + log_level "DEBUG", observe logs, pick midpoint
+  setup_mode: "false" # set "true" to log raw values for threshold calibration
+  log_level: "WARN"   # set "DEBUG" when setup_mode is "true" so touch pad values appear in logs
 
 esphome:
   name: ${name}
