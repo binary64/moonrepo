@@ -1,0 +1,89 @@
+- configuration:
+    connection_info:
+      database_url:
+        from_env: HASURA_GRAPHQL_DATABASE_URL
+      isolation_level: read-committed
+      pool_settings:
+        connection_lifetime: 600
+        idle_timeout: 180
+        max_connections: 50
+        retries: 1
+      use_prepared_statements: true
+  kind: postgres
+  name: default
+  tables:
+  - array_relationships:
+    - name: stock_checks
+      using:
+        foreign_key_constraint_on:
+          column: asin
+          table:
+            name: pawpicks_stock_checks
+            schema: public
+    select_permissions:
+    - permission:
+        columns: '*'
+        filter: {}
+      role: public
+    table:
+      name: pawpicks_products
+      schema: public
+  - object_relationships:
+    - name: product
+      using:
+        foreign_key_constraint_on: asin
+    select_permissions:
+    - permission:
+        columns: '*'
+        filter: {}
+      role: public
+    table:
+      name: pawpicks_stock_checks
+      schema: public
+  - insert_permissions:
+    - permission:
+        check: {}
+        columns: '*'
+      role: radio-ingest
+    select_permissions:
+    - permission:
+        columns: '*'
+        filter: {}
+      role: public
+    table:
+      name: listener_snapshots
+      schema: radio
+  - insert_permissions:
+    - permission:
+        check: {}
+        columns: '*'
+      role: radio-ingest
+    select_permissions:
+    - permission:
+        columns: '*'
+        filter: {}
+      role: public
+    table:
+      name: play_history
+      schema: radio
+  - insert_permissions:
+    - permission:
+        check: {}
+        columns: '*'
+      role: radio-ingest
+    select_permissions:
+    - permission:
+        columns: '*'
+        filter: {}
+      role: public
+    table:
+      name: skip_requests
+      schema: radio
+  - select_permissions:
+    - permission:
+        columns: '*'
+        filter: {}
+      role: public
+    table:
+      name: tracks
+      schema: radio

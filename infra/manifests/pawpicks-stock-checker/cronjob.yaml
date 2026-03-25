@@ -1,0 +1,62 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: pawpicks-stock-checker
+  namespace: pawpicks-stock-checker
+  annotations:
+    moonrepo.dev/skip-local: "true"
+  labels:
+    app: pawpicks-stock-checker
+spec:
+  # Run every hour at 5 minutes past (gives Vercel build time to pick it up)
+  schedule: "5 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 600
+      template:
+        metadata:
+          labels:
+            app: pawpicks-stock-checker
+        spec:
+          restartPolicy: OnFailure
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: stock-checker
+              # PLACEHOLDER: This tag is rewritten to a real immutable SHA digest by docker.yml
+              # on every master push (via docker/metadata-action + image pinning). The :0000000
+              # placeholder is intentionally non-pullable to prevent accidental deployment before
+              # CI has pinned the real digest. ArgoCD will not run the CronJob until it syncs.
+              image: ghcr.io/binary64/pawpicks-stock-checker:0000000
+              imagePullPolicy: IfNotPresent
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: false
+                capabilities:
+                  drop:
+                    - ALL
+              env:
+                - name: HASURA_ENDPOINT
+                  value: http://hasura.hasura.svc.cluster.local:8080
+                - name: HASURA_ADMIN_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      name: hasura-admin
+                      key: HASURA_GRAPHQL_ADMIN_SECRET
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  cpu: 500m
+                  memory: 256Mi

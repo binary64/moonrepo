@@ -1,0 +1,307 @@
+objects:
+- fields:
+  - name: cpu
+    type: Float
+  - name: ram
+    type: Float
+  - name: disk
+    type: Float
+  name: GatewayHealthOutput
+- fields:
+  - name: nodes
+    type: Int
+  - name: ready
+    type: Int
+  - name: cpu
+    type: Float
+  - name: memory
+    type: Float
+  name: ClusterHealthOutput
+- fields:
+  - name: name
+    type: String
+  - name: value
+    type: String
+  - name: unit
+    type: String
+  name: SensorReading
+- fields:
+  - name: state
+    type: String
+  - name: battery
+    type: Int
+  name: RoombaStatus
+- fields:
+  - name: temperatures
+    type: '[SensorReading]'
+  - name: energy
+    type: '[SensorReading]'
+  - name: roomba
+    type: RoombaStatus
+  name: HomeSensorsOutput
+- fields:
+  - name: lastWalk
+    type: String
+  - name: hoursSince
+    type: Float
+  - name: message
+    type: String
+  - name: overdue
+    type: Boolean
+  name: MiloWalkOutput
+- fields:
+  - name: accountValue
+    type: Float
+  - name: last24hChange
+    type: Float
+  - name: rateOfReturn
+    type: Float
+  - name: investments
+    type: Float
+  - name: cash
+    type: Float
+  - name: error
+    type: String
+  name: Trading212Output
+- fields:
+  - name: totalBalance
+    type: Float
+  - name: error
+    type: String
+  name: CoinbaseOutput
+- fields:
+  - name: james
+    type: Int
+  - name: abi
+    type: Int
+  name: EmailOutput
+- fields:
+  - name: battery
+    type: Int
+  - name: charging
+    type: Boolean
+  - name: activity
+    type: String
+  - name: sleepConfidence
+    type: Int
+  - name: steps
+    type: Int
+  name: PhoneInfo
+- fields:
+  - name: james
+    type: PhoneInfo
+  - name: abi
+    type: PhoneInfo
+  name: PhonesOutput
+- fields:
+  - name: summary
+    type: String
+  - name: title
+    type: String
+  - name: start
+    type: String
+  - name: end
+    type: String
+  - name: time
+    type: String
+  - name: date
+    type: String
+  - name: person
+    type: String
+  - name: countdown
+    type: String
+  - name: isNow
+    type: Boolean
+  name: CalendarEventItem
+- fields:
+  - name: james
+    type: '[CalendarEventItem]'
+  - name: abi
+    type: '[CalendarEventItem]'
+  name: CalendarOutput
+- fields:
+  - name: name
+    type: String
+  - name: carrier
+    type: String
+  - name: status
+    type: String
+  - name: eta
+    type: String
+  name: PackageItem
+- fields:
+  - name: packages
+    type: '[PackageItem]'
+  name: PackagesOutput
+- fields:
+  - name: type
+    type: String
+  - name: colour
+    type: String
+  - name: emoji
+    type: String
+  - name: nextDate
+    type: String
+  - name: daysUntil
+    type: Int
+  name: BinCollectionItem
+- fields:
+  - name: collections
+    type: '[BinCollectionItem]'
+  - name: nextCollection
+    type: BinCollectionItem
+  name: BinsOutput
+- fields:
+  - name: title
+    type: String
+  - name: link
+    type: String
+  - name: published
+    type: String
+  - name: imageUrl
+    type: String
+  name: NewsHeadlineItem
+- fields:
+  - name: headlines
+    type: '[NewsHeadlineItem]'
+  name: NewsOutput
+- fields:
+  - name: symbol
+    type: String
+  - name: name
+    type: String
+  - name: price
+    type: Float
+  - name: change
+    type: Float
+  - name: changePercent
+    type: Float
+  - name: currency
+    type: String
+  name: MarketQuoteItem
+- fields:
+  - name: quotes
+    type: '[MarketQuoteItem]'
+  name: MarketsOutput
+- fields:
+  - name: today
+    type: String
+  - name: todayNote
+    type: String
+  name: SchedulePersonOutput
+- fields:
+  - name: james
+    type: SchedulePersonOutput
+  - name: abi
+    type: SchedulePersonOutput
+  name: ScheduleOutput
+- fields:
+  - name: emoji
+    type: String
+  - name: text
+    type: String
+  - name: source
+    type: String
+  - name: timestamp
+    type: String
+  name: TickerItemOutput
+- fields:
+  - name: lastUpdated
+    type: String
+  - name: items
+    type: '[TickerItemOutput]'
+  name: TickerOutput
+- fields:
+  - name: summary
+    type: String
+  - name: start
+    type: String
+  - name: person
+    type: String
+  - name: countdown
+    type: String
+  name: HealthEventItem
+- fields:
+  - name: events
+    type: '[HealthEventItem]'
+  name: HealthOutput
+- fields:
+  - name: dj
+    type: String
+  - name: listeners
+    type: Int
+  - name: tracksToday
+    type: Int
+  name: RadioStatsOutput
+- fields:
+  - name: sunset
+    type: String
+  - name: goldenHour
+    type: String
+  - name: countdown
+    type: String
+  - name: isPast
+    type: Boolean
+  name: GoldenHourOutput
+- fields:
+  - name: title
+    type: String
+  - name: author
+    type: String
+  - name: note
+    type: String
+  - name: emoji
+    type: String
+  name: CurrentlyReadingOutput
+- fields:
+  - name: track
+    type: String
+  - name: artist
+    type: String
+  - name: playing
+    type: Boolean
+  - name: album
+    type: String
+  - name: albumArt
+    type: String
+  name: SpotifyOutput
+- fields:
+  - name: temp
+    type: String
+  - name: feelsLike
+    type: String
+  - name: condition
+    type: String
+  - name: wind
+    type: String
+  - name: rain
+    type: String
+  - name: airQuality
+    type: String
+  - name: tonight
+    type: String
+  name: WeatherInfoOutput
+- fields:
+  - name: date
+    type: String
+  - name: event
+    type: String
+  - name: time
+    type: String
+  - name: person
+    type: String
+  name: MemoryCalendarEventItem
+- fields:
+  - name: james
+    type: '[String]'
+  - name: abi
+    type: '[String]'
+  name: TasksInfoOutput
+- fields:
+  - name: weather
+    type: WeatherInfoOutput
+  - name: calendar
+    type: '[MemoryCalendarEventItem]'
+  - name: tasks
+    type: TasksInfoOutput
+  name: MemoryOutput

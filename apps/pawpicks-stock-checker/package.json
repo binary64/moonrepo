@@ -1,0 +1,19 @@
+{
+  "name": "pawpicks-stock-checker",
+  "version": "1.0.0",
+  "description": "Hourly Amazon stock checker for PawPicks UK product ASINs",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "build": "tsc --noEmit",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "cheerio": "1.2.0",
+    "tsx": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.0.0"
+  }
+}

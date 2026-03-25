@@ -1,0 +1,39 @@
+type: application
+language: node
+
+tasks:
+  copy-data:
+    command: 'cp $MOON_WORKSPACE_ROOT/apps/pawpicks-uk/src/_data/products.json ./products.json'
+    inputs:
+      - '$workspaceRoot/apps/pawpicks-uk/src/_data/products.json'
+    outputs:
+      - 'products.json'
+
+  build:
+    command: 'tsc --noEmit'
+    inputs:
+      - 'src/**/*.ts'
+      - 'tsconfig.json'
+
+  type-check:
+    deps:
+      - 'build'
+
+  lint:
+    command: 'biome check .'
+    inputs:
+      - 'src/**/*.ts'
+      - 'biome.json'
+
+  build-image:
+    command: 'docker build -t pawpicks-stock-checker .'
+    deps:
+      - 'copy-data'
+      - 'build'
+    inputs:
+      - 'Dockerfile'
+      - 'src/index.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - 'products.json'
