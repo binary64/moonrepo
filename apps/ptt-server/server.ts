@@ -843,7 +843,7 @@ function ts(): string { return new Date().toISOString().replace('T', ' ').slice(
 
 initVAD().then(() => {
   server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Watch PTT v8 — Battery Alerts + Fixes`);
+    console.log(`Watch PTT v9 — Containerised Voice Receiver`);
     console.log(`  WS: ws://0.0.0.0:${PORT}/ws`);
     console.log(`  HTTP: health, battery, text on :${PORT}`);
     console.log(`  Speech: >${SPEECH_THRESHOLD} | Silence: ${SILENCE_AFTER_SPEECH_MS}ms | Min: ${MIN_SPEECH_MS}ms`);
