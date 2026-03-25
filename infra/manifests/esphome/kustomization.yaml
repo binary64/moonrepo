@@ -7,6 +7,10 @@ resources:
   - deployment.yaml
   - service.yaml
 
+generatorOptions:
+  annotations:
+    moonrepo.dev/skip-local: "true"
+
 configMapGenerator:
   - name: esphome-device-configs
     files:

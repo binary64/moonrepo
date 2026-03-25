@@ -36,6 +36,14 @@ spec:
         # secrets.yaml stays in the PVC only — never in the ConfigMap.
         - name: sync-configs
           image: busybox:1.36
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: false  # busybox runs as root; needed to write to PVC
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
           command:
             - sh
             - -c
@@ -43,6 +51,15 @@ spec:
               set -e
               echo "Syncing ESPHome device configs from ConfigMap..."
               mkdir -p /config/packages
+
+              # Fail-fast: refuse to prune if the ConfigMap projection is empty.
+              # An empty /config-src likely means a kustomization items mismatch
+              # and we must not delete live configs from the PVC.
+              src_count=$(ls /config-src/*.yaml 2>/dev/null | wc -l)
+              if [ "$src_count" -eq 0 ]; then
+                echo "ERROR: /config-src contains no YAML files — aborting to protect existing PVC configs." >&2
+                exit 1
+              fi
 
               # Prune stale managed configs so /config mirrors /config-src exactly.
               # Preserve secrets.yaml — it lives in the PVC only (never in ConfigMap).
@@ -78,6 +95,7 @@ spec:
               mountPath: /config
             - name: device-configs
               mountPath: /config-src
+              readOnly: true
       containers:
         - name: esphome
           image: ghcr.io/esphome/esphome:2026.3.0
