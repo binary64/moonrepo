@@ -57,7 +57,7 @@ spec:
             - name: EPHEMERAL
               value: "true"
             - name: DISABLE_AUTO_UPDATE
-              value: "false"
+              value: "true"  # Image pinned by digest — disable in-container binary updates
             - name: DOCKER_ENABLED
               value: "true"
             # GitHub PAT with repo scope — stored in sealed secret
