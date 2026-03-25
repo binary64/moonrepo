@@ -1,0 +1,462 @@
+- definition:
+    handler: http://158.220.90.28:3004/action/bins
+    ignored_client_headers:
+    - Content-Length
+    - Content-MD5
+    - User-Agent
+    - Host
+    - Origin
+    - Referer
+    - Accept
+    - Accept-Encoding
+    - Accept-Language
+    - Accept-Datetime
+    - Cache-Control
+    - Connection
+    - DNT
+    - Content-Type
+    output_type: BinsOutput
+    type: query
+  name: bins
+  permissions:
+  - role: portal
+- definition:
+    handler: http://158.220.90.28:3004/action/calendar
+    ignored_client_headers:
+    - Content-Length
+    - Content-MD5
+    - User-Agent
+    - Host
+    - Origin
+    - Referer
+    - Accept
+    - Accept-Encoding
+    - Accept-Language
+    - Accept-Datetime
+    - Cache-Control
+    - Connection
+    - DNT
+    - Content-Type
+    output_type: CalendarOutput
+    type: query
+  name: calendar
+  permissions:
+  - role: portal
+- definition:
+    handler: http://158.220.90.28:3004/action/clusterHealth
+    ignored_client_headers:
+    - Content-Length
+    - Content-MD5
+    - User-Agent
+    - Host
+    - Origin
+    - Referer
+    - Accept
+    - Accept-Encoding
+    - Accept-Language
+    - Accept-Datetime
+    - Cache-Control
+    - Connection
+    - DNT
+    - Content-Type
+    output_type: ClusterHealthOutput
+    type: query
+  name: clusterHealth
+  permissions:
+  - role: portal
+- definition:
+    handler: http://158.220.90.28:3004/action/coinbase
+    ignored_client_headers:
+    - Content-Length
+    - Content-MD5
+    - User-Agent
+    - Host
+    - Origin
+    - Referer
+    - Accept
+    - Accept-Encoding
+    - Accept-Language
+    - Accept-Datetime
+    - Cache-Control
+    - Connection
+    - DNT
+    - Content-Type
+    output_type: CoinbaseOutput
+    type: query
+  name: coinbase
+  permissions:
+  - role: portal
+- definition:
+    handler: http://158.220.90.28:3004/action/currentlyReading
+    ignored_client_headers:
+    - Content-Length
+    - Content-MD5
+    - User-Agent
+    - Host
+    - Origin
+    - Referer
+    - Accept
+    - Accept-Encoding
+    - Accept-Language
+    - Accept-Datetime
+    - Cache-Control
+    - Connection
+    - DNT
+    - Content-Type
+    output_type: CurrentlyReadingOutput
+    type: query
+  name: currentlyReading
+  permissions:
+  - role: portal
+- definition:
+    handler: http://158.220.90.28:3004/action/email
+    ignored_client_headers:
+    - Content-Length
+    - Content-MD5
+    - User-Agent
+    - Host
+    - Origin
+    - Referer
+    - Accept
+    - Accept-Encoding
+    - Accept-Language
+    - Accept-Datetime
+    - Cache-Control
+    - Connection
+    - DNT
+    - Content-Type
+    output_type: EmailOutput
+    type: query
+  name: email
+  permissions:
+  - role: portal
+- definition:
+    handler: http://158.220.90.28:3004/action/gatewayHealth
+    ignored_client_headers:
+    - Content-Length
+    - Content-MD5
+    - User-Agent
+    - Host
+    - Origin
+    - Referer
+    - Accept
+    - Accept-Encoding
+    - Accept-Language
+    - Accept-Datetime
+    - Cache-Control
+    - Connection
+    - DNT
+    - Content-Type
+    output_type: GatewayHealthOutput
+    type: query
+  name: gatewayHealth
+  permissions:
+  - role: portal
+- definition:
+    handler: http://158.220.90.28:3004/action/goldenHour
+    ignored_client_headers:
+    - Content-Length
+    - Content-MD5
+    - User-Agent
+    - Host
+    - Origin
+    - Referer
+    - Accept
+    - Accept-Encoding
+    - Accept-Language
+    - Accept-Datetime
+    - Cache-Control
+    - Connection
+    - DNT
+    - Content-Type
+    output_type: GoldenHourOutput
+    type: query
+  name: goldenHour
+  permissions:
+  - role: portal
+- definition:
+    handler: http://158.220.90.28:3004/action/health
+    ignored_client_headers:
+    - Content-Length
+    - Content-MD5
+    - User-Agent
+    - Host
+    - Origin
+    - Referer
+    - Accept
+    - Accept-Encoding
+    - Accept-Language
+    - Accept-Datetime
+    - Cache-Control
+    - Connection
+    - DNT
+    - Content-Type
+    output_type: HealthOutput
+    type: query
+  name: health
+  permissions:
+  - role: portal
+- definition:
+    handler: http://158.220.90.28:3004/action/homeSensors
+    ignored_client_headers:
+    - Content-Length
+    - Content-MD5
+    - User-Agent
+    - Host
+    - Origin
+    - Referer
+    - Accept
+    - Accept-Encoding
+    - Accept-Language
+    - Accept-Datetime
+    - Cache-Control
+    - Connection
+    - DNT
+    - Content-Type
+    output_type: HomeSensorsOutput
+    type: query
+  name: homeSensors
+  permissions:
+  - role: portal
+- definition:
+    handler: http://158.220.90.28:3004/action/markets
+    ignored_client_headers:
+    - Content-Length
+    - Content-MD5
+    - User-Agent
+    - Host
+    - Origin
+    - Referer
+    - Accept
+    - Accept-Encoding
+    - Accept-Language
+    - Accept-Datetime
+    - Cache-Control
+    - Connection
+    - DNT
+    - Content-Type
+    output_type: MarketsOutput
+    type: query
+  name: markets
+  permissions:
+  - role: portal
+- definition:
+    handler: http://158.220.90.28:3004/action/memory
+    ignored_client_headers:
+    - Content-Length
+    - Content-MD5
+    - User-Agent
+    - Host
+    - Origin
+    - Referer
+    - Accept
+    - Accept-Encoding
+    - Accept-Language
+    - Accept-Datetime
+    - Cache-Control
+    - Connection
+    - DNT
+    - Content-Type
+    output_type: MemoryOutput
+    type: query
+  name: memory
+  permissions:
+  - role: portal
+- definition:
+    handler: http://158.220.90.28:3004/action/miloWalk
+    ignored_client_headers:
+    - Content-Length
+    - Content-MD5
+    - User-Agent
+    - Host
+    - Origin
+    - Referer
+    - Accept
+    - Accept-Encoding
+    - Accept-Language
+    - Accept-Datetime
+    - Cache-Control
+    - Connection
+    - DNT
+    - Content-Type
+    output_type: MiloWalkOutput
+    type: query
+  name: miloWalk
+  permissions:
+  - role: portal
+- definition:
+    handler: http://158.220.90.28:3004/action/news
+    ignored_client_headers:
+    - Content-Length
+    - Content-MD5
+    - User-Agent
+    - Host
+    - Origin
+    - Referer
+    - Accept
+    - Accept-Encoding
+    - Accept-Language
+    - Accept-Datetime
+    - Cache-Control
+    - Connection
+    - DNT
+    - Content-Type
+    output_type: NewsOutput
+    type: query
+  name: news
+  permissions:
+  - role: portal
+- definition:
+    handler: http://158.220.90.28:3004/action/packages
+    ignored_client_headers:
+    - Content-Length
+    - Content-MD5
+    - User-Agent
+    - Host
+    - Origin
+    - Referer
+    - Accept
+    - Accept-Encoding
+    - Accept-Language
+    - Accept-Datetime
+    - Cache-Control
+    - Connection
+    - DNT
+    - Content-Type
+    output_type: PackagesOutput
+    type: query
+  name: packages
+  permissions:
+  - role: portal
+- definition:
+    handler: http://158.220.90.28:3004/action/phones
+    ignored_client_headers:
+    - Content-Length
+    - Content-MD5
+    - User-Agent
+    - Host
+    - Origin
+    - Referer
+    - Accept
+    - Accept-Encoding
+    - Accept-Language
+    - Accept-Datetime
+    - Cache-Control
+    - Connection
+    - DNT
+    - Content-Type
+    output_type: PhonesOutput
+    type: query
+  name: phones
+  permissions:
+  - role: portal
+- definition:
+    handler: http://158.220.90.28:3004/action/radioStats
+    ignored_client_headers:
+    - Content-Length
+    - Content-MD5
+    - User-Agent
+    - Host
+    - Origin
+    - Referer
+    - Accept
+    - Accept-Encoding
+    - Accept-Language
+    - Accept-Datetime
+    - Cache-Control
+    - Connection
+    - DNT
+    - Content-Type
+    output_type: RadioStatsOutput
+    type: query
+  name: radioStats
+  permissions:
+  - role: portal
+- definition:
+    handler: http://158.220.90.28:3004/action/schedule
+    ignored_client_headers:
+    - Content-Length
+    - Content-MD5
+    - User-Agent
+    - Host
+    - Origin
+    - Referer
+    - Accept
+    - Accept-Encoding
+    - Accept-Language
+    - Accept-Datetime
+    - Cache-Control
+    - Connection
+    - DNT
+    - Content-Type
+    output_type: ScheduleOutput
+    type: query
+  name: schedule
+  permissions:
+  - role: portal
+- definition:
+    handler: http://158.220.90.28:3004/action/spotify
+    ignored_client_headers:
+    - Content-Length
+    - Content-MD5
+    - User-Agent
+    - Host
+    - Origin
+    - Referer
+    - Accept
+    - Accept-Encoding
+    - Accept-Language
+    - Accept-Datetime
+    - Cache-Control
+    - Connection
+    - DNT
+    - Content-Type
+    output_type: SpotifyOutput
+    type: query
+  name: spotify
+  permissions:
+  - role: portal
+- definition:
+    handler: http://158.220.90.28:3004/action/ticker
+    ignored_client_headers:
+    - Content-Length
+    - Content-MD5
+    - User-Agent
+    - Host
+    - Origin
+    - Referer
+    - Accept
+    - Accept-Encoding
+    - Accept-Language
+    - Accept-Datetime
+    - Cache-Control
+    - Connection
+    - DNT
+    - Content-Type
+    output_type: TickerOutput
+    type: query
+  name: ticker
+  permissions:
+  - role: portal
+- definition:
+    handler: http://158.220.90.28:3004/action/trading212
+    ignored_client_headers:
+    - Content-Length
+    - Content-MD5
+    - User-Agent
+    - Host
+    - Origin
+    - Referer
+    - Accept
+    - Accept-Encoding
+    - Accept-Language
+    - Accept-Datetime
+    - Cache-Control
+    - Connection
+    - DNT
+    - Content-Type
+    output_type: Trading212Output
+    type: query
+  name: trading212
+  permissions:
+  - role: portal
