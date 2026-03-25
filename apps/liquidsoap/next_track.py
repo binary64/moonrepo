@@ -286,41 +286,21 @@ def get_all_artists(name):
 
 PROMPT_FILE = "/config/llm-prompt/system_prompt.txt"
 
-_FALLBACK_SYSTEM_PROMPT = """You are a radio DJ AI selecting the next 25 tracks for a continuous radio stream.
-
-Rules:
-- Each track MUST appear in the previous track's "follow" list (these are beat-compatible transitions)
-- No artist more than twice in your 25 picks
-- Never pick a track from lastPlayed
-- Consider: time of day, who's home, day of week
-- If abiHome is true: lean toward shared electronic/dance, avoid obscure deep cuts
-- If only jamesHome: trip hop, French house, big beat, downtempo are preferred
-- Evening/night: lower energy, more atmospheric
-- Morning/afternoon: building energy
-- If seed is set, work that artist's tracks in within the first 5 picks
-- DJ "arthur" = eclectic daytime, DJ "cara" = evening/weekend vibes
-- AVOID R&B and hip-hop genres. The only acceptable hip-hop/rap acts are: Eminem, Snoop Dogg, Beastie Boys, LL Cool J, Run DMC. All other rap/R&B tracks should be deprioritised.
-
-Output ONLY a JSON array of 25 track IDs. No explanation. Example: [102, 45, 67, ...]
-Start from the last track in lastPlayed."""
-
-
-def load_system_prompt():
+def load_system_prompt() -> str:
     """Load the LLM system prompt from the ConfigMap-mounted file.
 
-    Falls back to the inline default if the file is missing, so the service
-    continues to function during local development or if the ConfigMap volume
-    is not yet mounted.
+    Exits immediately if the file is missing or empty — no silent fallback.
+    The container should crash loudly so the missing ConfigMap is noticed.
     """
     try:
-        with open(PROMPT_FILE) as f:
-            prompt = f.read().strip()
-        if prompt:
-            return prompt
-        print(f"Warning: {PROMPT_FILE} is empty, using inline fallback", file=sys.stderr)
-    except (FileNotFoundError, OSError) as e:
-        print(f"Warning: could not read {PROMPT_FILE} ({e}), using inline fallback", file=sys.stderr)
-    return _FALLBACK_SYSTEM_PROMPT
+        prompt = Path(PROMPT_FILE).read_text().strip()
+    except FileNotFoundError:
+        print(f"FATAL: prompt file not found: {PROMPT_FILE}", file=sys.stderr)
+        sys.exit(1)
+    if not prompt:
+        print(f"FATAL: prompt file is empty: {PROMPT_FILE}", file=sys.stderr)
+        sys.exit(1)
+    return prompt
 
 
 def build_llm_context(graph, state):
