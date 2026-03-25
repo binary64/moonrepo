@@ -61,6 +61,16 @@ spec:
                 exit 1
               fi
 
+              # Guard: refuse to prune /config/packages if the packages projection is missing
+              # or empty. An absent/empty /config-src/packages directory means the ConfigMap
+              # packages volume hasn't projected correctly — pruning would permanently delete
+              # live package configs from the PVC.
+              pkg_count=$(ls /config-src/packages/*.yaml 2>/dev/null | wc -l)
+              if [ "$pkg_count" -eq 0 ]; then
+                echo "ERROR: /config-src/packages contains no YAML files — aborting to protect existing PVC package configs." >&2
+                exit 1
+              fi
+
               # Prune stale managed configs so /config mirrors /config-src exactly.
               # Preserve secrets.yaml — it lives in the PVC only (never in ConfigMap).
               for f in /config/*.yaml; do
