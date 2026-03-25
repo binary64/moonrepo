@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: hasura
   namespace: hasura
+  annotations:
+    moonrepo.dev/skip-local: "true"
   labels:
     app.kubernetes.io/name: hasura
     app.kubernetes.io/instance: hasura
@@ -44,6 +46,13 @@ spec:
               value: "false"
             - name: HASURA_GRAPHQL_ENABLED_LOG_TYPES
               value: "startup, http-log, webhook-log, websocket-log, query-log"
+            - name: HASURA_GRAPHQL_UNAUTHORIZED_ROLE
+              value: "public"
+            - name: HASURA_GRAPHQL_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: hasura-jwt
+                  key: HASURA_GRAPHQL_JWT_SECRET
           livenessProbe:
             httpGet:
               path: /healthz

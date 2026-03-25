@@ -1,0 +1,70 @@
+esphome:
+  name: triang6
+  friendly_name: triang6
+
+esp32:
+  minimum_chip_revision: "3.1"
+  board: esp32-s3-devkitc-1
+  framework:
+    type: arduino
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  power_save_mode: NONE
+
+logger:
+  level: WARN
+
+mqtt:
+  broker: 192.168.1.201
+  port: 31883
+
+esp32_ble_tracker:
+  scan_parameters:
+    interval: 320ms
+    window: 300ms
+    active: false
+    continuous: true
+
+sensor:
+  # Phone 1 (iBeacon via HA companion app)
+  - platform: ble_rssi
+    ibeacon_uuid: "55844613-ad05-472a-a453-40d6a485123c"
+    ibeacon_major: 100
+    ibeacon_minor: 40004
+    name: "phone1_rssi"
+
+  # Watch 1 (iBeacon via HA companion app on Galaxy Watch)
+  - platform: ble_rssi
+    ibeacon_uuid: "3fbd1b77-9213-48f6-a8e5-e51630bf0156"
+    ibeacon_major: 100
+    ibeacon_minor: 40004
+    name: "watch1_rssi"
+
+  # Phone 2 (iBeacon)
+  - platform: ble_rssi
+    ibeacon_uuid: "f2272e9a-d2fe-43c1-b867-34be0b583516"
+    ibeacon_major: 100
+    ibeacon_minor: 40004
+    name: "phone2_rssi"
+
+  # Watch 2 (iBeacon — UUID TBD)
+  # - platform: ble_rssi
+  #   ibeacon_uuid: "PLACEHOLDER"
+  #   ibeacon_major: 100
+  #   ibeacon_minor: 40004
+  #   name: "watch2_rssi"
+
+  # Dog tracker (BLE tag — MAC TBD)
+  # - platform: ble_rssi
+  #   service_uuid: "PLACEHOLDER"
+  #   name: "dog_rssi"

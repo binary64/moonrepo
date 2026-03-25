@@ -42,6 +42,10 @@ spec:
       jsonPointers:
         - /data
         - /stringData
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      jsonPointers:
+        - /status
 
   destination:
     server: https://kubernetes.default.svc

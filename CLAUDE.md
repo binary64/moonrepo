@@ -2,6 +2,33 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## ⚠️ Git Worktree Rule (MANDATORY)
+
+**Never `git checkout` inside `/mnt/arthur/clawd/moonrepo` or `/mnt/arthur/clawd/repos/moonrepo`.**
+
+The main clone is shared. Checking out a branch there contaminates the working tree for other concurrent tasks and causes cross-branch file leakage.
+
+**Always use a git worktree for branch work:**
+
+```bash
+# Setup — do this FIRST before any other git operation
+BRANCH=fix/my-branch
+WT=/tmp/wt-$(echo $BRANCH | tr '/' '-')
+git -C /mnt/arthur/clawd/moonrepo worktree add $WT $BRANCH
+
+# Do all work inside $WT
+cd $WT
+# ... make changes, commit, push ...
+
+# Teardown — always clean up
+git -C /mnt/arthur/clawd/moonrepo worktree remove $WT --force
+```
+
+If the branch doesn't exist yet:
+```bash
+git -C /mnt/arthur/clawd/moonrepo worktree add $WT -b $BRANCH origin/master
+```
+
 ## Project Overview
 
 This is a monorepo combining a Next.js web application with Kubernetes infrastructure-as-code. It uses Moon as the task runner and Bun as the package manager. Infrastructure is deployed via GitOps (ArgoCD) with automated Pulumi stack execution via the Pulumi Kubernetes Operator.

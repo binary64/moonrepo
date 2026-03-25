@@ -40,3 +40,5 @@ USER nextjs
 EXPOSE 3004
 
 CMD ["node", "server.js"]
+
+# trigger: 2026-03-23
