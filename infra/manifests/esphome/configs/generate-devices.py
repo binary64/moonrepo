@@ -44,21 +44,8 @@ packages:
 """
 
 
-def main():
-    with open(DEVICES_FILE) as f:
-        config = yaml.safe_load(f) or {}
-
-    if not isinstance(config, dict):
-        print("devices.yaml must contain a top-level mapping", file=sys.stderr)
-        sys.exit(1)
-
-    devices = config.get("devices", [])
-    if not isinstance(devices, list) or not devices:
-        print("devices.yaml must contain a non-empty 'devices' list", file=sys.stderr)
-        sys.exit(1)
-
-    # --- Pre-write validation pass ---
-    # Check all required keys exist and no duplicate names before writing any files.
+def validate_devices(devices: list) -> None:
+    """Validate all device entries. Prints errors and raises SystemExit on failure."""
     REQUIRED_KEYS = ("name", "friendly_name", "board")
     seen_names: set[str] = set()
     errors: list[str] = []
@@ -72,8 +59,8 @@ def main():
                 errors.append(f"  device[{idx}]: missing required key '{key}'")
 
         name = device.get("name")
-        if not isinstance(name, str) or not name.strip():
-            errors.append(f"  device[{idx}]: name must be a non-empty string")
+        if not isinstance(name, str) or not name.strip() or name != name.strip():
+            errors.append(f"  device[{idx}]: name must be a non-empty string without leading/trailing whitespace")
             continue
 
         candidate = (SCRIPT_DIR / f"{name}.yaml").resolve()
@@ -86,13 +73,23 @@ def main():
         else:
             seen_names.add(name)
 
+        friendly_name = device.get("friendly_name")
+        if not isinstance(friendly_name, str) or not friendly_name.strip():
+            errors.append(f"  device[{idx}]: friendly_name must be a non-empty string")
+
+        board = device.get("board")
+        if not isinstance(board, str) or not board.strip():
+            errors.append(f"  device[{idx}]: board must be a non-empty string")
+
     if errors:
         print("Validation failed — fix devices.yaml before regenerating:", file=sys.stderr)
         for err in errors:
             print(err, file=sys.stderr)
         sys.exit(1)
 
-    # --- File-writing pass ---
+
+def generate_files(devices: list) -> None:
+    """Write per-device ESPHome YAML files for all validated device entries."""
     for device in devices:
         name = device["name"]
         friendly_name = device["friendly_name"]
@@ -126,6 +123,23 @@ def main():
         print(f"  wrote {out_path.name}")
 
     print(f"\nGenerated {len(devices)} device file(s).")
+
+
+def main():
+    with open(DEVICES_FILE) as f:
+        config = yaml.safe_load(f) or {}
+
+    if not isinstance(config, dict):
+        print("devices.yaml must contain a top-level mapping", file=sys.stderr)
+        sys.exit(1)
+
+    devices = config.get("devices", [])
+    if not isinstance(devices, list) or not devices:
+        print("devices.yaml must contain a non-empty 'devices' list", file=sys.stderr)
+        sys.exit(1)
+
+    validate_devices(devices)
+    generate_files(devices)
 
 
 if __name__ == "__main__":
