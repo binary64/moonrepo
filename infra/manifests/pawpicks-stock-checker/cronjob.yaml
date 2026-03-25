@@ -24,7 +24,6 @@ spec:
           securityContext:
             runAsUser: 1000
             runAsGroup: 1000
-            fsGroup: 1000
           containers:
             - name: stock-checker
               # Tag is replaced by the pawpicks-stock-checker.yml GHA workflow on every master push.
@@ -32,8 +31,13 @@ spec:
               image: ghcr.io/binary64/pawpicks-stock-checker:latest
               imagePullPolicy: IfNotPresent
               env:
-                - name: OUTPUT_DIR
-                  value: /data
+                - name: HASURA_ENDPOINT
+                  value: http://hasura.hasura.svc.cluster.local:8080
+                - name: HASURA_ADMIN_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      name: hasura-admin
+                      key: HASURA_GRAPHQL_ADMIN_SECRET
               resources:
                 requests:
                   cpu: 100m
@@ -41,10 +45,3 @@ spec:
                 limits:
                   cpu: 500m
                   memory: 256Mi
-              volumeMounts:
-                - name: stock-data
-                  mountPath: /data
-          volumes:
-            - name: stock-data
-              persistentVolumeClaim:
-                claimName: stock-data

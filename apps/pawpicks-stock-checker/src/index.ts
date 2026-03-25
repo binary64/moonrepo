@@ -3,7 +3,7 @@
  * PawPicks UK — Amazon Stock Checker
  *
  * Checks stock status for each ASIN via HTTP GET + cheerio HTML parsing.
- * Writes stock-status.json to OUTPUT_DIR (default: /data).
+ * Persists results to Hasura via GraphQL mutations.
  *
  * Status values:
  *   in_stock       — "Add to Basket" / "In Stock" found
@@ -14,8 +14,7 @@
  */
 
 import { load } from 'cheerio';
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 
 // ──────────────────────────────────────────────
 // Types
@@ -35,37 +34,59 @@ interface ProductResult {
   error?: string;
 }
 
-interface StockOutput {
-  lastChecked: string | null;
-  products: Record<string, ProductResult>;
-}
-
 interface Product {
   amazonAsin?: string;
+  name?: string;
+  brand?: string;
+  slug?: string;
   [key: string]: unknown;
+}
+
+interface ProductMeta {
+  asin: string;
+  name: string;
+  brand: string | null;
+  slug: string | null;
+}
+
+interface HasuraResponse<T> {
+  data?: T;
+  errors?: Array<{ message: string; extensions?: Record<string, unknown> }>;
 }
 
 // ──────────────────────────────────────────────
 // Config
 // ──────────────────────────────────────────────
 
-const OUTPUT_DIR = process.env['OUTPUT_DIR'] ?? '/data';
-const OUTPUT_FILE = join(OUTPUT_DIR, 'stock-status.json');
+const HASURA_ENDPOINT = process.env['HASURA_ENDPOINT'] ?? 'http://hasura.hasura.svc.cluster.local:8080';
+const HASURA_ADMIN_SECRET = process.env['HASURA_ADMIN_SECRET'];
 
-// Load ASINs from products.json — all top-level array values, any key
+if (!HASURA_ADMIN_SECRET) {
+  console.error('HASURA_ADMIN_SECRET env var is required');
+  process.exit(1);
+}
+
+// Load products from products.json — capture asin, name, brand, slug
 const PRODUCTS_JSON_PATH = process.env['PRODUCTS_JSON_PATH'] ?? '/app/products.json';
-let ASINS: string[];
+let PRODUCTS: ProductMeta[];
 try {
   const raw = readFileSync(PRODUCTS_JSON_PATH, 'utf8');
   const products = JSON.parse(raw) as Record<string, Product[]>;
-  ASINS = Object.values(products)
+  PRODUCTS = Object.values(products)
     .flat()
-    .map((p) => p.amazonAsin)
-    .filter((asin): asin is string => typeof asin === 'string' && asin.length > 0);
-  if (ASINS.length === 0) throw new Error('No ASINs found in products.json');
+    .filter((p): p is Product & { amazonAsin: string } =>
+      typeof p.amazonAsin === 'string' && p.amazonAsin.length > 0,
+    )
+    .map((p) => ({
+      asin: p.amazonAsin,
+      name: typeof p.name === 'string' ? p.name : p.amazonAsin,
+      brand: typeof p.brand === 'string' ? p.brand : null,
+      slug: typeof p.slug === 'string' ? p.slug : null,
+    }));
+  if (PRODUCTS.length === 0) throw new Error('No ASINs found in products.json');
 } catch (err) {
   const message = err instanceof Error ? err.message : String(err);
-  console.error(`Failed to load ASINs from ${PRODUCTS_JSON_PATH}: ${message}`);
+  console.error(`Failed to load products from ${PRODUCTS_JSON_PATH}: ${message}`);
   process.exit(1);
 }
 
@@ -83,12 +104,6 @@ const USER_AGENTS: string[] = [
 
 function randomUserAgent(): string {
   return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)] as string;
-}
-
-function randomDelay(minMs = 2000, maxMs = 5000): Promise<void> {
-  return new Promise((resolve) =>
-    setTimeout(resolve, Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs),
-  );
 }
 
 function parseAmazonPage(html: string, statusCode: number): ParseResult {
@@ -214,49 +229,117 @@ async function checkAsin(asin: string): Promise<ProductResult> {
 }
 
 // ──────────────────────────────────────────────
+// Hasura GraphQL helpers
+// ──────────────────────────────────────────────
+
+async function hasuraQuery<T>(
+  query: string,
+  variables: Record<string, unknown>,
+): Promise<T> {
+  const response = await fetch(`${HASURA_ENDPOINT}/v1/graphql`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-hasura-admin-secret': HASURA_ADMIN_SECRET as string,
+    },
+    body: JSON.stringify({ query, variables }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Hasura HTTP error: ${response.status} ${response.statusText}`);
+  }
+
+  const json = (await response.json()) as HasuraResponse<T>;
+
+  if (json.errors && json.errors.length > 0) {
+    const messages = json.errors.map((e) => e.message).join('; ');
+    throw new Error(`Hasura GraphQL error: ${messages}`);
+  }
+
+  return json.data as T;
+}
+
+async function upsertProduct(product: ProductMeta): Promise<void> {
+  const mutation = `
+    mutation UpsertProduct($asin: String!, $name: String!, $brand: String, $slug: String) {
+      insert_pawpicks_products_one(
+        object: { asin: $asin, name: $name, brand: $brand, slug: $slug }
+        on_conflict: { constraint: pawpicks_products_pkey, update_columns: [name, brand, slug, updated_at] }
+      ) {
+        asin
+      }
+    }
+  `;
+  await hasuraQuery(mutation, {
+    asin: product.asin,
+    name: product.name,
+    brand: product.brand,
+    slug: product.slug,
+  });
+}
+
+async function insertStockCheck(
+  asin: string,
+  result: ProductResult,
+): Promise<void> {
+  const mutation = `
+    mutation InsertStockCheck($asin: String!, $status: String!, $price: numeric, $error: String) {
+      insert_pawpicks_stock_checks_one(object: {
+        asin: $asin, status: $status, price: $price, error: $error
+      }) {
+        id
+        checked_at
+      }
+    }
+  `;
+  await hasuraQuery(mutation, {
+    asin,
+    status: result.status,
+    price: result.price ?? null,
+    error: result.error ?? null,
+  });
+}
+
+// ──────────────────────────────────────────────
 // Main
 // ──────────────────────────────────────────────
 
 async function main(): Promise<void> {
   console.log(`PawPicks Stock Checker — ${new Date().toISOString()}`);
-  console.log(`Checking ${ASINS.length} ASINs…`);
+  console.log(`Checking ${PRODUCTS.length} ASINs…`);
+  console.log(`Hasura endpoint: ${HASURA_ENDPOINT}`);
 
-  // Load existing data so we can preserve history on error
-  let existing: StockOutput = { lastChecked: null, products: {} };
-  try {
-    existing = JSON.parse(readFileSync(OUTPUT_FILE, 'utf8')) as StockOutput;
-  } catch {
-    // Fresh run — no existing file
-  }
+  const results: Record<string, ProductResult> = {};
 
-  const products: Record<string, ProductResult> = { ...existing.products };
+  for (let i = 0; i < PRODUCTS.length; i++) {
+    const product = PRODUCTS[i] as ProductMeta;
+    console.log(`\n[${i + 1}/${PRODUCTS.length}] Checking ${product.asin} (${product.name})…`);
 
-  for (let i = 0; i < ASINS.length; i++) {
-    const asin = ASINS[i] as string;
-    console.log(`\n[${i + 1}/${ASINS.length}] Checking ${asin}…`);
+    const result = await checkAsin(product.asin);
+    results[product.asin] = result;
 
-    products[asin] = await checkAsin(asin);
+    // Persist to Hasura
+    try {
+      await upsertProduct(product);
+      await insertStockCheck(product.asin, result);
+      console.log(`  [${product.asin}] ✓ Saved to Hasura`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`  [${product.asin}] ✗ Failed to save to Hasura: ${message}`);
+      // Continue with remaining ASINs — don't abort the whole run
+    }
 
     // Delay between requests (skip after last one)
-    if (i < ASINS.length - 1) {
+    if (i < PRODUCTS.length - 1) {
       const delayMs = Math.floor(Math.random() * 3000) + 2000;
       console.log(`  Waiting ${delayMs}ms before next request…`);
       await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
   }
 
-  const output: StockOutput = {
-    lastChecked: new Date().toISOString(),
-    products,
-  };
+  console.log(`\n✓ Completed stock check for ${PRODUCTS.length} ASINs`);
 
-  // Ensure output directory exists
-  mkdirSync(OUTPUT_DIR, { recursive: true });
-  writeFileSync(OUTPUT_FILE, JSON.stringify(output, null, 2));
-
-  console.log(`\n✓ Wrote stock-status.json to ${OUTPUT_FILE}`);
-
-  const summary = Object.entries(products).map(([asin, data]) => `  ${asin}: ${data.status}`);
+  const summary = Object.entries(results).map(([asin, data]) => `  ${asin}: ${data.status}`);
   console.log('\nSummary:\n' + summary.join('\n'));
 }
 
