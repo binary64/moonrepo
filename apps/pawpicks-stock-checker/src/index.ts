@@ -167,6 +167,9 @@ async function checkAsin(asin: string): Promise<ProductResult> {
   const url = `https://www.amazon.co.uk/dp/${asin}`;
   const checkedAt = new Date().toISOString();
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10_000);
+
   try {
     const response = await fetch(url, {
       headers: {
@@ -179,7 +182,9 @@ async function checkAsin(asin: string): Promise<ProductResult> {
         'Upgrade-Insecure-Requests': '1',
       },
       redirect: 'follow',
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     if (response.status === 404) {
       console.log(`  [${asin}] 404 → dead`);
@@ -197,6 +202,11 @@ async function checkAsin(asin: string): Promise<ProductResult> {
     if (price != null) result.price = price;
     return result;
   } catch (err) {
+    clearTimeout(timeoutId);
+    if (err instanceof Error && err.name === 'AbortError') {
+      console.error(`  [${asin}] Error: Request timed out after 10s`);
+      return { status: 'error', checkedAt, error: 'Request timed out after 10s' };
+    }
     const message = err instanceof Error ? err.message : String(err);
     console.error(`  [${asin}] Error: ${message}`);
     return { status: 'error', checkedAt, error: message };
@@ -229,9 +239,9 @@ async function main(): Promise<void> {
 
     // Delay between requests (skip after last one)
     if (i < ASINS.length - 1) {
-      const delay = Math.floor(Math.random() * 3000) + 2000;
-      console.log(`  Waiting ${delay}ms before next request…`);
-      await randomDelay(2000, 5000);
+      const delayMs = Math.floor(Math.random() * 3000) + 2000;
+      console.log(`  Waiting ${delayMs}ms before next request…`);
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
   }
 

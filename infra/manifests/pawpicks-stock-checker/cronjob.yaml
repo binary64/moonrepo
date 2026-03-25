@@ -21,6 +21,10 @@ spec:
             app: pawpicks-stock-checker
         spec:
           restartPolicy: OnFailure
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
           containers:
             - name: stock-checker
               # Tag is replaced by the pawpicks-stock-checker.yml GHA workflow on every master push.

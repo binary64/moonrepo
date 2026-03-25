@@ -3,9 +3,9 @@ language: node
 
 tasks:
   copy-data:
-    command: 'cp ../pawpicks-uk/src/_data/products.json ./products.json'
+    command: 'cp $MOON_WORKSPACE_ROOT/apps/pawpicks-uk/src/_data/products.json ./products.json'
     inputs:
-      - '../pawpicks-uk/src/_data/products.json'
+      - '$workspaceRoot/apps/pawpicks-uk/src/_data/products.json'
     outputs:
       - 'products.json'
 
