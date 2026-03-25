@@ -6,3 +6,32 @@ resources:
   - pvc.yaml
   - deployment.yaml
   - service.yaml
+
+configMapGenerator:
+  - name: esphome-device-configs
+    options:
+      disableNameSuffixHash: true
+    files:
+      # Triangulation nodes — classic ESP32 (triang1-3)
+      - configs/triang1.yaml
+      - configs/triang2.yaml
+      - configs/triang3.yaml
+      # Triangulation nodes — ESP32-S3 (triang4-6)
+      - configs/triang4.yaml
+      - configs/triang5.yaml
+      - configs/triang6.yaml
+      # Loft nodes — ESP32-S3 (triang7-15, new)
+      - configs/triang7.yaml
+      - configs/triang8.yaml
+      - configs/triang9.yaml
+      - configs/triang10.yaml
+      - configs/triang11.yaml
+      - configs/triang12.yaml
+      - configs/triang13.yaml
+      - configs/triang14.yaml
+      - configs/triang15.yaml
+      # Sensors
+      - configs/water-sensor.yaml
+      # Shared packages
+      - configs/packages/triang-common.yaml
+      - configs/packages/water-sensor-base.yaml

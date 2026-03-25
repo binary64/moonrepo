@@ -1,0 +1,19 @@
+substitutions:
+  name: water-sensor
+  friendly_name: "Water Sensor"
+  touch_pin: GPIO4    # GPIO1-14 valid on S3; wire probe here + second probe to GND
+  threshold: "50000"  # calibrate: set setup_mode true, observe logs dry vs wet, pick midpoint
+  setup_mode: "false"
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+
+# ESP32-S3 required — uses S3 capacitive touch peripheral
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: arduino
+
+packages:
+  base: !include packages/water-sensor-base.yaml
