@@ -10,13 +10,10 @@ spec:
   source:
     repoURL: https://pajikos.github.io/home-assistant-helm-chart/
     chart: home-assistant
-    targetRevision: 0.3.35
+    targetRevision: 0.3.51
     helm:
       values: |
         # Enable host networking for LAN device discovery (TP-Link, mDNS, etc.)
-        image:
-          tag: "2026.3.4"
-
         hostNetwork: true
         dnsPolicy: ClusterFirstWithHostNet
 
