@@ -87,10 +87,11 @@ def main():
         friendly_name = device["friendly_name"]
         board = device["board"]
 
-        # yaml.dump produces a properly-escaped/quoted scalar (e.g. wraps in
-        # quotes and escapes backslashes/double-quotes) so that the generated
-        # YAML stays valid even when friendly_name contains special characters.
-        friendly_name_yaml = yaml.dump(friendly_name, default_flow_style=True).strip()
+        # yaml.dump({'v': ...}) produces a properly-escaped/quoted scalar (e.g.
+        # wraps in quotes when the value contains special characters) without
+        # emitting a YAML document-end marker ("...") that yaml.dump() adds
+        # when dumping a bare scalar with default_flow_style=True.
+        friendly_name_yaml = yaml.dump({"v": friendly_name})[3:].rstrip()
 
         # Only emit minimum_chip_revision when the device entry explicitly
         # specifies it.  Omitting it is safe (ESPHome defaults to 0.0) and

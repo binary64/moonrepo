@@ -2,7 +2,6 @@
 substitutions:
   name: triang2
   friendly_name: Triangulation Node 2
-...
 
 esphome:
   name: ${name}
