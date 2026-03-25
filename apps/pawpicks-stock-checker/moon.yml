@@ -25,6 +25,7 @@ tasks:
     command: 'biome check .'
     inputs:
       - 'src/**/*.ts'
+      - 'biome.json'
 
   build-image:
     command: 'docker build -t pawpicks-stock-checker .'
