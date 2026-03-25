@@ -284,22 +284,23 @@ def get_all_artists(name):
 
 # ─── LLM queue refill ───
 
-SYSTEM_PROMPT = """You are a radio DJ AI selecting the next 25 tracks for a continuous radio stream.
+PROMPT_FILE = "/config/llm-prompt/system_prompt.txt"
 
-Rules:
-- Each track MUST appear in the previous track's "follow" list (these are beat-compatible transitions)
-- No artist more than twice in your 25 picks
-- Never pick a track from lastPlayed
-- Consider: time of day, who's home, day of week
-- If abiHome is true: lean toward shared electronic/dance, avoid obscure deep cuts
-- If only jamesHome: trip hop, French house, big beat, downtempo are preferred
-- Evening/night: lower energy, more atmospheric
-- Morning/afternoon: building energy
-- If seed is set, work that artist's tracks in within the first 5 picks
-- DJ "arthur" = eclectic daytime, DJ "cara" = evening/weekend vibes
+def load_system_prompt() -> str:
+    """Load the LLM system prompt from the ConfigMap-mounted file.
 
-Output ONLY a JSON array of 25 track IDs. No explanation. Example: [102, 45, 67, ...]
-Start from the last track in lastPlayed."""
+    Exits immediately if the file is missing or empty — no silent fallback.
+    The container should crash loudly so the missing ConfigMap is noticed.
+    """
+    try:
+        prompt = Path(PROMPT_FILE).read_text().strip()
+    except FileNotFoundError:
+        print(f"FATAL: prompt file not found: {PROMPT_FILE}", file=sys.stderr)
+        sys.exit(1)
+    if not prompt:
+        print(f"FATAL: prompt file is empty: {PROMPT_FILE}", file=sys.stderr)
+        sys.exit(1)
+    return prompt
 
 
 def build_llm_context(graph, state):
@@ -403,7 +404,7 @@ def call_llm(graph, state):
     payload = {
         "model": LLM_MODEL,
         "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": load_system_prompt()},
             {"role": "user", "content": user_msg},
         ],
         "max_tokens": 512,
