@@ -3,6 +3,7 @@ esphome:
   friendly_name: triang3
 
 esp32:
+  minimum_chip_revision: "3.1"
   board: esp32dev
   framework:
     type: arduino
