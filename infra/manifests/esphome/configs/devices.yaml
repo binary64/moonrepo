@@ -1,0 +1,37 @@
+devices:
+  - name: triang1
+    friendly_name: "Triangulation Node 1"
+    board: esp32dev
+  - name: triang2
+    friendly_name: "Triangulation Node 2"
+    board: esp32dev
+  - name: triang3
+    friendly_name: "Triangulation Node 3"
+    board: esp32dev
+  - name: triang4
+    friendly_name: "Triangulation Node 4"
+    board: esp32-s3-devkitc-1
+  - name: triang5
+    friendly_name: "Triangulation Node 5"
+    board: esp32-s3-devkitc-1
+  - name: triang6
+    friendly_name: "Triangulation Node 6"
+    board: esp32-s3-devkitc-1
+  - name: triang10
+    friendly_name: "Triangulation Node 10"
+    board: esp32-s3-devkitc-1
+  - name: triang11
+    friendly_name: "Triangulation Node 11"
+    board: esp32-s3-devkitc-1
+  - name: triang12
+    friendly_name: "Triangulation Node 12"
+    board: esp32-s3-devkitc-1
+  - name: triang13
+    friendly_name: "Triangulation Node 13"
+    board: esp32-s3-devkitc-1
+  - name: triang14
+    friendly_name: "Triangulation Node 14"
+    board: esp32-s3-devkitc-1
+  - name: triang15
+    friendly_name: "Triangulation Node 15"
+    board: esp32-s3-devkitc-1

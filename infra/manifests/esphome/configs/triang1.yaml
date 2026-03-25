@@ -1,3 +1,4 @@
+# GENERATED — do not edit. Edit devices.yaml and run generate-devices.py
 substitutions:
   name: triang1
   friendly_name: "Triangulation Node 1"
