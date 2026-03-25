@@ -1,4 +1,5 @@
 #!/usr/bin/env tsx
+
 /**
  * PawPicks UK — Amazon Stock Checker
  *
@@ -13,14 +14,14 @@
  *   error          — network/fetch error
  */
 
-import { load } from 'cheerio';
-import { readFileSync } from 'node:fs';
+import { readFileSync } from "node:fs";
+import { load } from "cheerio";
 
 // ──────────────────────────────────────────────
 // Types
 // ──────────────────────────────────────────────
 
-type StockStatus = 'in_stock' | 'out_of_stock' | 'dead' | 'unknown' | 'error';
+type StockStatus = "in_stock" | "out_of_stock" | "dead" | "unknown" | "error";
 
 interface ParseResult {
   status: StockStatus;
@@ -58,44 +59,49 @@ interface HasuraResponse<T> {
 // Config
 // ──────────────────────────────────────────────
 
-const HASURA_ENDPOINT = process.env['HASURA_ENDPOINT'] ?? 'http://hasura.hasura.svc.cluster.local:8080';
-const HASURA_ADMIN_SECRET = process.env['HASURA_ADMIN_SECRET'];
+const HASURA_ENDPOINT =
+  process.env.HASURA_ENDPOINT ?? "http://hasura.hasura.svc.cluster.local:8080";
+const HASURA_ADMIN_SECRET = process.env.HASURA_ADMIN_SECRET;
 
 if (!HASURA_ADMIN_SECRET) {
-  console.error('HASURA_ADMIN_SECRET env var is required');
+  console.error("HASURA_ADMIN_SECRET env var is required");
   process.exit(1);
 }
 
 // Load products from products.json — capture asin, name, brand, slug
-const PRODUCTS_JSON_PATH = process.env['PRODUCTS_JSON_PATH'] ?? '/app/products.json';
+const PRODUCTS_JSON_PATH =
+  process.env.PRODUCTS_JSON_PATH ?? "/app/products.json";
 let PRODUCTS: ProductMeta[];
 try {
-  const raw = readFileSync(PRODUCTS_JSON_PATH, 'utf8');
+  const raw = readFileSync(PRODUCTS_JSON_PATH, "utf8");
   const products = JSON.parse(raw) as Record<string, Product[]>;
   PRODUCTS = Object.values(products)
     .flat()
-    .filter((p): p is Product & { amazonAsin: string } =>
-      typeof p.amazonAsin === 'string' && p.amazonAsin.length > 0,
+    .filter(
+      (p): p is Product & { amazonAsin: string } =>
+        typeof p.amazonAsin === "string" && p.amazonAsin.length > 0,
     )
     .map((p) => ({
       asin: p.amazonAsin,
-      name: typeof p.name === 'string' ? p.name : p.amazonAsin,
-      brand: typeof p.brand === 'string' ? p.brand : null,
-      slug: typeof p.slug === 'string' ? p.slug : null,
+      name: typeof p.name === "string" ? p.name : p.amazonAsin,
+      brand: typeof p.brand === "string" ? p.brand : null,
+      slug: typeof p.slug === "string" ? p.slug : null,
     }));
-  if (PRODUCTS.length === 0) throw new Error('No ASINs found in products.json');
+  if (PRODUCTS.length === 0) throw new Error("No ASINs found in products.json");
 } catch (err) {
   const message = err instanceof Error ? err.message : String(err);
-  console.error(`Failed to load products from ${PRODUCTS_JSON_PATH}: ${message}`);
+  console.error(
+    `Failed to load products from ${PRODUCTS_JSON_PATH}: ${message}`,
+  );
   process.exit(1);
 }
 
 const USER_AGENTS: string[] = [
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0',
-  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15',
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0",
+  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15",
 ];
 
 // ──────────────────────────────────────────────
@@ -108,11 +114,11 @@ function randomUserAgent(): string {
 
 function parseAmazonPage(html: string, statusCode: number): ParseResult {
   if (statusCode === 404) {
-    return { status: 'dead', price: null };
+    return { status: "dead", price: null };
   }
 
   const $ = load(html);
-  const bodyText = $('body').text();
+  const bodyText = $("body").text();
 
   // Dead / not found patterns
   const deadPatterns: RegExp[] = [
@@ -124,7 +130,7 @@ function parseAmazonPage(html: string, statusCode: number): ParseResult {
   ];
   for (const pattern of deadPatterns) {
     if (pattern.test(bodyText)) {
-      return { status: 'dead', price: null };
+      return { status: "dead", price: null };
     }
   }
 
@@ -137,7 +143,7 @@ function parseAmazonPage(html: string, statusCode: number): ParseResult {
   ];
   for (const pattern of outPatterns) {
     if (pattern.test(bodyText)) {
-      return { status: 'out_of_stock', price: null };
+      return { status: "out_of_stock", price: null };
     }
   }
 
@@ -153,29 +159,29 @@ function parseAmazonPage(html: string, statusCode: number): ParseResult {
     // Best-effort price extraction
     let price: number | null = null;
     const priceSelectors: string[] = [
-      '.a-price .a-offscreen',
-      '#priceblock_ourprice',
-      '#priceblock_dealprice',
-      '.a-price-whole',
-      '#price_inside_buybox',
+      ".a-price .a-offscreen",
+      "#priceblock_ourprice",
+      "#priceblock_dealprice",
+      ".a-price-whole",
+      "#price_inside_buybox",
     ];
     for (const selector of priceSelectors) {
       const raw = $(selector).first().text().trim();
       if (raw) {
         const match = raw.match(/[\d,]+\.?\d*/);
         if (match) {
-          const parsed = parseFloat(match[0].replace(/,/g, ''));
-          if (!isNaN(parsed)) {
+          const parsed = parseFloat(match[0].replace(/,/g, ""));
+          if (!Number.isNaN(parsed)) {
             price = parsed;
             break;
           }
         }
       }
     }
-    return { status: 'in_stock', price };
+    return { status: "in_stock", price };
   }
 
-  return { status: 'unknown', price: null };
+  return { status: "unknown", price: null };
 }
 
 async function checkAsin(asin: string): Promise<ProductResult> {
@@ -188,22 +194,23 @@ async function checkAsin(asin: string): Promise<ProductResult> {
   try {
     const response = await fetch(url, {
       headers: {
-        'User-Agent': randomUserAgent(),
-        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-GB,en;q=0.9',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Cache-Control': 'no-cache',
-        Connection: 'keep-alive',
-        'Upgrade-Insecure-Requests': '1',
+        "User-Agent": randomUserAgent(),
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-GB,en;q=0.9",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
       },
-      redirect: 'follow',
+      redirect: "follow",
       signal: controller.signal,
     });
 
     if (response.status === 404) {
       clearTimeout(timeoutId);
       console.log(`  [${asin}] 404 → dead`);
-      return { status: 'dead', checkedAt };
+      return { status: "dead", checkedAt };
     }
 
     const html = await response.text();
@@ -211,7 +218,7 @@ async function checkAsin(asin: string): Promise<ProductResult> {
     const { status, price } = parseAmazonPage(html, response.status);
 
     console.log(
-      `  [${asin}] HTTP ${response.status} → ${status}${price != null ? ` @ £${price}` : ''}`,
+      `  [${asin}] HTTP ${response.status} → ${status}${price != null ? ` @ £${price}` : ""}`,
     );
 
     const result: ProductResult = { status, checkedAt };
@@ -219,13 +226,17 @@ async function checkAsin(asin: string): Promise<ProductResult> {
     return result;
   } catch (err) {
     clearTimeout(timeoutId);
-    if (err instanceof Error && err.name === 'AbortError') {
+    if (err instanceof Error && err.name === "AbortError") {
       console.error(`  [${asin}] Error: Request timed out after 10s`);
-      return { status: 'error', checkedAt, error: 'Request timed out after 10s' };
+      return {
+        status: "error",
+        checkedAt,
+        error: "Request timed out after 10s",
+      };
     }
     const message = err instanceof Error ? err.message : String(err);
     console.error(`  [${asin}] Error: ${message}`);
-    return { status: 'error', checkedAt, error: message };
+    return { status: "error", checkedAt, error: message };
   }
 }
 
@@ -238,22 +249,24 @@ async function hasuraQuery<T>(
   variables: Record<string, unknown>,
 ): Promise<T> {
   const response = await fetch(`${HASURA_ENDPOINT}/v1/graphql`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'x-hasura-admin-secret': HASURA_ADMIN_SECRET as string,
+      "Content-Type": "application/json",
+      "x-hasura-admin-secret": HASURA_ADMIN_SECRET as string,
     },
     body: JSON.stringify({ query, variables }),
   });
 
   if (!response.ok) {
-    throw new Error(`Hasura HTTP error: ${response.status} ${response.statusText}`);
+    throw new Error(
+      `Hasura HTTP error: ${response.status} ${response.statusText}`,
+    );
   }
 
   const json = (await response.json()) as HasuraResponse<T>;
 
   if (json.errors && json.errors.length > 0) {
-    const messages = json.errors.map((e) => e.message).join('; ');
+    const messages = json.errors.map((e) => e.message).join("; ");
     throw new Error(`Hasura GraphQL error: ${messages}`);
   }
 
@@ -314,7 +327,9 @@ async function main(): Promise<void> {
 
   for (let i = 0; i < PRODUCTS.length; i++) {
     const product = PRODUCTS[i] as ProductMeta;
-    console.log(`\n[${i + 1}/${PRODUCTS.length}] Checking ${product.asin} (${product.name})…`);
+    console.log(
+      `\n[${i + 1}/${PRODUCTS.length}] Checking ${product.asin} (${product.name})…`,
+    );
 
     const result = await checkAsin(product.asin);
     results[product.asin] = result;
@@ -326,7 +341,9 @@ async function main(): Promise<void> {
       console.log(`  [${product.asin}] ✓ Saved to Hasura`);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      console.error(`  [${product.asin}] ✗ Failed to save to Hasura: ${message}`);
+      console.error(
+        `  [${product.asin}] ✗ Failed to save to Hasura: ${message}`,
+      );
       // Continue with remaining ASINs — don't abort the whole run
     }
 
@@ -340,11 +357,13 @@ async function main(): Promise<void> {
 
   console.log(`\n✓ Completed stock check for ${PRODUCTS.length} ASINs`);
 
-  const summary = Object.entries(results).map(([asin, data]) => `  ${asin}: ${data.status}`);
-  console.log('\nSummary:\n' + summary.join('\n'));
+  const summary = Object.entries(results).map(
+    ([asin, data]) => `  ${asin}: ${data.status}`,
+  );
+  console.log(`\nSummary:\n${summary.join("\n")}`);
 }
 
 main().catch((err: unknown) => {
-  console.error('Fatal error:', err);
+  console.error("Fatal error:", err);
   process.exit(1);
 });
