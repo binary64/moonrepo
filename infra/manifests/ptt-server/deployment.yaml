@@ -84,3 +84,12 @@ spec:
               port: 9876
             initialDelaySeconds: 5
             periodSeconds: 10
+          volumeMounts:
+            - name: ptt-quick-commands
+              mountPath: /config/registry.json
+              subPath: registry.json
+              readOnly: true
+      volumes:
+        - name: ptt-quick-commands
+          configMap:
+            name: ptt-quick-commands

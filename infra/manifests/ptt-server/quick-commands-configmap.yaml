@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ptt-quick-commands
+  namespace: ptt-server
+data:
+  registry.json: |
+    {
+      "commands": {
+        "lights on": { "session": "agent:main:main", "message": "lights on" },
+        "lights off": { "session": "agent:main:main", "message": "lights off" },
+        "radio on": { "session": "agent:main:main", "message": "radio on" },
+        "radio off": { "session": "agent:main:main", "message": "radio off" },
+        "tv on": { "session": "agent:main:main", "message": "tv on" },
+        "tv off": { "session": "agent:main:main", "message": "tv off" },
+        "play music": { "session": "agent:main:main", "message": "play music" }
+      }
+    }
