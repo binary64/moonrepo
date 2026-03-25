@@ -7,18 +7,23 @@ metadata:
     # Skip local execution — mounts host Docker socket, not available in dev clusters
     moonrepo.dev/skip-local: "true"
   labels:
-    app: gha-runner
+    app.kubernetes.io/name: gha-runner
+    app.kubernetes.io/instance: gha-runner
+    app.kubernetes.io/component: runner
 spec:
   replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app: gha-runner
+      app.kubernetes.io/name: gha-runner
+      app.kubernetes.io/instance: gha-runner
   template:
     metadata:
       labels:
-        app: gha-runner
+        app.kubernetes.io/name: gha-runner
+        app.kubernetes.io/instance: gha-runner
+        app.kubernetes.io/component: runner
     spec:
       # Run on Jupiter — needs the host Docker socket for build containers
       # Label the node: kubectl label node vmi3137202 brandwhisper.cloud/node-role=jupiter
