@@ -26,6 +26,10 @@ spec:
         brandwhisper.cloud/node-role: jupiter
       # Prevent unnecessary Kubernetes API access from the runner pod
       automountServiceAccountToken: false
+      securityContext:
+        # Enforce RuntimeDefault seccomp profile at pod level
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: runner
           # Pinned to digest for supply chain security (tag: 2.333.0)
