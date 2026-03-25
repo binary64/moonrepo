@@ -16,10 +16,8 @@ tasks:
       - 'tsconfig.json'
 
   type-check:
-    command: 'tsc --noEmit'
-    inputs:
-      - 'src/**/*.ts'
-      - 'tsconfig.json'
+    deps:
+      - 'build'
 
   lint:
     command: 'biome check .'
