@@ -337,7 +337,10 @@ async function main(): Promise<void> {
     // Persist to Hasura
     try {
       await upsertProduct(product);
-      await insertStockCheck(product.asin, result);
+      // Skip recording error results — preserve the last known good status
+      if (result.status !== "error") {
+        await insertStockCheck(product.asin, result);
+      }
       console.log(`  [${product.asin}] ✓ Saved to Hasura`);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
