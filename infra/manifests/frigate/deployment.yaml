@@ -32,6 +32,29 @@ spec:
       securityContext:
         seccompProfile:
           type: RuntimeDefault
+      initContainers:
+        - name: init-shm-logs
+          # Pre-create /dev/shm/logs subdirs with correct permissions so s6-overlay's
+          # log-prepare service does not need CAP_FOWNER to chmod them at startup.
+          # Runs as root; only needs the shared emptyDir volume.
+          image: busybox:1.36
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              mkdir -p /dev/shm/logs/frigate /dev/shm/logs/go2rtc /dev/shm/logs/nginx /dev/shm/logs/certsync
+              chmod 755 /dev/shm/logs /dev/shm/logs/frigate /dev/shm/logs/go2rtc /dev/shm/logs/nginx /dev/shm/logs/certsync
+          securityContext:
+            runAsUser: 0
+            runAsNonRoot: false
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: shm
+              mountPath: /dev/shm
       containers:
         - name: frigate
           image: ghcr.io/blakeblackshear/frigate:0.14.1@sha256:656301bd28c08f15a778f1fe37b8332e0ae8189c6311e0fcc58b1e7a8f8ab310
@@ -62,6 +85,7 @@ spec:
                 - CHOWN      # s6-overlay needs to chown /dev/shm/logs/* on init
                 - SETUID     # s6-overlay drops to service user after init
                 - SETGID     # s6-overlay drops to service group after init
+                - FOWNER     # s6-overlay log-prepare chmods /dev/shm/logs/* subdirs
           volumeMounts:
             - name: config
               mountPath: /config/config.yml
