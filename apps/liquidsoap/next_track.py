@@ -297,6 +297,7 @@ Rules:
 - Morning/afternoon: building energy
 - If seed is set, work that artist's tracks in within the first 5 picks
 - DJ "arthur" = eclectic daytime, DJ "cara" = evening/weekend vibes
+- AVOID R&B and hip-hop genres. The only acceptable hip-hop/rap acts are: Eminem, Snoop Dogg, Beastie Boys, LL Cool J, Run DMC. All other rap/R&B tracks should be deprioritised.
 
 Output ONLY a JSON array of 25 track IDs. No explanation. Example: [102, 45, 67, ...]
 Start from the last track in lastPlayed."""
