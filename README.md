@@ -360,6 +360,7 @@ curl http://home.localhost:8080  # Home Assistant (add to /etc/hosts)
 5. **Certificate auto-generated:** Gateway-shim creates cert
 
 ### Code Quality
+- **Language**: TypeScript only — all `apps/` and `packages/` code must use `.ts`/`.tsx`. Never `.js`/`.jsx` for application code. Config files that explicitly require JS (e.g. `next.config.js`) are the only exception.
 - **Linting**: Biome for consistent formatting
 - **Type Checking**: TypeScript strict mode
 - **CI/CD**: GitHub Actions with moon tasks
