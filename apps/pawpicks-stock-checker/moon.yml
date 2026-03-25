@@ -9,12 +9,31 @@ tasks:
     outputs:
       - 'products.json'
 
+  build:
+    command: 'tsc --noEmit'
+    inputs:
+      - 'src/**/*.ts'
+      - 'tsconfig.json'
+
+  type-check:
+    command: 'tsc --noEmit'
+    inputs:
+      - 'src/**/*.ts'
+      - 'tsconfig.json'
+
+  lint:
+    command: 'biome check .'
+    inputs:
+      - 'src/**/*.ts'
+
   build-image:
     command: 'docker build -t pawpicks-stock-checker .'
     deps:
       - 'copy-data'
+      - 'build'
     inputs:
       - 'Dockerfile'
-      - 'index.js'
+      - 'src/index.ts'
       - 'package.json'
+      - 'tsconfig.json'
       - 'products.json'

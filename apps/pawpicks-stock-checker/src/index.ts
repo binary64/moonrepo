@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env tsx
 /**
  * PawPicks UK — Amazon Stock Checker
  *
@@ -18,28 +18,58 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 // ──────────────────────────────────────────────
+// Types
+// ──────────────────────────────────────────────
+
+type StockStatus = 'in_stock' | 'out_of_stock' | 'dead' | 'unknown' | 'error';
+
+interface ParseResult {
+  status: StockStatus;
+  price: number | null;
+}
+
+interface ProductResult {
+  status: StockStatus;
+  checkedAt: string;
+  price?: number;
+  error?: string;
+}
+
+interface StockOutput {
+  lastChecked: string | null;
+  products: Record<string, ProductResult>;
+}
+
+interface Product {
+  amazonAsin?: string;
+  [key: string]: unknown;
+}
+
+// ──────────────────────────────────────────────
 // Config
 // ──────────────────────────────────────────────
 
-const OUTPUT_DIR = process.env.OUTPUT_DIR || '/data';
+const OUTPUT_DIR = process.env['OUTPUT_DIR'] ?? '/data';
 const OUTPUT_FILE = join(OUTPUT_DIR, 'stock-status.json');
 
 // Load ASINs from products.json — all top-level array values, any key
-const PRODUCTS_JSON_PATH = process.env.PRODUCTS_JSON_PATH || '/app/products.json';
-let ASINS;
+const PRODUCTS_JSON_PATH = process.env['PRODUCTS_JSON_PATH'] ?? '/app/products.json';
+let ASINS: string[];
 try {
-  const products = JSON.parse(readFileSync(PRODUCTS_JSON_PATH, 'utf8'));
+  const raw = readFileSync(PRODUCTS_JSON_PATH, 'utf8');
+  const products = JSON.parse(raw) as Record<string, Product[]>;
   ASINS = Object.values(products)
     .flat()
     .map((p) => p.amazonAsin)
-    .filter(Boolean);
+    .filter((asin): asin is string => typeof asin === 'string' && asin.length > 0);
   if (ASINS.length === 0) throw new Error('No ASINs found in products.json');
 } catch (err) {
-  console.error(`Failed to load ASINs from ${PRODUCTS_JSON_PATH}: ${err.message}`);
+  const message = err instanceof Error ? err.message : String(err);
+  console.error(`Failed to load ASINs from ${PRODUCTS_JSON_PATH}: ${message}`);
   process.exit(1);
 }
 
-const USER_AGENTS = [
+const USER_AGENTS: string[] = [
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0',
@@ -51,23 +81,17 @@ const USER_AGENTS = [
 // Helpers
 // ──────────────────────────────────────────────
 
-function randomUserAgent() {
-  return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
+function randomUserAgent(): string {
+  return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)] as string;
 }
 
-function randomDelay(minMs = 2000, maxMs = 5000) {
+function randomDelay(minMs = 2000, maxMs = 5000): Promise<void> {
   return new Promise((resolve) =>
-    setTimeout(resolve, Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs)
+    setTimeout(resolve, Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs),
   );
 }
 
-/**
- * Parse Amazon product page HTML into a stock result.
- * @param {string} html
- * @param {number} statusCode
- * @returns {{ status: string, price: number|null }}
- */
-function parseAmazonPage(html, statusCode) {
+function parseAmazonPage(html: string, statusCode: number): ParseResult {
   if (statusCode === 404) {
     return { status: 'dead', price: null };
   }
@@ -76,7 +100,7 @@ function parseAmazonPage(html, statusCode) {
   const bodyText = $('body').text();
 
   // Dead / not found patterns
-  const deadPatterns = [
+  const deadPatterns: RegExp[] = [
     /page not found/i,
     /looking for something\?/i,
     /sorry! we couldn.*t find that page/i,
@@ -90,7 +114,7 @@ function parseAmazonPage(html, statusCode) {
   }
 
   // Out of stock patterns (check before in_stock — order matters)
-  const outPatterns = [
+  const outPatterns: RegExp[] = [
     /currently unavailable/i,
     /currently out of stock/i,
     /we don.*t know when or if this item will be back in stock/i,
@@ -103,7 +127,7 @@ function parseAmazonPage(html, statusCode) {
   }
 
   // In stock patterns
-  const inPatterns = [
+  const inPatterns: RegExp[] = [
     /add to basket/i,
     /add to cart/i,
     /in stock/i,
@@ -112,8 +136,8 @@ function parseAmazonPage(html, statusCode) {
   const inStockMatch = inPatterns.some((p) => p.test(bodyText));
   if (inStockMatch) {
     // Best-effort price extraction
-    let price = null;
-    const priceSelectors = [
+    let price: number | null = null;
+    const priceSelectors: string[] = [
       '.a-price .a-offscreen',
       '#priceblock_ourprice',
       '#priceblock_dealprice',
@@ -125,8 +149,11 @@ function parseAmazonPage(html, statusCode) {
       if (raw) {
         const match = raw.match(/[\d,]+\.?\d*/);
         if (match) {
-          price = parseFloat(match[0].replace(/,/g, ''));
-          if (!isNaN(price)) break;
+          const parsed = parseFloat(match[0].replace(/,/g, ''));
+          if (!isNaN(parsed)) {
+            price = parsed;
+            break;
+          }
         }
       }
     }
@@ -136,12 +163,7 @@ function parseAmazonPage(html, statusCode) {
   return { status: 'unknown', price: null };
 }
 
-/**
- * Fetch and parse a single ASIN.
- * @param {string} asin
- * @returns {Promise<{ status: string, checkedAt: string, price?: number }>}
- */
-async function checkAsin(asin) {
+async function checkAsin(asin: string): Promise<ProductResult> {
   const url = `https://www.amazon.co.uk/dp/${asin}`;
   const checkedAt = new Date().toISOString();
 
@@ -167,14 +189,17 @@ async function checkAsin(asin) {
     const html = await response.text();
     const { status, price } = parseAmazonPage(html, response.status);
 
-    console.log(`  [${asin}] HTTP ${response.status} → ${status}${price != null ? ` @ £${price}` : ''}`);
+    console.log(
+      `  [${asin}] HTTP ${response.status} → ${status}${price != null ? ` @ £${price}` : ''}`,
+    );
 
-    const result = { status, checkedAt };
+    const result: ProductResult = { status, checkedAt };
     if (price != null) result.price = price;
     return result;
   } catch (err) {
-    console.error(`  [${asin}] Error: ${err.message}`);
-    return { status: 'error', checkedAt, error: err.message };
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`  [${asin}] Error: ${message}`);
+    return { status: 'error', checkedAt, error: message };
   }
 }
 
@@ -182,22 +207,22 @@ async function checkAsin(asin) {
 // Main
 // ──────────────────────────────────────────────
 
-async function main() {
+async function main(): Promise<void> {
   console.log(`PawPicks Stock Checker — ${new Date().toISOString()}`);
   console.log(`Checking ${ASINS.length} ASINs…`);
 
   // Load existing data so we can preserve history on error
-  let existing = { lastChecked: null, products: {} };
+  let existing: StockOutput = { lastChecked: null, products: {} };
   try {
-    existing = JSON.parse(readFileSync(OUTPUT_FILE, 'utf8'));
+    existing = JSON.parse(readFileSync(OUTPUT_FILE, 'utf8')) as StockOutput;
   } catch {
     // Fresh run — no existing file
   }
 
-  const products = { ...existing.products };
+  const products: Record<string, ProductResult> = { ...existing.products };
 
   for (let i = 0; i < ASINS.length; i++) {
-    const asin = ASINS[i];
+    const asin = ASINS[i] as string;
     console.log(`\n[${i + 1}/${ASINS.length}] Checking ${asin}…`);
 
     products[asin] = await checkAsin(asin);
@@ -210,7 +235,7 @@ async function main() {
     }
   }
 
-  const output = {
+  const output: StockOutput = {
     lastChecked: new Date().toISOString(),
     products,
   };
@@ -225,7 +250,7 @@ async function main() {
   console.log('\nSummary:\n' + summary.join('\n'));
 }
 
-main().catch((err) => {
+main().catch((err: unknown) => {
   console.error('Fatal error:', err);
   process.exit(1);
 });
