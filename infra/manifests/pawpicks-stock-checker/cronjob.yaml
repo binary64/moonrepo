@@ -3,6 +3,8 @@ kind: CronJob
 metadata:
   name: pawpicks-stock-checker
   namespace: pawpicks-stock-checker
+  annotations:
+    moonrepo.dev/skip-local: "true"
   labels:
     app: pawpicks-stock-checker
 spec:
@@ -21,15 +23,26 @@ spec:
             app: pawpicks-stock-checker
         spec:
           restartPolicy: OnFailure
+          automountServiceAccountToken: false
           securityContext:
+            runAsNonRoot: true
             runAsUser: 1000
             runAsGroup: 1000
+            fsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
           containers:
             - name: stock-checker
-              # Tag is replaced by the pawpicks-stock-checker.yml GHA workflow on every master push.
+              # Tag is replaced by the docker.yml GHA workflow on every master push.
               # Placeholder SHA — docker.yml pins this to the real digest on first master push.
               image: ghcr.io/binary64/pawpicks-stock-checker:0000000
               imagePullPolicy: IfNotPresent
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: false
+                capabilities:
+                  drop:
+                    - ALL
               env:
                 - name: HASURA_ENDPOINT
                   value: http://hasura.hasura.svc.cluster.local:8080
