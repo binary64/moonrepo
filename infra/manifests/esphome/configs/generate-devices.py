@@ -35,8 +35,7 @@ esphome:
   friendly_name: ${{friendly_name}}
 
 esp32:
-  board: {board}
-  minimum_chip_revision: "3.1"
+  board: {board}{minimum_chip_revision}
   framework:
     type: arduino
 
@@ -47,13 +46,42 @@ packages:
 
 def main():
     with open(DEVICES_FILE) as f:
-        config = yaml.safe_load(f)
+        config = yaml.safe_load(f) or {}
+
+    if not isinstance(config, dict):
+        print("devices.yaml must contain a top-level mapping", file=sys.stderr)
+        sys.exit(1)
 
     devices = config.get("devices", [])
     if not devices:
         print("No devices found in devices.yaml", file=sys.stderr)
         sys.exit(1)
 
+    # --- Pre-write validation pass ---
+    # Check all required keys exist and no duplicate names before writing any files.
+    REQUIRED_KEYS = ("name", "friendly_name", "board")
+    seen_names: set[str] = set()
+    errors: list[str] = []
+
+    for idx, device in enumerate(devices):
+        for key in REQUIRED_KEYS:
+            if key not in device:
+                errors.append(f"  device[{idx}]: missing required key '{key}'")
+
+        name = device.get("name")
+        if name is not None:
+            if name in seen_names:
+                errors.append(f"  device[{idx}]: duplicate name '{name}'")
+            else:
+                seen_names.add(name)
+
+    if errors:
+        print("Validation failed — fix devices.yaml before regenerating:", file=sys.stderr)
+        for err in errors:
+            print(err, file=sys.stderr)
+        sys.exit(1)
+
+    # --- File-writing pass ---
     for device in devices:
         name = device["name"]
         friendly_name = device["friendly_name"]
@@ -64,11 +92,21 @@ def main():
         # YAML stays valid even when friendly_name contains special characters.
         friendly_name_yaml = yaml.dump(friendly_name, default_flow_style=True).strip()
 
+        # Only emit minimum_chip_revision when the device entry explicitly
+        # specifies it.  Omitting it is safe (ESPHome defaults to 0.0) and
+        # prevents blocking older ESP32 chips (e.g. esp32dev rev 0.0–3.0).
+        if "minimum_chip_revision" in device:
+            min_rev = device["minimum_chip_revision"]
+            minimum_chip_revision_block = f"\n  minimum_chip_revision: \"{min_rev}\""
+        else:
+            minimum_chip_revision_block = ""
+
         content = TEMPLATE.format(
             header=HEADER.rstrip(),
             name=name,
             friendly_name=friendly_name_yaml,
             board=board,
+            minimum_chip_revision=minimum_chip_revision_block,
         )
 
         out_path = SCRIPT_DIR / f"{name}.yaml"

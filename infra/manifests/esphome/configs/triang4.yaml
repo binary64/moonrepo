@@ -1,7 +1,8 @@
 # GENERATED — do not edit. Edit devices.yaml and run generate-devices.py
 substitutions:
   name: triang4
-  friendly_name: "Triangulation Node 4"
+  friendly_name: Triangulation Node 4
+...
 
 esphome:
   name: ${name}
@@ -9,7 +10,6 @@ esphome:
 
 esp32:
   board: esp32-s3-devkitc-1
-  minimum_chip_revision: "3.1"
   framework:
     type: arduino
 
