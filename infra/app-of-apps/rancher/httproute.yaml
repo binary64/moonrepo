@@ -7,7 +7,9 @@ metadata:
     moonrepo.dev/skip-local: "true"
 spec:
   parentRefs:
-    - name: gateway
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gateway
       namespace: istio-system
       sectionName: https
   hostnames:
@@ -18,5 +20,8 @@ spec:
             type: PathPrefix
             value: /
       backendRefs:
-        - name: rancher
+        - group: ""
+          kind: Service
+          name: rancher
           port: 80
+          weight: 1

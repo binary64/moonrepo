@@ -209,7 +209,9 @@ extraResources:
       namespace: litellm
     spec:
       parentRefs:
-        - name: gateway
+        - group: gateway.networking.k8s.io
+          kind: Gateway
+          name: gateway
           namespace: istio-system
           sectionName: https
       hostnames:
@@ -220,5 +222,8 @@ extraResources:
                 type: PathPrefix
                 value: /
           backendRefs:
-            - name: litellm
+            - group: ""
+              kind: Service
+              name: litellm
               port: 4000
+              weight: 1

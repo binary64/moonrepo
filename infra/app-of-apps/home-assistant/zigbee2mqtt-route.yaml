@@ -5,16 +5,21 @@ metadata:
   namespace: home-assistant
 spec:
   parentRefs:
-  - name: gateway
-    namespace: istio-system
-    sectionName: https
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gateway
+      namespace: istio-system
+      sectionName: https
   hostnames:
-  - "zigbee.brandwhisper.cloud"
+    - "zigbee.brandwhisper.cloud"
   rules:
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /
-    backendRefs:
-    - name: zigbee2mqtt
-      port: 8080
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: zigbee2mqtt
+          port: 8080
+          weight: 1
