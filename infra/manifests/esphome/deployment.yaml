@@ -152,6 +152,11 @@ spec:
         - name: device-configs
           configMap:
             name: esphome-device-configs
+            # MAINTENANCE: The "items" list below must be kept in sync with the
+            # "configMapGenerator.files" entry in kustomization.yaml.
+            # When adding or removing device config files, update BOTH:
+            #   1. The "items" list here (under configMap: name: esphome-device-configs)
+            #   2. The "configMapGenerator.files" list in kustomization.yaml
             items:
               - key: triang1.yaml
                 path: triang1.yaml
