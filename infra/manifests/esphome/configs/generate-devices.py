@@ -53,8 +53,8 @@ def main():
         sys.exit(1)
 
     devices = config.get("devices", [])
-    if not devices:
-        print("No devices found in devices.yaml", file=sys.stderr)
+    if not isinstance(devices, list) or not devices:
+        print("devices.yaml must contain a non-empty 'devices' list", file=sys.stderr)
         sys.exit(1)
 
     # --- Pre-write validation pass ---
@@ -64,6 +64,9 @@ def main():
     errors: list[str] = []
 
     for idx, device in enumerate(devices):
+        if not isinstance(device, dict):
+            errors.append(f"Device at index {idx} is not a mapping (got {type(device).__name__})")
+            continue
         for key in REQUIRED_KEYS:
             if key not in device:
                 errors.append(f"  device[{idx}]: missing required key '{key}'")
