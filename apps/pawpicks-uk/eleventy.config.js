@@ -27,6 +27,8 @@ module.exports = async function(eleventyConfig) {
           }
         }
       `;
+      const hasuraController = new AbortController();
+      const hasuraTimeoutId = setTimeout(() => hasuraController.abort(), 8_000);
       const response = await fetch(`${hasuraEndpoint}/v1/graphql`, {
         method: 'POST',
         headers: {
@@ -34,7 +36,9 @@ module.exports = async function(eleventyConfig) {
           'x-hasura-admin-secret': hasuraAdminSecret,
         },
         body: JSON.stringify({ query }),
+        signal: hasuraController.signal,
       });
+      clearTimeout(hasuraTimeoutId);
 
       if (!response.ok) {
         throw new Error(`Hasura HTTP error: ${response.status} ${response.statusText}`);

@@ -10,7 +10,7 @@ CREATE TABLE pawpicks_products (
 CREATE TABLE pawpicks_stock_checks (
   id          BIGSERIAL PRIMARY KEY,
   asin        TEXT NOT NULL REFERENCES pawpicks_products(asin),
-  status      TEXT NOT NULL,  -- in_stock | out_of_stock | dead | unknown | error
+  status      TEXT NOT NULL CHECK (status IN ('in_stock', 'out_of_stock', 'dead', 'unknown', 'error')),  -- enforced enum
   price       NUMERIC(10,2),
   error       TEXT,
   checked_at  TIMESTAMPTZ NOT NULL DEFAULT now()

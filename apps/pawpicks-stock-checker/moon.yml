@@ -35,5 +35,6 @@ tasks:
       - 'Dockerfile'
       - 'src/index.ts'
       - 'package.json'
+      - 'package-lock.json'
       - 'tsconfig.json'
       - 'products.json'

@@ -27,8 +27,8 @@ spec:
           containers:
             - name: stock-checker
               # Tag is replaced by the pawpicks-stock-checker.yml GHA workflow on every master push.
-              # Do not push this manifest with :latest — use a pinned SHA or semver tag.
-              image: ghcr.io/binary64/pawpicks-stock-checker:latest
+              # Placeholder SHA — docker.yml pins this to the real digest on first master push.
+              image: ghcr.io/binary64/pawpicks-stock-checker:0000000
               imagePullPolicy: IfNotPresent
               env:
                 - name: HASURA_ENDPOINT

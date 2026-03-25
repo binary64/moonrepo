@@ -199,14 +199,15 @@ async function checkAsin(asin: string): Promise<ProductResult> {
       redirect: 'follow',
       signal: controller.signal,
     });
-    clearTimeout(timeoutId);
 
     if (response.status === 404) {
+      clearTimeout(timeoutId);
       console.log(`  [${asin}] 404 → dead`);
       return { status: 'dead', checkedAt };
     }
 
     const html = await response.text();
+    clearTimeout(timeoutId);
     const { status, price } = parseAmazonPage(html, response.status);
 
     console.log(
