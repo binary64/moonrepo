@@ -58,6 +58,10 @@ spec:
             capabilities:
               drop:
                 - ALL
+              add:
+                - CHOWN      # s6-overlay needs to chown /dev/shm/logs/* on init
+                - SETUID     # s6-overlay drops to service user after init
+                - SETGID     # s6-overlay drops to service group after init
           volumeMounts:
             - name: config
               mountPath: /config/config.yml
