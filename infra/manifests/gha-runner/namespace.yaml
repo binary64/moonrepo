@@ -2,6 +2,9 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: gha-runner
+  annotations:
+    moonrepo.dev/skip-local: "true"
+    argocd.argoproj.io/sync-wave: "-1"
   labels:
     # Privileged PSS required: runner mounts host Docker socket (hostPath Socket)
     # baseline/restricted profiles forbid hostPath volumes
