@@ -9,11 +9,11 @@ esp32:
 
 api:
   encryption:
-    key: "YulI/KNfLvb0VKiLbNhqCdJCnHttd50K1XF0SwNJ5Tg="
+    key: !secret api_encryption_key
 
 ota:
   - platform: esphome
-    password: "b8a2909e998eb9e171c6b57748b13099"
+    password: !secret ota_password
 
 wifi:
   ssid: !secret wifi_ssid
