@@ -14,6 +14,9 @@ spec:
     helm:
       values: |
         # Enable host networking for LAN device discovery (TP-Link, mDNS, etc.)
+        image:
+          tag: "2026.3.4"
+
         hostNetwork: true
         dnsPolicy: ClusterFirstWithHostNet
 
