@@ -24,10 +24,23 @@ spec:
       # Label the node: kubectl label node vmi3137202 brandwhisper.cloud/node-role=jupiter
       nodeSelector:
         brandwhisper.cloud/node-role: jupiter
+      # Prevent unnecessary Kubernetes API access from the runner pod
+      automountServiceAccountToken: false
       containers:
         - name: runner
-          image: myoung34/github-runner:2.333.0
+          # Pinned to digest for supply chain security (tag: 2.333.0)
+          # To update: docker pull myoung34/github-runner:<new-tag> && docker inspect --format='{{index .RepoDigests 0}}' myoung34/github-runner:<new-tag>
+          image: myoung34/github-runner@sha256:ce7e703b2b6c8c3f9110e734cf2d263f600aa5c71d5afa942b80fb71dfb89019
           imagePullPolicy: Always
+          securityContext:
+            # allowPrivilegeEscalation must remain false where possible, but note: runner
+            # requires Docker socket access which grants host-equivalent privileges.
+            # runAsNonRoot is not set — this image runs as root (required for Docker socket).
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false  # Runner workspace requires writable filesystem
+            capabilities:
+              drop:
+                - ALL
           env:
             - name: REPO_URL
               value: "https://github.com/binary64/ocdesktop"
@@ -60,6 +73,10 @@ spec:
               cpu: "12"
               memory: 32Gi
       volumes:
+        # ACCEPTED RISK (CKV_K8S_27): Host Docker socket is required for Docker-in-Docker
+        # builds in ocdesktop CI workflows. Mitigations: Jupiter node is dedicated to this
+        # workload, runner is ephemeral (job isolation), access-token scoped to ocdesktop repo.
+        # Future: evaluate rootless Docker or Kaniko as alternatives.
         - name: docker-sock
           hostPath:
             path: /var/run/docker.sock

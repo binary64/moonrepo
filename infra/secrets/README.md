@@ -30,7 +30,8 @@ infra/secrets/
 ├── unsealed/                           # Local unsealed secrets (gitignored)
 │   └── *.unsealed.yaml
 └── sealed/                             # Sealed secrets (committed to git)
-    └── pulumi-secrets.yaml
+    ├── pulumi-secrets.yaml             # Pulumi operator credentials
+    └── gha-runner-secret-sealed.yaml  # GitHub PAT for self-hosted runner (binary64/ocdesktop)
 ```
 
 ## Prerequisites
@@ -100,6 +101,26 @@ When you need to rotate the Cloudflare API token:
 4. ArgoCD automatically syncs the new sealed secrets to the cluster
 
 ## Secrets Reference
+
+### gha-runner-secret
+- **Purpose**: GitHub PAT for the self-hosted GHA runner to authenticate with GitHub and register as a runner for `binary64/ocdesktop`
+- **Namespace**: `gha-runner`
+- **Key**: `access-token`
+- **Required scopes**: `repo` (full repo access for runner registration)
+- **Sealed secret file**: `sealed/gha-runner-secret-sealed.yaml`
+- **Used by**: `infra/manifests/gha-runner/` (referenced via kustomization)
+- **To seal a new/rotated token**:
+  ```bash
+  kubectl create secret generic gha-runner-secret \
+    --namespace gha-runner \
+    --from-literal=access-token=<github-pat-with-repo-scope> \
+    --dry-run=client -o yaml \
+  | kubeseal --context prod --controller-namespace sealed-secrets --format yaml \
+  > infra/secrets/sealed/gha-runner-secret-sealed.yaml
+  git add infra/secrets/sealed/gha-runner-secret-sealed.yaml
+  git commit -m "seal gha-runner secret"
+  git push
+  ```
 
 ### cloudflare-api-token-pulumi
 - **Purpose**: High-privilege token for Pulumi to CREATE restricted tokens for cert-manager
