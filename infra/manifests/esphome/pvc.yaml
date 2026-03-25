@@ -1,5 +1,5 @@
 # PVC for ESPHome config directory.
-# Stores device YAML configs and compiled firmware cache.
+# Stores device YAML configs; compiled firmware cache is mounted via the build-cache emptyDir and is not persisted to this PVC.
 # Prune=false prevents ArgoCD from deleting data on app removal.
 apiVersion: v1
 kind: PersistentVolumeClaim
