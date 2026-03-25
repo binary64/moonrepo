@@ -6,6 +6,6 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**", "!tsconfig.json", "!tsconfig*.json"]
+    "includes": ["!tsconfig.json", "!tsconfig*.json"]
   }
 }
