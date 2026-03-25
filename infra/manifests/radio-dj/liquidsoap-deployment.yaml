@@ -74,6 +74,9 @@ spec:
               readOnly: true
             - name: state
               mountPath: /state
+            - name: llm-prompt
+              mountPath: /config/llm-prompt
+              readOnly: true
       volumes:
         - name: music
           hostPath:
@@ -107,3 +110,6 @@ spec:
           hostPath:
             path: /tmp/radio-state
             type: DirectoryOrCreate
+        - name: llm-prompt
+          configMap:
+            name: radio-llm-prompt

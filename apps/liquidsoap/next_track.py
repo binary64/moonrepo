@@ -284,7 +284,9 @@ def get_all_artists(name):
 
 # ─── LLM queue refill ───
 
-SYSTEM_PROMPT = """You are a radio DJ AI selecting the next 25 tracks for a continuous radio stream.
+PROMPT_FILE = "/config/llm-prompt/system_prompt.txt"
+
+_FALLBACK_SYSTEM_PROMPT = """You are a radio DJ AI selecting the next 25 tracks for a continuous radio stream.
 
 Rules:
 - Each track MUST appear in the previous track's "follow" list (these are beat-compatible transitions)
@@ -297,9 +299,28 @@ Rules:
 - Morning/afternoon: building energy
 - If seed is set, work that artist's tracks in within the first 5 picks
 - DJ "arthur" = eclectic daytime, DJ "cara" = evening/weekend vibes
+- AVOID R&B and hip-hop genres. The only acceptable hip-hop/rap acts are: Eminem, Snoop Dogg, Beastie Boys, LL Cool J, Run DMC. All other rap/R&B tracks should be deprioritised.
 
 Output ONLY a JSON array of 25 track IDs. No explanation. Example: [102, 45, 67, ...]
 Start from the last track in lastPlayed."""
+
+
+def load_system_prompt():
+    """Load the LLM system prompt from the ConfigMap-mounted file.
+
+    Falls back to the inline default if the file is missing, so the service
+    continues to function during local development or if the ConfigMap volume
+    is not yet mounted.
+    """
+    try:
+        with open(PROMPT_FILE) as f:
+            prompt = f.read().strip()
+        if prompt:
+            return prompt
+        print(f"Warning: {PROMPT_FILE} is empty, using inline fallback", file=sys.stderr)
+    except (FileNotFoundError, OSError) as e:
+        print(f"Warning: could not read {PROMPT_FILE} ({e}), using inline fallback", file=sys.stderr)
+    return _FALLBACK_SYSTEM_PROMPT
 
 
 def build_llm_context(graph, state):
@@ -403,7 +424,7 @@ def call_llm(graph, state):
     payload = {
         "model": LLM_MODEL,
         "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": load_system_prompt()},
             {"role": "user", "content": user_msg},
         ],
         "max_tokens": 512,
