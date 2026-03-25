@@ -72,11 +72,19 @@ def main():
                 errors.append(f"  device[{idx}]: missing required key '{key}'")
 
         name = device.get("name")
-        if name is not None:
-            if name in seen_names:
-                errors.append(f"  device[{idx}]: duplicate name '{name}'")
-            else:
-                seen_names.add(name)
+        if not isinstance(name, str) or not name.strip():
+            errors.append(f"  device[{idx}]: name must be a non-empty string")
+            continue
+
+        candidate = (SCRIPT_DIR / f"{name}.yaml").resolve()
+        if candidate.parent != SCRIPT_DIR.resolve():
+            errors.append(f"  device[{idx}]: invalid path-like name '{name}'")
+            continue
+
+        if name in seen_names:
+            errors.append(f"  device[{idx}]: duplicate name '{name}'")
+        else:
+            seen_names.add(name)
 
     if errors:
         print("Validation failed — fix devices.yaml before regenerating:", file=sys.stderr)
