@@ -24,16 +24,20 @@ import { join } from 'node:path';
 const OUTPUT_DIR = process.env.OUTPUT_DIR || '/data';
 const OUTPUT_FILE = join(OUTPUT_DIR, 'stock-status.json');
 
-const ASINS = [
-  'B00CFFLEDA', // Canagan Free-Run Chicken
-  'B06XNBWL48', // Orijen Original
-  'B00BSSMLT6', // Lily's Kitchen
-  'B0CB21P5W7', // Symply Fresh Turkey
-  'B00SYH7MC0', // Eden Holistic
-  'B00WAE2MSM', // Harringtons GF Turkey
-  'B07B9TS1VF', // Forthglade Lifestage
-  'B01M5ES0TR', // Acana Prairie Poultry
-];
+// Load ASINs from products.json — all top-level array values, any key
+const PRODUCTS_JSON_PATH = process.env.PRODUCTS_JSON_PATH || '/app/products.json';
+let ASINS;
+try {
+  const products = JSON.parse(readFileSync(PRODUCTS_JSON_PATH, 'utf8'));
+  ASINS = Object.values(products)
+    .flat()
+    .map((p) => p.amazonAsin)
+    .filter(Boolean);
+  if (ASINS.length === 0) throw new Error('No ASINs found in products.json');
+} catch (err) {
+  console.error(`Failed to load ASINs from ${PRODUCTS_JSON_PATH}: ${err.message}`);
+  process.exit(1);
+}
 
 const USER_AGENTS = [
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',

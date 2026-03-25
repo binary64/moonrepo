@@ -140,9 +140,11 @@ jobs:
 
           for APP in $(echo "$APPS" | jq -r '.[]'); do
             MANIFEST="infra/manifests/${APP}/deployment.yaml"
-
             if [ ! -f "$MANIFEST" ]; then
-              echo "No deployment manifest at $MANIFEST — skipping"
+              MANIFEST="infra/manifests/${APP}/cronjob.yaml"
+            fi
+            if [ ! -f "$MANIFEST" ]; then
+              echo "No manifest for ${APP} — skipping"
               continue
             fi
 
