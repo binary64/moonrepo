@@ -1,4 +1,22 @@
+const fs = require('node:fs');
+const path = require('node:path');
+
 module.exports = function(eleventyConfig) {
+  // ── Stock status data ──────────────────────────────────────────────────────
+  // Reads stock-status.json written by the pawpicks-stock-checker CronJob.
+  // Configure path via STOCK_STATUS_PATH env var (default: /data/stock-status.json).
+  // Falls back to an empty object so builds don't fail when the file is absent.
+  const stockStatusPath = process.env.STOCK_STATUS_PATH || '/data/stock-status.json';
+  let stockStatus = { lastChecked: null, products: {} };
+  try {
+    stockStatus = JSON.parse(fs.readFileSync(stockStatusPath, 'utf8'));
+    console.log(`[pawpicks] Loaded stock status from ${stockStatusPath} (checked: ${stockStatus.lastChecked})`);
+  } catch {
+    console.warn(`[pawpicks] No stock-status.json at ${stockStatusPath} — stock badges will be hidden`);
+  }
+  eleventyConfig.addGlobalData('stockStatus', stockStatus);
+  // ──────────────────────────────────────────────────────────────────────────
+
   // Passthrough copy
   eleventyConfig.addPassthroughCopy("src/css");
   eleventyConfig.addPassthroughCopy("src/images");

@@ -1,0 +1,46 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: pawpicks-stock-checker
+  namespace: pawpicks-stock-checker
+  labels:
+    app: pawpicks-stock-checker
+spec:
+  # Run every hour at 5 minutes past (gives Vercel build time to pick it up)
+  schedule: "5 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 600
+      template:
+        metadata:
+          labels:
+            app: pawpicks-stock-checker
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: stock-checker
+              # Tag is replaced by the pawpicks-stock-checker.yml GHA workflow on every master push.
+              # Do not push this manifest with :latest — use a pinned SHA or semver tag.
+              image: ghcr.io/binary64/pawpicks-stock-checker:latest
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: OUTPUT_DIR
+                  value: /data
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  cpu: 500m
+                  memory: 256Mi
+              volumeMounts:
+                - name: stock-data
+                  mountPath: /data
+          volumes:
+            - name: stock-data
+              persistentVolumeClaim:
+                claimName: stock-data
