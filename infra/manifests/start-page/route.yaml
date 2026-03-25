@@ -5,12 +5,17 @@ metadata:
   namespace: start-page
 spec:
   parentRefs:
-    - name: gateway
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gateway
       namespace: istio-system
       sectionName: https
   hostnames:
     - "start.brandwhisper.cloud"
   rules:
     - backendRefs:
-        - name: start-page
+        - group: ""
+          kind: Service
+          name: start-page
           port: 80
+          weight: 1

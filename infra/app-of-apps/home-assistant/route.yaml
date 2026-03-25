@@ -5,17 +5,21 @@ metadata:
   namespace: home-assistant
 spec:
   parentRefs:
-  - name: gateway
-    namespace: istio-system
-    sectionName: https-home
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gateway
+      namespace: istio-system
+      sectionName: https-home
   hostnames:
-  - "home.brandwhisper.cloud"
+    - "home.brandwhisper.cloud"
   rules:
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /
-    backendRefs:
-    - name: home-assistant
-      port: 8123
-
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: home-assistant
+          port: 8123
+          weight: 1

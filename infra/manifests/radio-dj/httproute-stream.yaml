@@ -5,11 +5,16 @@ metadata:
   namespace: radio-dj
 spec:
   parentRefs:
-    - name: gateway
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gateway
       namespace: istio-system
   hostnames:
     - "stream.brandwhisper.cloud"
   rules:
     - backendRefs:
-        - name: icecast
+        - group: ""
+          kind: Service
+          name: icecast
           port: 8100
+          weight: 1

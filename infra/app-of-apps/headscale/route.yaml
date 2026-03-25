@@ -5,23 +5,31 @@ metadata:
   namespace: headscale
 spec:
   parentRefs:
-  - name: gateway
-    namespace: istio-system
-    sectionName: https
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gateway
+      namespace: istio-system
+      sectionName: https
   hostnames:
-  - "headscale.brandwhisper.cloud"
+    - "headscale.brandwhisper.cloud"
   rules:
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /web
-    backendRefs:
-    - name: headscale-ui
-      port: 80
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /
-    backendRefs:
-    - name: headscale
-      port: 8080
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /web
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: headscale-ui
+          port: 80
+          weight: 1
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: headscale
+          port: 8080
+          weight: 1

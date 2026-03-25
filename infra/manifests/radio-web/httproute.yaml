@@ -5,11 +5,16 @@ metadata:
   namespace: radio-web
 spec:
   parentRefs:
-    - name: gateway
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gateway
       namespace: istio-system
   hostnames:
     - "radio.brandwhisper.cloud"
   rules:
     - backendRefs:
-        - name: radio-web
+        - group: ""
+          kind: Service
+          name: radio-web
           port: 3004
+          weight: 1
