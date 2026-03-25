@@ -103,10 +103,11 @@ def generate_files(devices: list) -> None:
 
         # Only emit minimum_chip_revision when the device entry explicitly
         # specifies it.  Omitting it is safe (ESPHome defaults to 0.0) and
-        # prevents blocking older ESP32 chips (e.g. esp32dev rev 0.0–3.0).
+        # prevents blocking older ESP32 chips (e.g. esp32dev rev 0.0-3.0).
         if "minimum_chip_revision" in device:
             min_rev = device["minimum_chip_revision"]
-            minimum_chip_revision_block = f"\n  minimum_chip_revision: \"{min_rev}\""
+            min_rev_yaml = yaml.dump({"v": min_rev})[3:].rstrip()
+            minimum_chip_revision_block = f"\n  minimum_chip_revision: {min_rev_yaml}"
         else:
             minimum_chip_revision_block = ""
 
