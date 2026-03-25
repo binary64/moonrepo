@@ -5,6 +5,19 @@
 # - ws: WebSocket for watch connection + gateway RPC
 # - express-rate-limit: rate limiting for HTTP endpoints
 
+FROM node:22-slim AS builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY tsconfig.json ./
+COPY server.ts ./
+RUN npm run build
+
 FROM node:22-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -12,14 +25,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY package.json ./
-RUN npm install --production
-COPY server.js ./
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+COPY --from=builder /app/dist ./dist
 COPY sessions.json ./
 # Silero VAD v6.2 model (Dec 2025) — improved low-quality mic audio detection.
 # Drop-in replacement: same ONNX input/output API, better weights.
 # Downloaded from: https://github.com/snakers4/silero-vad/tree/v6.2
-COPY silero_vad_v6.2.onnx ./
+COPY silero_vad_v6.2.onnx ./dist/
 
 # Give the node user write access so metrics.json can be persisted at runtime
 RUN chown -R node:node /app
@@ -27,6 +40,4 @@ RUN chown -R node:node /app
 EXPOSE 9876
 
 USER node
-CMD ["node", "server.js"]
-
-# trigger: 2026-03-23
+CMD ["node", "dist/server.js"]
