@@ -28,9 +28,11 @@ spec:
       containers:
         - name: headscale-ui
           image: ghcr.io/gurucomputing/headscale-ui@sha256:015f5ba04bcbd5ee03178540a1dbbfc97b6896d7411032e3bf33c2f3e08f8b6f
+          # Image serves via Caddy on port 8080 (HTTP), not port 80.
+          # Confirmed from container logs: "server is listening only on the HTTP port, http_port:8080"
           ports:
             - name: http
-              containerPort: 80
+              containerPort: 8080
               protocol: TCP
           env:
             - name: HEADSCALE_URL
