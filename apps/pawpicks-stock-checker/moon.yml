@@ -38,6 +38,3 @@ tasks:
       - 'package-lock.json'
       - 'tsconfig.json'
       - 'products.json'
-
-typescript:
-  syncProjectReferences: false
