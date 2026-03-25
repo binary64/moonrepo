@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// PTT Server v9 — Containerised Watch Voice Receiver
+// PTT Server v10 — Containerised Watch Voice Receiver
 //
 // Protocol: Each binary chunk has a 4-byte prefix (session index, uint32 LE)
 // This ensures in-flight audio always routes to the correct session even
@@ -169,7 +169,7 @@ async function initVAD(): Promise<void> {
   let modelPath: string;
   if (fs.existsSync(bundledModelPath)) {
     modelPath = bundledModelPath;
-    console.log('Silero VAD v6.2 model found — using bundled weights');
+    console.log('Using bundled Silero VAD v6.2 (primary) — confirmed working with onnxruntime-node 1.24.3+');
   } else {
     modelPath = require.resolve('@ricky0123/vad-node/dist/silero_vad.onnx');
     console.warn('⚠️ silero_vad_v6.2.onnx not found — falling back to @ricky0123/vad-node bundled model');
@@ -331,7 +331,7 @@ function updateHABattery(level: number, charging: boolean): void {
 }
 
 app.get('/health', (_req: Request, res: Response) => {
-  res.json({ status: 'ok', service: 'ptt-server', version: 9 });
+  res.json({ status: 'ok', service: 'ptt-server', version: 10 });
 });
 
 app.get('/metrics', (_req: Request, res: Response) => {
@@ -843,7 +843,7 @@ function ts(): string { return new Date().toISOString().replace('T', ' ').slice(
 
 initVAD().then(() => {
   server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Watch PTT v9 — Containerised Voice Receiver`);
+    console.log(`Watch PTT v10 — Containerised Voice Receiver`);
     console.log(`  WS: ws://0.0.0.0:${PORT}/ws`);
     console.log(`  HTTP: health, battery, text on :${PORT}`);
     console.log(`  Speech: >${SPEECH_THRESHOLD} | Silence: ${SILENCE_AFTER_SPEECH_MS}ms | Min: ${MIN_SPEECH_MS}ms`);

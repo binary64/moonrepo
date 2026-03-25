@@ -6,7 +6,8 @@ metadata:
   labels:
     app: watch-adb-discover
 spec:
-  replicas: 1
+  # Watch doesn't have wireless ADB enabled — scale to 0 to avoid wasteful port scanning
+  replicas: 0
   strategy:
     type: Recreate
   selector:
