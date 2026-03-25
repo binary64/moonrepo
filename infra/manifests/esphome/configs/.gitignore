@@ -1,0 +1,3 @@
+# ESPHome secrets — never commit to Git.
+# The PVC-resident secrets.yaml is the live source; see secrets.yaml.example for required keys.
+secrets.yaml
