@@ -248,6 +248,9 @@ async function hasuraQuery<T>(
   query: string,
   variables: Record<string, unknown>,
 ): Promise<T> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15_000);
+
   const response = await fetch(`${HASURA_ENDPOINT}/v1/graphql`, {
     method: "POST",
     headers: {
@@ -255,7 +258,8 @@ async function hasuraQuery<T>(
       "x-hasura-admin-secret": HASURA_ADMIN_SECRET as string,
     },
     body: JSON.stringify({ query, variables }),
-  });
+    signal: controller.signal,
+  }).finally(() => clearTimeout(timeoutId));
 
   if (!response.ok) {
     throw new Error(

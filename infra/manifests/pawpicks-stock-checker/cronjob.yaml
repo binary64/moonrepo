@@ -33,8 +33,10 @@ spec:
               type: RuntimeDefault
           containers:
             - name: stock-checker
-              # Tag is replaced by the docker.yml GHA workflow on every master push.
-              # Placeholder SHA — docker.yml pins this to the real digest on first master push.
+              # PLACEHOLDER: This tag is rewritten to a real immutable SHA digest by docker.yml
+              # on every master push (via docker/metadata-action + image pinning). The :0000000
+              # placeholder is intentionally non-pullable to prevent accidental deployment before
+              # CI has pinned the real digest. ArgoCD will not run the CronJob until it syncs.
               image: ghcr.io/binary64/pawpicks-stock-checker:0000000
               imagePullPolicy: IfNotPresent
               securityContext:
