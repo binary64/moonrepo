@@ -4,7 +4,8 @@ metadata:
   name: headscale
   namespace: headscale
   annotations:
-    # DNS for headscale-ui.brandwhisper.cloud is managed by external-dns via this HTTPRoute
+    moonrepo.dev/skip-local: "true"
+    # DNS for headscale-ui.home.brandwhisper.cloud is managed by external-dns via this HTTPRoute
     # (gateway-httproute source → home IP via --default-targets).
     #
     # headscale.brandwhisper.cloud (the Tailscale/gRPC API endpoint) is intentionally NOT
@@ -19,7 +20,7 @@ spec:
       namespace: istio-system
       sectionName: https
   hostnames:
-    - "headscale-ui.brandwhisper.cloud"
+    - "headscale-ui.home.brandwhisper.cloud"
   rules:
     - matches:
         - path:
