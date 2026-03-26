@@ -99,6 +99,8 @@ async function notifyPRs(prs, conclusion, checkName, repo) {
         const prNumber = pr.number;
         const branch = pr.head.ref;
         const prUrl = pr.html_url || `https://github.com/${repoFullName}/pull/${prNumber}`;
+        // Dedupe key is scoped to repo+PR+conclusion to be globally unique across repos
+        const dedupeKey = `${repoFullName}-pr-${prNumber}-${conclusion}`;
         // Dedup check — only write after successful send
         const lastConclusion = lastNotified.get(prNumber);
         if (lastConclusion === conclusion) {
@@ -114,7 +116,7 @@ async function notifyPRs(prs, conclusion, checkName, repo) {
             message = `🔴 PR #${prNumber} — ${branch}: CI failed (check: ${checkName})\n${prUrl}`;
         }
         console.log(`Notifying for PR #${prNumber}: ${conclusion}`);
-        await sendGatewayMessage(message, `gh-webhook-${prNumber}-${conclusion}`);
+        await sendGatewayMessage(message, dedupeKey);
         // Write dedup only after successful send
         lastNotified.set(prNumber, conclusion);
     }
