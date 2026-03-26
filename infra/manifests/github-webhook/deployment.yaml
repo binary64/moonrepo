@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: github-webhook
   namespace: github-webhook
+  annotations:
+    moonrepo.dev/skip-local: "true"
   labels:
     app: github-webhook
 spec:
