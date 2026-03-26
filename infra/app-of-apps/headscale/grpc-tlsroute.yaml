@@ -3,6 +3,10 @@ kind: TLSRoute
 metadata:
   name: headscale-grpc
   namespace: headscale
+  annotations:
+    # Keep gRPC route consistent: DNS-only, pointing at Jupiter directly.
+    external-dns.alpha.kubernetes.io/target: "158.220.90.28"
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
 spec:
   parentRefs:
     - group: gateway.networking.k8s.io
