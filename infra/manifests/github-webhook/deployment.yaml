@@ -36,7 +36,10 @@ spec:
             - name: OPENCLAW_GATEWAY_URL
               value: "http://127.0.0.1:6798"
             - name: OPENCLAW_SESSION_KEY
-              value: "agent:main:telegram:direct:james"
+              valueFrom:
+                secretKeyRef:
+                  name: github-webhook-secret
+                  key: session-key
             - name: GITHUB_WEBHOOK_SECRET
               valueFrom:
                 secretKeyRef:

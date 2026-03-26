@@ -13,6 +13,7 @@
 import express, { Request, Response } from 'express';
 import crypto from 'crypto';
 import http from 'http';
+import https from 'https';
 
 const PORT = parseInt(process.env.PORT || '3200', 10);
 const WEBHOOK_SECRET = process.env.GITHUB_WEBHOOK_SECRET || '';
@@ -122,13 +123,12 @@ async function notifyPRs(
     const branch = pr.head.ref;
     const prUrl = pr.html_url || `https://github.com/${repoFullName}/pull/${prNumber}`;
 
-    // Dedup
+    // Dedup check — only write after successful send
     const lastConclusion = lastNotified.get(prNumber);
     if (lastConclusion === conclusion) {
       console.log(`Skipping duplicate notification for PR #${prNumber} (${conclusion})`);
       continue;
     }
-    lastNotified.set(prNumber, conclusion);
 
     const isSuccess = ['success', 'neutral', 'skipped'].includes(conclusion);
     let message: string;
@@ -141,6 +141,8 @@ async function notifyPRs(
 
     console.log(`Notifying for PR #${prNumber}: ${conclusion}`);
     await sendGatewayMessage(message, `gh-webhook-${prNumber}-${conclusion}`);
+    // Write dedup only after successful send
+    lastNotified.set(prNumber, conclusion);
   }
 }
 
@@ -155,12 +157,14 @@ async function sendGatewayMessage(message: string, idempotencyKey: string): Prom
   });
 
   const url = new URL('/rpc', GATEWAY_URL);
+  const transport = url.protocol === 'https:' ? https : http;
+  const defaultPort = url.protocol === 'https:' ? 443 : 80;
 
   return new Promise((resolve, reject) => {
-    const req = http.request(
+    const req = transport.request(
       {
         hostname: url.hostname,
-        port: url.port || 80,
+        port: url.port || defaultPort,
         path: url.pathname,
         method: 'POST',
         headers: {
@@ -172,8 +176,15 @@ async function sendGatewayMessage(message: string, idempotencyKey: string): Prom
         let data = '';
         res.on('data', (chunk) => { data += chunk; });
         res.on('end', () => {
-          console.log(`Gateway response (${res.statusCode}): ${data}`);
-          resolve();
+          const status = res.statusCode ?? 0;
+          if (status >= 200 && status < 300) {
+            console.log(`Gateway response (${status}): ${data}`);
+            resolve();
+          } else {
+            const err = new Error(`Gateway returned non-2xx status ${status}: ${data}`);
+            console.error(err.message);
+            reject(err);
+          }
         });
       },
     );
@@ -191,5 +202,5 @@ async function sendGatewayMessage(message: string, idempotencyKey: string): Prom
 app.listen(PORT, () => {
   console.log(`github-webhook server listening on port ${PORT}`);
   console.log(`Gateway: ${GATEWAY_URL}`);
-  console.log(`Session: ${SESSION_KEY}`);
+  // SESSION_KEY intentionally not logged (sensitive routing key)
 });
