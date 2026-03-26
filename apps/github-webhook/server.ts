@@ -39,7 +39,7 @@ app.get('/health', (_req: Request, res: Response) => {
   res.json({ ok: true });
 });
 
-app.post('/webhook', (req: Request, res: Response) => {
+app.post('/webhook', async (req: Request, res: Response) => {
   // Verify HMAC-SHA256 signature
   const sig = req.headers['x-hub-signature-256'] as string | undefined;
   if (!sig) {
@@ -60,9 +60,6 @@ app.post('/webhook', (req: Request, res: Response) => {
     return;
   }
 
-  // Always return 200 after auth passes — GitHub retries on non-2xx
-  res.status(200).json({ ok: true });
-
   const event = req.headers['x-github-event'] as string | undefined;
   let payload: Record<string, unknown>;
 
@@ -70,12 +67,20 @@ app.post('/webhook', (req: Request, res: Response) => {
     payload = JSON.parse(body.toString());
   } catch {
     console.error('Failed to parse webhook payload');
+    res.status(400).json({ error: 'Invalid JSON payload' });
     return;
   }
 
-  handleEvent(event || '', payload).catch((err) => {
+  // Await processing before responding so GitHub retries on failure (non-2xx).
+  // Return 200 only when the event was handled successfully; 500 on error causes
+  // GitHub to re-deliver with exponential back-off.
+  try {
+    await handleEvent(event || '', payload);
+    res.status(200).json({ ok: true });
+  } catch (err) {
     console.error('Error handling event:', err);
-  });
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 type PullRequestRef = {

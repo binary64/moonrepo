@@ -34,7 +34,7 @@ spec:
         - name: github-webhook
           # Tag is replaced by the docker.yml GHA workflow on every master push.
           # Do not push this manifest with :latest — use a pinned SHA or semver tag.
-          image: ghcr.io/binary64/github-webhook:latest
+          image: ghcr.io/binary64/github-webhook:1.0.0
           imagePullPolicy: Always
           ports:
             - containerPort: 3200
