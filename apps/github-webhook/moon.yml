@@ -1,0 +1,22 @@
+type: application
+language: typescript
+
+tasks:
+  build:
+    command: npm run build
+    inputs:
+      - "server.ts"
+      - "tsconfig.json"
+      - "package.json"
+    outputs:
+      - "dist"
+
+  typecheck:
+    command: npm run typecheck
+    inputs:
+      - "server.ts"
+      - "tsconfig.json"
+
+  start:
+    command: npm start
+    local: true
