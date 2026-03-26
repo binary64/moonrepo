@@ -8,8 +8,6 @@ tasks:
       - "server.ts"
       - "tsconfig.json"
       - "package.json"
-    outputs:
-      - "dist"
 
   typecheck:
     command: npm run typecheck
