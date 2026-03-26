@@ -46,7 +46,7 @@ RAW_FILE="/state/${CLIP_ID}-raw.mp3"
 PADDED_FILE="/state/${CLIP_ID}.mp3"
 
 cleanup() {
-    rm -f "$RAW_FILE" 2>/dev/null || true
+    rm -f "$RAW_FILE" "$PADDED_FILE" 2>/dev/null || true
 }
 trap cleanup EXIT
 
@@ -113,7 +113,10 @@ PUSH_RESPONSE=$(echo "${QUEUE_NAME}.push ${PADDED_FILE}" | nc -w2 "$LIQUIDSOAP_H
     exit 1
 }
 
-# Schedule cleanup in background — gives Liquidsoap time to read the file
-(sleep 30 && rm -f "$PADDED_FILE" "$RAW_FILE") &
+# On success, disable the EXIT trap for PADDED_FILE — schedule delayed cleanup
+# instead so Liquidsoap has time to read the file before it's removed.
+trap - EXIT
+rm -f "$RAW_FILE" 2>/dev/null || true
+(sleep 30 && rm -f "$PADDED_FILE") &
 
 echo "[dj-commentary] Done — DJ $DJ_NAME commentary queued ($CLIP_ID)"

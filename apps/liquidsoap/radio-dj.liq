@@ -7,10 +7,11 @@
 
 settings.server.telnet.set(true)
 settings.server.telnet.port.set(1234)
-# Binds to 127.0.0.1 — telnet is loopback-only. announce-track.sh (same
-# container) communicates via 127.0.0.1:1234 directly. Cross-pod access from
-# dj-brain uses the state-file event mechanism rather than telnet.
-settings.server.telnet.bind_addr.set("127.0.0.1")
+# Binds to 0.0.0.0 — dj-brain runs in a separate pod and pushes TTS clips
+# to queue_arthur/queue_cara via telnet. announce-track.sh (same container)
+# also uses telnet at 127.0.0.1:1234. Network policy restricts access to
+# the radio-dj namespace; the k8s Service routes dj-brain → liquidsoap:1234.
+settings.server.telnet.bind_addr.set("0.0.0.0")
 
 # Separate voice queues — Arthur and Cara have independent volume
 queue_arthur = request.queue(id="queue_arthur")
