@@ -4,11 +4,11 @@ metadata:
   name: headscale
   namespace: headscale
   annotations:
-    # Tailscale's Noise protocol is incompatible with Cloudflare proxying.
-    # headscale must resolve directly to Jupiter (158.220.90.28), not via the
-    # home network IP, and must NOT be orange-clouded.
-    external-dns.alpha.kubernetes.io/target: "158.220.90.28"
-    external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
+    # DNS is managed via DNSEndpoint CRD (infra/app-of-apps/headscale/dns-endpoint.yaml)
+    # rather than route-level annotations, because external-dns v0.15.0 reads the target
+    # annotation from the Gateway object only — not from HTTPRoute/TLSRoute resources.
+    # Setting controller=ignore prevents the gateway source generating a duplicate record.
+    external-dns.alpha.kubernetes.io/controller: "ignore"
 spec:
   parentRefs:
     - group: gateway.networking.k8s.io

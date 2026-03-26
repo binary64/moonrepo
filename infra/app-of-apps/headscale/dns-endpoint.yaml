@@ -1,0 +1,26 @@
+# DNSEndpoint CRD for headscale.brandwhisper.cloud
+#
+# external-dns v0.15.0 reads the `external-dns.alpha.kubernetes.io/target` annotation
+# only from the Gateway object itself, NOT from HTTPRoute/TLSRoute resources.  Placing
+# the annotation on the routes (as done in PR #189) has no effect on the resolved IP —
+# external-dns still uses the Gateway's status addresses + --default-targets.
+#
+# Workaround: use a DNSEndpoint CRD (external-dns "crd" source) to explicitly assert the
+# desired record.  The routes are opted out of DNS management via the controller=ignore
+# annotation so the gateway source generates no conflicting record.
+#
+# Result: headscale.brandwhisper.cloud → 158.220.90.28 (Jupiter), DNS-only (no Cloudflare proxy).
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: headscale
+  namespace: headscale
+spec:
+  endpoints:
+    - dnsName: headscale.brandwhisper.cloud
+      recordType: A
+      targets:
+        - "158.220.90.28"
+      providerSpecific:
+        - name: external-dns.alpha.kubernetes.io/cloudflare-proxied
+          value: "false"
