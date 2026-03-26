@@ -20,11 +20,19 @@ spec:
       labels:
         app: ptt-server
     spec:
-      # Run on Jupiter — needs localhost access to OpenClaw gateway (:18789)
-      # Uses stable custom label rather than hostname so pod survives VM replacement.
-      # Label the node: kubectl label node vmi3137202 brandwhisper.cloud/node-role=jupiter
+      # Run on master (NUC, 192.168.1.201) — watch app connects to 192.168.1.201:30987
+      # (NodePort), so the pod must be on the NUC for home-network reachability.
+      # The NUC node hostname is stable; if the node is ever reprovisioned, update this.
+      # NOTE: OPENCLAW_GATEWAY_URL uses Jupiter's host IP (158.220.90.28) because the
+      # gateway runs on Jupiter. Ensure the gateway is bound to 0.0.0.0 (not just
+      # 127.0.0.1) on Jupiter, or expose it via a k8s Service/NodePort.
       nodeSelector:
-        brandwhisper.cloud/node-role: jupiter
+        kubernetes.io/hostname: master
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/control-plane
+          effect: NoSchedule
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
       containers:
@@ -54,7 +62,7 @@ spec:
                   name: ptt-server-secret
                   key: openai-api-key
             - name: OPENCLAW_GATEWAY_URL
-              value: "ws://127.0.0.1:18789"
+              value: "ws://158.220.90.28:18789"
             - name: OPENCLAW_GATEWAY_TOKEN
               valueFrom:
                 secretKeyRef:
