@@ -4,6 +4,7 @@ metadata:
   name: github-webhook
   namespace: github-webhook
   annotations:
+    # Skip local execution — uses hostNetwork, which would bind host ports
     moonrepo.dev/skip-local: "true"
   labels:
     app: github-webhook
@@ -20,15 +21,21 @@ spec:
         app: github-webhook
     spec:
       # Run on Jupiter — needs localhost access to OpenClaw Gateway (:6798)
+      # Label the node: kubectl label node vmi3137202 brandwhisper.cloud/node-role=jupiter
       nodeSelector:
         brandwhisper.cloud/node-role: jupiter
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
       containers:
         - name: github-webhook
           # Tag is replaced by the docker.yml GHA workflow on every master push.
+          # Do not push this manifest with :latest — use a pinned SHA or semver tag.
           image: ghcr.io/binary64/github-webhook:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - containerPort: 3200
               protocol: TCP
@@ -47,6 +54,12 @@ spec:
                 secretKeyRef:
                   name: github-webhook-secret
                   key: webhook-secret
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
           resources:
             requests:
               cpu: 50m
