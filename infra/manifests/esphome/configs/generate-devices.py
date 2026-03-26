@@ -153,35 +153,19 @@ def generate_files(devices: list) -> None:
 
     # Remove stale generated files (i.e. files that were previously generated
     # for a device that has since been removed or renamed in devices.yaml).
-    # Only delete files that begin with the generated header so hand-written
-    # YAML files in the same directory are never touched.
+    # Only GENERATED files (those starting with HEADER) are ever deleted so
+    # hand-written YAML files in the same directory are never touched.
     header_first_line = HEADER.split("\n")[0]
-    for existing in SCRIPT_DIR.glob("*.yaml"):
+    for existing in sorted(SCRIPT_DIR.glob("*.yaml")):
         if existing.name not in expected_files:
-            if existing.read_text(encoding="utf-8").startswith(header_first_line):
-                existing.unlink()
-                print(f"  removed stale {existing.name}")
+            try:
+                if existing.read_text(encoding="utf-8").startswith(header_first_line):
+                    existing.unlink()
+                    print(f"  removed stale {existing.name}")
+            except OSError as exc:
+                print(f"  warning: could not remove {existing.name}: {exc}", file=sys.stderr)
 
     print(f"\nGenerated {len(devices)} device file(s).")
-
-    # Prune stale generated files — any *.yaml in SCRIPT_DIR that was
-    # previously generated (starts with HEADER) but is no longer in the
-    # current device list gets removed so stale configs don't linger.
-    expected_names = {f"{device['name']}.yaml" for device in devices}
-    for yaml_path in sorted(SCRIPT_DIR.glob("*.yaml")):
-        if yaml_path.name in expected_names:
-            continue
-        try:
-            first_line = yaml_path.read_text(encoding="utf-8").split("\n", 1)[0] + "\n"
-        except OSError:
-            continue
-        if first_line != HEADER:
-            continue
-        try:
-            yaml_path.unlink()
-            print(f"  removed stale {yaml_path.name}")
-        except OSError as exc:
-            print(f"  warning: could not remove {yaml_path.name}: {exc}", file=sys.stderr)
 
 
 def main():
