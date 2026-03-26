@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gha-runner
+  namespace: gha-runner
+  annotations:
+    # Skip local execution — mounts host Docker socket, not available in dev clusters
+    moonrepo.dev/skip-local: "true"
+  labels:
+    app.kubernetes.io/name: gha-runner
+    app.kubernetes.io/instance: gha-runner
+    app.kubernetes.io/component: runner
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: gha-runner
+      app.kubernetes.io/instance: gha-runner
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: gha-runner
+        app.kubernetes.io/instance: gha-runner
+        app.kubernetes.io/component: runner
+    spec:
+      # Run on Jupiter — needs the host Docker socket for build containers
+      # Label the node: kubectl label node vmi3137202 brandwhisper.cloud/node-role=jupiter
+      nodeSelector:
+        brandwhisper.cloud/node-role: jupiter
+      # Prevent unnecessary Kubernetes API access from the runner pod
+      automountServiceAccountToken: false
+      securityContext:
+        # Enforce RuntimeDefault seccomp profile at pod level
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: runner
+          # Pinned to digest for supply chain security (tag: 2.333.0)
+          # To update: docker pull myoung34/github-runner:<new-tag> && docker inspect --format='{{index .RepoDigests 0}}' myoung34/github-runner:<new-tag>
+          image: myoung34/github-runner@sha256:ce7e703b2b6c8c3f9110e734cf2d263f600aa5c71d5afa942b80fb71dfb89019
+          imagePullPolicy: Always
+          securityContext:
+            # allowPrivilegeEscalation must remain false where possible, but note: runner
+            # requires Docker socket access which grants host-equivalent privileges.
+            # runAsNonRoot is not set — this image runs as root (required for Docker socket).
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false  # Runner workspace requires writable filesystem
+            capabilities:
+              drop:
+                - ALL
+          env:
+            - name: REPO_URL
+              value: "https://github.com/binary64/ocdesktop"
+            - name: RUNNER_NAME_PREFIX
+              value: "jupiter"
+            - name: LABELS
+              value: "self-hosted,linux,x64,jupiter"
+            - name: RUNNER_SCOPE
+              value: "repo"
+            - name: EPHEMERAL
+              value: "true"
+            - name: DISABLE_AUTO_UPDATE
+              value: "true"  # Image pinned by digest — disable in-container binary updates
+            - name: DOCKER_ENABLED
+              value: "true"
+            # GitHub PAT with repo scope — stored in sealed secret
+            - name: ACCESS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: gha-runner-secret
+                  key: access-token
+          volumeMounts:
+            - name: docker-sock
+              mountPath: /var/run/docker.sock
+          resources:
+            requests:
+              cpu: "2"
+              memory: 4Gi
+            limits:
+              cpu: "12"
+              memory: 32Gi
+      volumes:
+        # ACCEPTED RISK (CKV_K8S_27): Host Docker socket is required for Docker-in-Docker
+        # builds in ocdesktop CI workflows. Mitigations: Jupiter node is dedicated to this
+        # workload, runner is ephemeral (job isolation), access-token scoped to ocdesktop repo.
+        # Future: evaluate rootless Docker or Kaniko as alternatives.
+        - name: docker-sock
+          hostPath:
+            path: /var/run/docker.sock
+            type: Socket
