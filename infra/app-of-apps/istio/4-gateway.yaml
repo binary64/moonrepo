@@ -37,3 +37,12 @@ spec:
     allowedRoutes:
       namespaces:
         from: All
+  - name: headscale-grpc
+    port: 50443
+    protocol: TLS
+    hostname: "headscale.brandwhisper.cloud"
+    tls:
+      mode: Passthrough
+    allowedRoutes:
+      namespaces:
+        from: All

@@ -1,0 +1,21 @@
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TLSRoute
+metadata:
+  name: headscale-grpc
+  namespace: headscale
+spec:
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gateway
+      namespace: istio-system
+      sectionName: headscale-grpc
+  hostnames:
+    - "headscale.brandwhisper.cloud"
+  rules:
+    - backendRefs:
+        - group: ""
+          kind: Service
+          name: headscale
+          port: 50443
+          weight: 1
