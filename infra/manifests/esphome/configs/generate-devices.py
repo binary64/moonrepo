@@ -114,6 +114,8 @@ def validate_devices(devices: list) -> None:
 
 def generate_files(devices: list) -> None:
     """Write per-device ESPHome YAML files for all validated device entries."""
+    expected_files = {f"{device['name']}.yaml" for device in devices}
+
     for device in devices:
         name = device["name"]
         friendly_name = device["friendly_name"]
@@ -148,6 +150,17 @@ def generate_files(devices: list) -> None:
         out_path = SCRIPT_DIR / f"{name}.yaml"
         out_path.write_text(content, encoding="utf-8")
         print(f"  wrote {out_path.name}")
+
+    # Remove stale generated files (i.e. files that were previously generated
+    # for a device that has since been removed or renamed in devices.yaml).
+    # Only delete files that begin with the generated header so hand-written
+    # YAML files in the same directory are never touched.
+    header_first_line = HEADER.split("\n")[0]
+    for existing in SCRIPT_DIR.glob("*.yaml"):
+        if existing.name not in expected_files:
+            if existing.read_text(encoding="utf-8").startswith(header_first_line):
+                existing.unlink()
+                print(f"  removed stale {existing.name}")
 
     print(f"\nGenerated {len(devices)} device file(s).")
 
