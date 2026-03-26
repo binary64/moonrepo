@@ -22,6 +22,7 @@ spec:
     spec:
       # Run on Jupiter — needs localhost access to OpenClaw Gateway (:6798)
       # Label the node: kubectl label node vmi3137202 brandwhisper.cloud/node-role=jupiter
+      automountServiceAccountToken: false
       nodeSelector:
         brandwhisper.cloud/node-role: jupiter
       hostNetwork: true
@@ -30,6 +31,8 @@ spec:
         runAsNonRoot: true
         runAsUser: 1000
         runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: github-webhook
           # Tag is replaced by the docker.yml GHA workflow on every master push.
