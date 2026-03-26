@@ -63,6 +63,10 @@ def validate_devices(devices: list) -> None:
             errors.append(f"  device[{idx}]: name must be a non-empty string without leading/trailing whitespace")
             continue
 
+        if "/" in name or "\\" in name or ".." in name:
+            errors.append(f"  device[{idx}]: invalid path-like name '{name}'")
+            continue
+
         candidate = (SCRIPT_DIR / f"{name}.yaml").resolve()
         if candidate.parent != SCRIPT_DIR.resolve():
             errors.append(f"  device[{idx}]: invalid path-like name '{name}'")
@@ -83,7 +87,7 @@ def validate_devices(devices: list) -> None:
 
         if "minimum_chip_revision" in device:
             min_rev = device.get("minimum_chip_revision")
-            if not isinstance(min_rev, (str, int, float, bool)) or (isinstance(min_rev, str) and not min_rev.strip()):
+            if not (isinstance(min_rev, (str, int, float)) and not isinstance(min_rev, bool)) or (isinstance(min_rev, str) and not min_rev.strip()):
                 errors.append(
                     f"  device[{idx}]: minimum_chip_revision must be a non-empty scalar (str/int/float)"
                 )
