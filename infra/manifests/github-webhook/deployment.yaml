@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: github-webhook
+  namespace: github-webhook
+  labels:
+    app: github-webhook
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: github-webhook
+  template:
+    metadata:
+      labels:
+        app: github-webhook
+    spec:
+      # Run on Jupiter — needs localhost access to OpenClaw Gateway (:6798)
+      nodeSelector:
+        brandwhisper.cloud/node-role: jupiter
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+        - name: github-webhook
+          # Tag is replaced by the docker.yml GHA workflow on every master push.
+          image: ghcr.io/binary64/github-webhook:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3200
+              protocol: TCP
+          env:
+            - name: PORT
+              value: "3200"
+            - name: OPENCLAW_GATEWAY_URL
+              value: "http://127.0.0.1:6798"
+            - name: OPENCLAW_SESSION_KEY
+              value: "agent:main:telegram:direct:james"
+            - name: GITHUB_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: github-webhook-secret
+                  key: webhook-secret
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3200
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3200
+            initialDelaySeconds: 5
+            periodSeconds: 10
