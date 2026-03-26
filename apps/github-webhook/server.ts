@@ -80,7 +80,7 @@ app.post('/webhook', async (req: Request, res: Response) => {
   try {
     payload = JSON.parse(body.toString());
   } catch (err: unknown) {
-    console.error('Failed to parse webhook payload:', err instanceof Error ? err.message : err);
+    console.error('Failed to parse webhook payload:', err instanceof Error ? err.message : String(err));
     res.status(400).json({ error: 'Invalid JSON payload' });
     return;
   }
@@ -92,7 +92,7 @@ app.post('/webhook', async (req: Request, res: Response) => {
     await handleEvent(event || '', payload);
     res.status(200).json({ ok: true });
   } catch (err: unknown) {
-    console.error('Error handling event:', err instanceof Error ? err.message : err);
+    console.error('Error handling event:', err instanceof Error ? err.message : String(err));
     res.status(500).json({ error: 'Internal server error' });
   }
 });
