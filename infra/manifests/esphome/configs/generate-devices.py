@@ -122,6 +122,7 @@ def generate_files(devices: list) -> None:
         # when dumping a bare scalar with default_flow_style=True.
         name_yaml = yaml.dump({"v": name})[3:].rstrip()
         friendly_name_yaml = yaml.dump({"v": friendly_name})[3:].rstrip()
+        board_yaml = yaml.dump({"v": board})[3:].rstrip()
 
         # Only emit minimum_chip_revision when the device entry explicitly
         # specifies it.  Omitting it is safe (ESPHome defaults to 0.0) and
@@ -137,7 +138,7 @@ def generate_files(devices: list) -> None:
             header=HEADER.rstrip(),
             name=name_yaml,
             friendly_name=friendly_name_yaml,
-            board=board,
+            board=board_yaml,
             minimum_chip_revision=minimum_chip_revision_block,
         )
 
