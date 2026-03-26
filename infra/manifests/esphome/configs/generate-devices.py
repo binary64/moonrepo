@@ -60,32 +60,35 @@ def validate_devices(devices: list) -> None:
                 errors.append(f"  device[{idx}]: missing required key '{key}'")
 
         name = device.get("name")
+        name_valid = True
         if not isinstance(name, str) or not name.strip() or name != name.strip():
             errors.append(f"  device[{idx}]: name must be a non-empty string without leading/trailing whitespace")
-            continue
+            name_valid = False
 
-        if "/" in name or "\\" in name or ".." in name:
+        if name_valid and ("/" in name or "\\" in name or ".." in name):
             errors.append(f"  device[{idx}]: invalid path-like name '{name}'")
-            continue
+            name_valid = False
 
         # ESPHome device names must be lowercase alphanumeric + hyphens/underscores.
         # This also ensures the name is safe to embed in YAML without quoting.
-        if not re.fullmatch(r"[a-z0-9_-]+", name):
+        if name_valid and not re.fullmatch(r"[a-z0-9_-]+", name):
             errors.append(
                 f"  device[{idx}]: name '{name}' contains invalid characters "
                 f"(only a-z, 0-9, _ and - are allowed)"
             )
-            continue
+            name_valid = False
 
-        candidate = (SCRIPT_DIR / f"{name}.yaml").resolve()
-        if candidate.parent != SCRIPT_DIR.resolve():
-            errors.append(f"  device[{idx}]: invalid path-like name '{name}'")
-            continue
+        if name_valid:
+            candidate = (SCRIPT_DIR / f"{name}.yaml").resolve()
+            if candidate.parent != SCRIPT_DIR.resolve():
+                errors.append(f"  device[{idx}]: invalid path-like name '{name}'")
+                name_valid = False
 
-        if name in seen_names:
-            errors.append(f"  device[{idx}]: duplicate name '{name}'")
-        else:
-            seen_names.add(name)
+        if name_valid:
+            if name in seen_names:
+                errors.append(f"  device[{idx}]: duplicate name '{name}'")
+            else:
+                seen_names.add(name)
 
         friendly_name = device.get("friendly_name")
         if not isinstance(friendly_name, str) or not friendly_name.strip():
