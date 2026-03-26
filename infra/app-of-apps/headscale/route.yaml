@@ -4,11 +4,13 @@ metadata:
   name: headscale
   namespace: headscale
   annotations:
-    # DNS is managed via DNSEndpoint CRD (infra/app-of-apps/headscale/dns-endpoint.yaml)
-    # rather than route-level annotations, because external-dns v0.15.0 reads the target
-    # annotation from the Gateway object only — not from HTTPRoute/TLSRoute resources.
-    # Setting controller=ignore prevents the gateway source generating a duplicate record.
-    external-dns.alpha.kubernetes.io/controller: "ignore"
+    # DNS for headscale-ui.brandwhisper.cloud is managed by external-dns via this HTTPRoute
+    # (gateway-httproute source → home IP via --default-targets).
+    #
+    # headscale.brandwhisper.cloud (the Tailscale/gRPC API endpoint) is intentionally NOT
+    # listed here — it is exclusively managed by the DNSEndpoint CRD in dns-endpoint.yaml
+    # which points to 158.220.90.28 (Jupiter VPS). Keeping the two hostnames separate
+    # prevents the gateway-httproute source from racing the CRD source over the API record.
 spec:
   parentRefs:
     - group: gateway.networking.k8s.io
@@ -17,7 +19,7 @@ spec:
       namespace: istio-system
       sectionName: https
   hostnames:
-    - "headscale.brandwhisper.cloud"
+    - "headscale-ui.brandwhisper.cloud"
   rules:
     - matches:
         - path:
