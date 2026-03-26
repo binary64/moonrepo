@@ -38,6 +38,7 @@ if ! k3d cluster list | grep -q "$CLUSTER_NAME"; then
 			exit 1
 		}
 		kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.0/experimental-install.yaml
+		kubectl apply --server-side -f https://raw.githubusercontent.com/kubernetes-sigs/external-dns/v0.15.0/docs/contributing/crd-source/crd-manifest.yaml
 	else
 		echo "Warning: $K3D_CONFIG not found, creating default cluster."
 		k3d cluster create "$CLUSTER_NAME"
