@@ -61,18 +61,10 @@ spec:
           enabled: true
 
         # --------------------------------
-        # Logging (EU endpoint)
+        # Logging (disabled — was causing ~45GB/day ingest via Fluent Bit)
         # --------------------------------
         newrelic-logging:
-          enabled: true
-          endpoint: https://log-api.eu.newrelic.com/log/v1
-          resources:
-            requests:
-              cpu: 30m
-              memory: 96Mi
-            limits:
-              cpu: 200m
-              memory: 256Mi
+          enabled: false
 
         # --------------------------------
         # Metadata Injection
@@ -81,16 +73,16 @@ spec:
           enabled: true
 
         # --------------------------------
-        # Kubernetes Events
+        # Kubernetes Events (disabled — noisy, not needed for home cluster)
         # --------------------------------
         nri-kube-events:
-          enabled: true
+          enabled: false
 
         # --------------------------------
-        # Prometheus Scraping
+        # Prometheus Scraping (disabled — significant data volume)
         # --------------------------------
         nri-prometheus:
-          enabled: true
+          enabled: false
 
         # --------------------------------
         # Pixie (explicitly disabled)
