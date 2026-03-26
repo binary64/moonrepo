@@ -6,9 +6,11 @@
     "strict": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "outDir": "dist",
+    "outDir": "../../.moon/cache/types/apps/pawpicks-stock-checker",
     "rootDir": "src"
   },
-  "include": ["src/**/*.ts"],
+  "include": [
+    "src/**/*.ts"
+  ],
   "references": []
 }
