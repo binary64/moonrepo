@@ -25,9 +25,12 @@ if (!WEBHOOK_SECRET) {
   process.exit(1);
 }
 
-// Deduplication: prNumber → lastNotifiedConclusion
+// Deduplication: repoFullName+prNumber → lastNotifiedConclusion
+// Keyed by repo+PR to avoid cross-repo collisions on shared PR numbers.
 // Written only after successful gateway delivery to avoid suppressing retries on failure.
-const lastNotified = new Map<number, string>();
+const lastNotified = new Map<string, string>();
+
+const GATEWAY_TIMEOUT_MS = parseInt(process.env.GATEWAY_TIMEOUT_MS || '10000', 10);
 
 const app = express();
 
@@ -48,7 +51,18 @@ app.post('/webhook', async (req: Request, res: Response) => {
     return;
   }
 
-  const body = req.body as Buffer;
+  const rawBody = req.body;
+  const body =
+    Buffer.isBuffer(rawBody)
+      ? rawBody
+      : typeof rawBody === 'string' || rawBody instanceof Uint8Array
+        ? Buffer.from(rawBody)
+        : null;
+  if (!body) {
+    console.warn('Webhook payload is not a raw JSON buffer');
+    res.status(400).json({ error: 'Invalid payload type' });
+    return;
+  }
   const expected = 'sha256=' + crypto.createHmac('sha256', WEBHOOK_SECRET).update(body).digest('hex');
 
   // Guard against length mismatch before timingSafeEqual (throws on unequal lengths)
@@ -65,8 +79,8 @@ app.post('/webhook', async (req: Request, res: Response) => {
 
   try {
     payload = JSON.parse(body.toString());
-  } catch {
-    console.error('Failed to parse webhook payload');
+  } catch (err: unknown) {
+    console.error('Failed to parse webhook payload:', err instanceof Error ? err.message : err);
     res.status(400).json({ error: 'Invalid JSON payload' });
     return;
   }
@@ -77,8 +91,8 @@ app.post('/webhook', async (req: Request, res: Response) => {
   try {
     await handleEvent(event || '', payload);
     res.status(200).json({ ok: true });
-  } catch (err) {
-    console.error('Error handling event:', err);
+  } catch (err: unknown) {
+    console.error('Error handling event:', err instanceof Error ? err.message : err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -150,9 +164,10 @@ async function notifyPRs(
 
     // Dedupe key is scoped to repo+PR+conclusion to be globally unique across repos
     const dedupeKey = `${repoFullName}-pr-${prNumber}-${conclusion}`;
+    const stateKey = `${repoFullName}-pr-${prNumber}`;
 
     // Skip if we already successfully delivered this conclusion for this PR
-    const lastConclusion = lastNotified.get(prNumber);
+    const lastConclusion = lastNotified.get(stateKey);
     if (lastConclusion === conclusion) {
       console.log(`Skipping duplicate notification for PR #${prNumber} (${conclusion})`);
       continue;
@@ -170,7 +185,7 @@ async function notifyPRs(
     console.log(`Notifying for PR #${prNumber}: ${conclusion}`);
     // Only mark as sent after successful delivery
     await sendGatewayMessage(message, dedupeKey);
-    lastNotified.set(prNumber, conclusion);
+    lastNotified.set(stateKey, conclusion);
   }
 }
 
@@ -223,6 +238,10 @@ async function sendGatewayMessage(message: string, idempotencyKey: string): Prom
         });
       },
     );
+
+    req.setTimeout(GATEWAY_TIMEOUT_MS, () => {
+      req.destroy(new Error(`Gateway request timed out after ${GATEWAY_TIMEOUT_MS}ms`));
+    });
 
     req.on('error', (err) => {
       console.error('Gateway request failed:', err);
