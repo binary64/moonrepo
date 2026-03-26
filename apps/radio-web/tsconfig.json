@@ -24,7 +24,7 @@
     ],
     "paths": {
       "@/*": [
-        "./*"
+        "./src/*"
       ]
     },
     "outDir": "../../.moon/cache/types/apps/radio-web"
