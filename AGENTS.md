@@ -109,7 +109,7 @@ moon run :lint
 - **Helm Values**: Externalize configuration, use minimal overrides
 
 ### Gateway API & HTTPRoutes
-- **Hostnames**: Use `*.home.brandwhisper.cloud` pattern for new services
+- **Hostnames**: Use `*.home.brandwhisper.cloud` pattern for new services. Exception: services requiring external/public access (e.g. `headscale-ui.brandwhisper.cloud`) may use the root domain — document the reason with an inline comment.
 - **Parent Refs**: Always reference the Istio gateway in `istio-system` namespace
 - **Backend Refs**: Use service name and port from the same namespace
 - **Example:**
