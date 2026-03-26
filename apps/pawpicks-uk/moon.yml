@@ -1,8 +1,8 @@
-# https://moonrepo.dev/docs/config/workspace
-$schema: "../../.moon/cache/schemas/workspace.json"
+# https://moonrepo.dev/docs/config/project
+$schema: "https://moonrepo.dev/schemas/project.json"
 
 language: 'node'
-type: 'application'
+layer: 'application'
 
 tasks:
   build:
@@ -15,6 +15,6 @@ tasks:
       - '_site'
   dev:
     command: 'bun run serve'
-    local: true
+    preset: 'server'
   clean:
     command: 'bun run clean'

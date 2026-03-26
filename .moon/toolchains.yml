@@ -1,9 +1,13 @@
 # https://moonrepo.dev/docs/config/toolchain
-$schema: "./cache/schemas/toolchain.json"
+$schema: "./cache/schemas/toolchains.json"
 
-node:
+# In v2, shared JS settings moved from node: to javascript:
+javascript:
   packageManager: "bun"
   syncProjectWorkspaceDependencies: true
+
+# Keep node: section to activate the Node.js toolchain
+node: {}
 
 typescript:
   createMissingConfig: true
