@@ -30,6 +30,93 @@ spec:
       # Host networking for mDNS device discovery and OTA flashing on LAN
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
+      initContainers:
+        # Sync device configs from ConfigMap into the PVC on every pod start.
+        # Git/ArgoCD is the source of truth; ESPHome reads from /config as normal.
+        # secrets.yaml stays in the PVC only — never in the ConfigMap.
+        - name: sync-configs
+          image: busybox:1.36
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: false  # busybox runs as root; needed to write to PVC
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              echo "Syncing ESPHome device configs from ConfigMap..."
+              mkdir -p /config/packages
+
+              # Fail-fast: refuse to prune if the ConfigMap projection is empty.
+              # An empty /config-src likely means a kustomization items mismatch
+              # and we must not delete live configs from the PVC.
+              src_count=$(ls /config-src/*.yaml 2>/dev/null | wc -l)
+              if [ "$src_count" -eq 0 ]; then
+                echo "ERROR: /config-src contains no YAML files — aborting to protect existing PVC configs." >&2
+                exit 1
+              fi
+
+              # Guard: refuse to prune /config/packages if the packages projection is missing
+              # or empty. An absent/empty /config-src/packages directory means the ConfigMap
+              # packages volume hasn't projected correctly — pruning would permanently delete
+              # live package configs from the PVC.
+              pkg_count=$(ls /config-src/packages/*.yaml 2>/dev/null | wc -l)
+              if [ "$pkg_count" -eq 0 ]; then
+                echo "ERROR: /config-src/packages contains no YAML files — aborting to protect existing PVC package configs." >&2
+                exit 1
+              fi
+
+              # Guard: abort if secrets.yaml has not been provisioned in the PVC.
+              # The ConfigMap projection checks above only prove the volume is non-empty;
+              # they do not protect a fresh or replaced PVC where secrets.yaml is genuinely
+              # absent. All device configs depend on !secret entries — starting ESPHome
+              # without secrets.yaml would cause compilation failures for every device.
+              if [ ! -s /config/secrets.yaml ]; then
+                echo "ERROR: /config/secrets.yaml is missing or empty — provision secrets.yaml into the PVC before starting ESPHome." >&2
+                echo "  See infra/manifests/esphome/configs/secrets.yaml.example for the required format." >&2
+                exit 1
+              fi
+
+              # Prune stale managed configs so /config mirrors /config-src exactly.
+              # Preserve secrets.yaml — it lives in the PVC only (never in ConfigMap).
+              for f in /config/*.yaml; do
+                [ -f "$f" ] || continue
+                [ "$(basename "$f")" = "secrets.yaml" ] && continue
+                rm -f "$f"
+              done
+              for f in /config/packages/*.yaml; do
+                [ -f "$f" ] || continue
+                rm -f "$f"
+              done
+
+              # Copy device config files to /config/
+              for f in /config-src/*.yaml; do
+                [ -f "$f" ] || continue
+                fname=$(basename "$f")
+                cp "$f" "/config/${fname}"
+                echo "  synced /config/${fname}"
+              done
+
+              # Copy package files to /config/packages/
+              for f in /config-src/packages/*.yaml; do
+                [ -f "$f" ] || continue
+                fname=$(basename "$f")
+                cp "$f" "/config/packages/${fname}"
+                echo "  synced /config/packages/${fname}"
+              done
+
+              echo "Sync complete."
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: device-configs
+              mountPath: /config-src
+              readOnly: true
       containers:
         - name: esphome
           image: ghcr.io/esphome/esphome:2026.3.0
@@ -73,3 +160,48 @@ spec:
           # Mounting as emptyDir prevents stale platformio cache from
           # causing "multiple ways to build same target" failures after
           # ESPHome or espressif32 platform version upgrades.
+        - name: device-configs
+          configMap:
+            name: esphome-device-configs
+            # MAINTENANCE: The "items" list below must be kept in sync with the
+            # "configMapGenerator.files" entry in kustomization.yaml.
+            # When adding or removing device config files, update BOTH:
+            #   1. The "items" list here (under configMap: name: esphome-device-configs)
+            #   2. The "configMapGenerator.files" list in kustomization.yaml
+            items:
+              - key: triang1.yaml
+                path: triang1.yaml
+              - key: triang2.yaml
+                path: triang2.yaml
+              - key: triang3.yaml
+                path: triang3.yaml
+              - key: triang4.yaml
+                path: triang4.yaml
+              - key: triang5.yaml
+                path: triang5.yaml
+              - key: triang6.yaml
+                path: triang6.yaml
+              - key: triang7.yaml
+                path: triang7.yaml
+              - key: triang8.yaml
+                path: triang8.yaml
+              - key: triang9.yaml
+                path: triang9.yaml
+              - key: triang10.yaml
+                path: triang10.yaml
+              - key: triang11.yaml
+                path: triang11.yaml
+              - key: triang12.yaml
+                path: triang12.yaml
+              - key: triang13.yaml
+                path: triang13.yaml
+              - key: triang14.yaml
+                path: triang14.yaml
+              - key: triang15.yaml
+                path: triang15.yaml
+              - key: water-sensor.yaml
+                path: water-sensor.yaml
+              - key: triang-common.yaml
+                path: packages/triang-common.yaml
+              - key: water-sensor-base.yaml
+                path: packages/water-sensor-base.yaml

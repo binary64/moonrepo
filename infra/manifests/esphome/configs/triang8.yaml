@@ -1,11 +1,12 @@
 substitutions:
-  name: triang6
-  friendly_name: "Triangulation Node 6"
+  name: triang8
+  friendly_name: "Triangulation Node 8"
 
 esphome:
   name: ${name}
   friendly_name: ${friendly_name}
 
+# ESP32-S3 — loft node
 esp32:
   board: esp32-s3-devkitc-1
   minimum_chip_revision: "3.1"

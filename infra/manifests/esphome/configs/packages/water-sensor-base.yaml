@@ -1,0 +1,50 @@
+# Shared config for ESPHome capacitive water/moisture sensors.
+# Uses ESP32-S3 touch pad peripheral — detects water conductivity between probe wires.
+# Device file must define substitutions: name, friendly_name, touch_pin, threshold, setup_mode, log_level
+#
+# Wiring: one probe wire to touch pin, one to GND. Submerge both in water (don't touch each other).
+# Values INCREASE when wet (opposite of classic ESP32).
+#
+# Calibration workflow:
+#   1. Set setup_mode: "true" and log_level: "DEBUG" in device file
+#   2. Flash and observe logs — note raw values dry vs wet
+#   3. Set threshold to midpoint between dry and wet values
+#   4. Set setup_mode: "false" and log_level: "WARN", reflash
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  power_save_mode: NONE
+
+logger:
+  level: ${log_level}  # use DEBUG when setup_mode is "true" for calibration
+
+# S3 touch peripheral.
+# Lower measurement_duration is critical for S3 — default 8ms is too high and breaks detection.
+esp32_touch:
+  setup_mode: ${setup_mode}
+  measurement_duration: 0.25ms
+  sleep_duration: 0.5ms
+
+binary_sensor:
+  - platform: esp32_touch
+    id: water_touch_pad
+    name: "Water Detected"
+    pin: ${touch_pin}
+    threshold: ${threshold}
+
+sensor:
+  # Raw touch value — useful for calibration and water level estimation
+  - platform: template
+    name: "Water Touch Raw Value"
+    lambda: |-
+      return id(water_touch_pad).get_value();
+    update_interval: 5s
