@@ -92,8 +92,8 @@ def validate_devices(devices: list) -> None:
             errors.append(f"  device[{idx}]: friendly_name must be a non-empty string")
 
         board = device.get("board")
-        if not isinstance(board, str) or not board.strip():
-            errors.append(f"  device[{idx}]: board must be a non-empty string")
+        if not isinstance(board, str) or not board.strip() or board != board.strip():
+            errors.append(f"  device[{idx}]: board must be a non-empty string without leading/trailing whitespace")
 
         if "minimum_chip_revision" in device:
             min_rev = device.get("minimum_chip_revision")
