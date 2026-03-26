@@ -1,15 +1,14 @@
+# GENERATED — do not edit. Edit devices.yaml and run generate-devices.py
 substitutions:
   name: triang14
-  friendly_name: "Triangulation Node 14"
+  friendly_name: Triangulation Node 14
 
 esphome:
   name: ${name}
   friendly_name: ${friendly_name}
 
-# ESP32-S3 — loft node
 esp32:
   board: esp32-s3-devkitc-1
-  minimum_chip_revision: "3.1"
   framework:
     type: arduino
 
