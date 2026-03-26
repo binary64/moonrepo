@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: liquidsoap
   namespace: radio-dj
+  annotations:
+    moonrepo.dev/skip-local: "true"
   labels:
     app: liquidsoap
 spec:

@@ -286,20 +286,20 @@ def get_all_artists(name):
 
 PROMPT_FILE = "/config/llm-prompt/system_prompt.txt"
 
-def load_system_prompt() -> str:
+def load_system_prompt() -> str | None:
     """Load the LLM system prompt from the ConfigMap-mounted file.
 
-    Exits immediately if the file is missing or empty — no silent fallback.
-    The container should crash loudly so the missing ConfigMap is noticed.
+    Returns None if the file is missing or empty so the caller can fall back
+    to the existing random-walk track selection instead of crashing.
     """
     try:
         prompt = Path(PROMPT_FILE).read_text().strip()
     except FileNotFoundError:
-        print(f"FATAL: prompt file not found: {PROMPT_FILE}", file=sys.stderr)
-        sys.exit(1)
+        print(f"WARNING: prompt file not found: {PROMPT_FILE} — skipping LLM queue refill", file=sys.stderr)
+        return None
     if not prompt:
-        print(f"FATAL: prompt file is empty: {PROMPT_FILE}", file=sys.stderr)
-        sys.exit(1)
+        print(f"WARNING: prompt file is empty: {PROMPT_FILE} — skipping LLM queue refill", file=sys.stderr)
+        return None
     return prompt
 
 
@@ -398,13 +398,17 @@ Pick 25 tracks. Start from track {seed_id if seed_id else 'any track'}."""
 
 def call_llm(graph, state):
     """Call the LLM to get a track queue."""
+    system_prompt = load_system_prompt()
+    if system_prompt is None:
+        return None
+
     context = build_llm_context(graph, state)
     user_msg = build_user_message(graph, context)
 
     payload = {
         "model": LLM_MODEL,
         "messages": [
-            {"role": "system", "content": load_system_prompt()},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_msg},
         ],
         "max_tokens": 512,
