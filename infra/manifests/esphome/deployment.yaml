@@ -71,6 +71,17 @@ spec:
                 exit 1
               fi
 
+              # Guard: abort if secrets.yaml has not been provisioned in the PVC.
+              # The ConfigMap projection checks above only prove the volume is non-empty;
+              # they do not protect a fresh or replaced PVC where secrets.yaml is genuinely
+              # absent. All device configs depend on !secret entries — starting ESPHome
+              # without secrets.yaml would cause compilation failures for every device.
+              if [ ! -s /config/secrets.yaml ]; then
+                echo "ERROR: /config/secrets.yaml is missing or empty — provision secrets.yaml into the PVC before starting ESPHome." >&2
+                echo "  See infra/manifests/esphome/configs/secrets.yaml.example for the required format." >&2
+                exit 1
+              fi
+
               # Prune stale managed configs so /config mirrors /config-src exactly.
               # Preserve secrets.yaml — it lives in the PVC only (never in ConfigMap).
               for f in /config/*.yaml; do
