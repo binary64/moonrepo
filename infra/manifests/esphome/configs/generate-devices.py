@@ -131,7 +131,7 @@ def generate_files(devices: list) -> None:
         )
 
         out_path = SCRIPT_DIR / f"{name}.yaml"
-        out_path.write_text(content)
+        out_path.write_text(content, encoding="utf-8")
         print(f"  wrote {out_path.name}")
 
     print(f"\nGenerated {len(devices)} device file(s).")
