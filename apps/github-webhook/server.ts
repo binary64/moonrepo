@@ -148,6 +148,9 @@ async function notifyPRs(
     const branch = pr.head.ref;
     const prUrl = pr.html_url || `https://github.com/${repoFullName}/pull/${prNumber}`;
 
+    // Dedupe key is scoped to repo+PR+conclusion to be globally unique across repos
+    const dedupeKey = `${repoFullName}-pr-${prNumber}-${conclusion}`;
+
     // Skip if we already successfully delivered this conclusion for this PR
     const lastConclusion = lastNotified.get(prNumber);
     if (lastConclusion === conclusion) {
@@ -166,7 +169,7 @@ async function notifyPRs(
 
     console.log(`Notifying for PR #${prNumber}: ${conclusion}`);
     // Only mark as sent after successful delivery
-    await sendGatewayMessage(message, `gh-webhook-${prNumber}-${conclusion}`);
+    await sendGatewayMessage(message, dedupeKey);
     lastNotified.set(prNumber, conclusion);
   }
 }
