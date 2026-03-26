@@ -20,6 +20,9 @@ spec:
       namespace: istio-system
       sectionName: https
   hostnames:
+    # Intentional exception to the *.home.brandwhisper.cloud naming convention:
+    # headscale-ui is exposed on the root domain for external access (public VPN management UI).
+    # The home. subdomain is reserved for internal/home-network-only services.
     - "headscale-ui.brandwhisper.cloud"
   rules:
     - matches:
