@@ -26,11 +26,12 @@ if (!WEBHOOK_SECRET) {
 }
 
 // Deduplication: prNumber → lastNotifiedConclusion
+// Written only after successful gateway delivery to avoid suppressing retries on failure.
 const lastNotified = new Map<number, string>();
 
 const app = express();
 
-// Raw body needed for signature verification
+// Raw body needed for HMAC signature verification
 app.use(express.raw({ type: 'application/json' }));
 
 // Health check
@@ -39,7 +40,7 @@ app.get('/health', (_req: Request, res: Response) => {
 });
 
 app.post('/webhook', (req: Request, res: Response) => {
-  // Verify signature
+  // Verify HMAC-SHA256 signature
   const sig = req.headers['x-hub-signature-256'] as string | undefined;
   if (!sig) {
     console.warn('Missing X-Hub-Signature-256 header');
@@ -50,13 +51,16 @@ app.post('/webhook', (req: Request, res: Response) => {
   const body = req.body as Buffer;
   const expected = 'sha256=' + crypto.createHmac('sha256', WEBHOOK_SECRET).update(body).digest('hex');
 
-  if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) {
+  // Guard against length mismatch before timingSafeEqual (throws on unequal lengths)
+  const sigBuf = Buffer.from(sig);
+  const expBuf = Buffer.from(expected);
+  if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
     console.warn('Invalid webhook signature');
     res.status(401).json({ error: 'Invalid signature' });
     return;
   }
 
-  // Always return 200 after auth passes
+  // Always return 200 after auth passes — GitHub retries on non-2xx
   res.status(200).json({ ok: true });
 
   const event = req.headers['x-github-event'] as string | undefined;
@@ -80,6 +84,13 @@ type PullRequestRef = {
   html_url?: string;
 };
 
+/**
+ * Routes an incoming GitHub webhook event to the appropriate handler.
+ * Only check_suite and workflow_run completed events are acted upon.
+ *
+ * @param event - The X-GitHub-Event header value
+ * @param payload - The parsed webhook payload
+ */
 async function handleEvent(event: string, payload: Record<string, unknown>): Promise<void> {
   if (event === 'check_suite') {
     const action = payload.action as string;
@@ -104,26 +115,35 @@ async function handleEvent(event: string, payload: Record<string, unknown>): Pro
     if (prs.length === 0) return;
 
     const conclusion = run.conclusion as string;
-    const workflowName = run.name as string || 'Workflow';
+    const workflowName = (run.name as string) || 'Workflow';
 
     await notifyPRs(prs, conclusion, workflowName, payload.repository as Record<string, unknown>);
   }
 }
 
+/**
+ * Sends a notification for each PR in the list, respecting deduplication.
+ * Dedup state is written only after successful gateway delivery.
+ *
+ * @param prs - Pull request refs from the webhook payload
+ * @param conclusion - The check conclusion (success, failure, cancelled, etc.)
+ * @param checkName - The name of the check suite or workflow
+ * @param repo - The repository object from the payload
+ */
 async function notifyPRs(
   prs: PullRequestRef[],
   conclusion: string,
   checkName: string,
   repo: Record<string, unknown>,
 ): Promise<void> {
-  const repoFullName = repo?.full_name as string || 'binary64/moonrepo';
+  const repoFullName = (repo?.full_name as string) || 'binary64/moonrepo';
 
   for (const pr of prs) {
     const prNumber = pr.number;
     const branch = pr.head.ref;
     const prUrl = pr.html_url || `https://github.com/${repoFullName}/pull/${prNumber}`;
 
-    // Dedup check — only write after successful send
+    // Skip if we already successfully delivered this conclusion for this PR
     const lastConclusion = lastNotified.get(prNumber);
     if (lastConclusion === conclusion) {
       console.log(`Skipping duplicate notification for PR #${prNumber} (${conclusion})`);
@@ -140,12 +160,20 @@ async function notifyPRs(
     }
 
     console.log(`Notifying for PR #${prNumber}: ${conclusion}`);
+    // Only mark as sent after successful delivery
     await sendGatewayMessage(message, `gh-webhook-${prNumber}-${conclusion}`);
-    // Write dedup only after successful send
     lastNotified.set(prNumber, conclusion);
   }
 }
 
+/**
+ * Sends a message to the OpenClaw Gateway via the chat.send RPC method.
+ * Supports both HTTP and HTTPS gateway URLs.
+ * Rejects on non-2xx responses so callers can handle failures.
+ *
+ * @param message - The message text to deliver
+ * @param idempotencyKey - Unique key to prevent duplicate delivery
+ */
 async function sendGatewayMessage(message: string, idempotencyKey: string): Promise<void> {
   const body = JSON.stringify({
     method: 'chat.send',
@@ -157,8 +185,9 @@ async function sendGatewayMessage(message: string, idempotencyKey: string): Prom
   });
 
   const url = new URL('/rpc', GATEWAY_URL);
-  const transport = url.protocol === 'https:' ? https : http;
-  const defaultPort = url.protocol === 'https:' ? 443 : 80;
+  const isHttps = url.protocol === 'https:';
+  const transport = isHttps ? https : http;
+  const defaultPort = isHttps ? 443 : 80;
 
   return new Promise((resolve, reject) => {
     const req = transport.request(
@@ -178,12 +207,10 @@ async function sendGatewayMessage(message: string, idempotencyKey: string): Prom
         res.on('end', () => {
           const status = res.statusCode ?? 0;
           if (status >= 200 && status < 300) {
-            console.log(`Gateway response (${status}): ${data}`);
+            console.log(`Gateway accepted message (${status})`);
             resolve();
           } else {
-            const err = new Error(`Gateway returned non-2xx status ${status}: ${data}`);
-            console.error(err.message);
-            reject(err);
+            reject(new Error(`Gateway returned ${status}: ${data}`));
           }
         });
       },
@@ -201,6 +228,5 @@ async function sendGatewayMessage(message: string, idempotencyKey: string): Prom
 
 app.listen(PORT, () => {
   console.log(`github-webhook server listening on port ${PORT}`);
-  console.log(`Gateway: ${GATEWAY_URL}`);
-  // SESSION_KEY intentionally not logged (sensitive routing key)
+  // Intentionally omit SESSION_KEY from logs — it is sensitive routing config
 });
