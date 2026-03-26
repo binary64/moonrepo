@@ -5,13 +5,13 @@ metadata:
   namespace: headscale
   annotations:
     moonrepo.dev/skip-local: "true"
-    # DNS for headscale-ui.home.brandwhisper.cloud is managed by external-dns via this HTTPRoute
-    # (gateway-httproute source → home IP via --default-targets).
+    # DNS for headscale-ui.brandwhisper.cloud is managed by external-dns via this HTTPRoute
+    # (gateway-httproute source → NUC home IP via --default-targets).
     #
-    # headscale.brandwhisper.cloud (the Tailscale/gRPC API endpoint) is intentionally NOT
-    # listed here — it is exclusively managed by the DNSEndpoint CRD in dns-endpoint.yaml
-    # which points to 158.220.90.28 (Jupiter VPS). Keeping the two hostnames separate
-    # prevents the gateway-httproute source from racing the CRD source over the API record.
+    # headscale.brandwhisper.cloud (the Tailscale/gRPC API endpoint) is intentionally kept
+    # separate — managed by the DNSEndpoint CRD in dns-endpoint.yaml pointing to Jupiter
+    # (158.220.90.28). Keeping hostnames separate prevents the gateway-httproute source from
+    # racing the CRD source and overwriting the API record with the wrong IP.
 spec:
   parentRefs:
     - group: gateway.networking.k8s.io
@@ -20,18 +20,8 @@ spec:
       namespace: istio-system
       sectionName: https
   hostnames:
-    - "headscale-ui.home.brandwhisper.cloud"
+    - "headscale-ui.brandwhisper.cloud"
   rules:
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /web
-      backendRefs:
-        - group: ""
-          kind: Service
-          name: headscale-ui
-          port: 80
-          weight: 1
     - matches:
         - path:
             type: PathPrefix
@@ -39,6 +29,6 @@ spec:
       backendRefs:
         - group: ""
           kind: Service
-          name: headscale
-          port: 8080
+          name: headscale-ui
+          port: 80
           weight: 1
