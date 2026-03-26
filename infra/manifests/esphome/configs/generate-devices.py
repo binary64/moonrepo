@@ -81,6 +81,13 @@ def validate_devices(devices: list) -> None:
         if not isinstance(board, str) or not board.strip():
             errors.append(f"  device[{idx}]: board must be a non-empty string")
 
+        if "minimum_chip_revision" in device:
+            min_rev = device.get("minimum_chip_revision")
+            if not isinstance(min_rev, (str, int, float, bool)) or (isinstance(min_rev, str) and not min_rev.strip()):
+                errors.append(
+                    f"  device[{idx}]: minimum_chip_revision must be a non-empty scalar (str/int/float)"
+                )
+
     if errors:
         print("Validation failed — fix devices.yaml before regenerating:", file=sys.stderr)
         for err in errors:
@@ -127,8 +134,18 @@ def generate_files(devices: list) -> None:
 
 
 def main():
-    with open(DEVICES_FILE) as f:
-        config = yaml.safe_load(f) or {}
+    try:
+        with open(DEVICES_FILE, encoding="utf-8") as f:
+            config = yaml.safe_load(f) or {}
+    except FileNotFoundError:
+        print(f"Missing file: {DEVICES_FILE}", file=sys.stderr)
+        sys.exit(1)
+    except yaml.YAMLError as exc:
+        print(f"Invalid YAML in {DEVICES_FILE}: {exc}", file=sys.stderr)
+        sys.exit(1)
+    except OSError as exc:
+        print(f"Unable to read {DEVICES_FILE}: {exc}", file=sys.stderr)
+        sys.exit(1)
 
     if not isinstance(config, dict):
         print("devices.yaml must contain a top-level mapping", file=sys.stderr)
