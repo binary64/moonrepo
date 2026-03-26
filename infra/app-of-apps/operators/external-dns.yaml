@@ -30,6 +30,7 @@ spec:
                 name: home-network
                 key: public-ip
         sources:
+          - crd
           - gateway-httproute
           - gateway-grpcroute
           - gateway-tlsroute

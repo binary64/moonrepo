@@ -4,9 +4,11 @@ metadata:
   name: headscale-grpc
   namespace: headscale
   annotations:
-    # Keep gRPC route consistent: DNS-only, pointing at Jupiter directly.
-    external-dns.alpha.kubernetes.io/target: "158.220.90.28"
-    external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
+    # DNS is managed via DNSEndpoint CRD (infra/app-of-apps/headscale/dns-endpoint.yaml).
+    # external-dns v0.15.0 ignores the target annotation on TLSRoute resources (reads it
+    # only from the Gateway object).  Setting controller=ignore stops the gateway source
+    # generating a conflicting record with the wrong IP.
+    external-dns.alpha.kubernetes.io/controller: "ignore"
 spec:
   parentRefs:
     - group: gateway.networking.k8s.io
