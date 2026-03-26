@@ -1,0 +1,32 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: headscale-server
+  namespace: headscale
+  annotations:
+    moonrepo.dev/skip-local: "true"
+    # DNS for headscale.brandwhisper.cloud is managed by the DNSEndpoint CRD in
+    # dns-endpoint.yaml (pointing to Jupiter 158.220.90.28, DNS-only, no Cloudflare proxy).
+    # Setting controller=ignore prevents the gateway-httproute source from generating a
+    # conflicting record with the wrong IP.
+    external-dns.alpha.kubernetes.io/controller: "ignore"
+spec:
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gateway
+      namespace: istio-system
+      sectionName: https
+  hostnames:
+    - "headscale.brandwhisper.cloud"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: headscale
+          port: 8080
+          weight: 1
