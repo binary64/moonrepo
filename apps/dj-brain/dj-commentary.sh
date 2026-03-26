@@ -117,6 +117,6 @@ PUSH_RESPONSE=$(echo "${QUEUE_NAME}.push ${PADDED_FILE}" | nc -w2 "$LIQUIDSOAP_H
 # instead so Liquidsoap has time to read the file before it's removed.
 trap - EXIT
 rm -f "$RAW_FILE" 2>/dev/null || true
-(sleep 30 && rm -f "$PADDED_FILE") &
+(sleep "${CLEANUP_DELAY_SECS:-30}" && rm -f "$PADDED_FILE") &
 
 echo "[dj-commentary] Done — DJ $DJ_NAME commentary queued ($CLIP_ID)"
