@@ -113,12 +113,22 @@ When you need to rotate the Cloudflare API token:
 To seal a new/rotated token:
 
 ```bash
+# Read PAT securely (not in shell history) and write to a restrictive temp file
+read -rs GH_PAT
+umask 077
+PAT_FILE="$(mktemp /tmp/gha-pat.XXXXXX)"
+trap 'rm -f "$PAT_FILE"; unset GH_PAT' EXIT
+printf '%s' "$GH_PAT" > "$PAT_FILE"
+
 kubectl create secret generic gha-runner-secret \
   --namespace gha-runner \
-  --from-literal=access-token=<github-pat-with-repo-scope> \
+  --from-file=access-token="$PAT_FILE" \
   --dry-run=client -o yaml \
 | kubeseal --context prod --controller-namespace sealed-secrets --format yaml \
 > infra/manifests/gha-runner/gha-runner-secret-sealed.yaml
+
+rm -f "$PAT_FILE"
+unset GH_PAT
 git add infra/manifests/gha-runner/gha-runner-secret-sealed.yaml
 git commit -m "seal gha-runner secret"
 git push
