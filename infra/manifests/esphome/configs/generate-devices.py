@@ -11,6 +11,7 @@ To add a new node:
   3. Commit devices.yaml + the new <name>.yaml
 """
 
+import re
 import sys
 from pathlib import Path
 
@@ -67,6 +68,15 @@ def validate_devices(devices: list) -> None:
             errors.append(f"  device[{idx}]: invalid path-like name '{name}'")
             continue
 
+        # ESPHome device names must be lowercase alphanumeric + hyphens/underscores.
+        # This also ensures the name is safe to embed in YAML without quoting.
+        if not re.fullmatch(r"[a-z0-9_-]+", name):
+            errors.append(
+                f"  device[{idx}]: name '{name}' contains invalid characters "
+                f"(only a-z, 0-9, _ and - are allowed)"
+            )
+            continue
+
         candidate = (SCRIPT_DIR / f"{name}.yaml").resolve()
         if candidate.parent != SCRIPT_DIR.resolve():
             errors.append(f"  device[{idx}]: invalid path-like name '{name}'")
@@ -110,6 +120,7 @@ def generate_files(devices: list) -> None:
         # wraps in quotes when the value contains special characters) without
         # emitting a YAML document-end marker ("...") that yaml.dump() adds
         # when dumping a bare scalar with default_flow_style=True.
+        name_yaml = yaml.dump({"v": name})[3:].rstrip()
         friendly_name_yaml = yaml.dump({"v": friendly_name})[3:].rstrip()
 
         # Only emit minimum_chip_revision when the device entry explicitly
@@ -124,7 +135,7 @@ def generate_files(devices: list) -> None:
 
         content = TEMPLATE.format(
             header=HEADER.rstrip(),
-            name=name,
+            name=name_yaml,
             friendly_name=friendly_name_yaml,
             board=board,
             minimum_chip_revision=minimum_chip_revision_block,
