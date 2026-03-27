@@ -1,20 +1,29 @@
-type: application
+layer: application
 language: typescript
 
 tasks:
   build:
-    command: npm run build
+    script: 'tsc --noEmit'
     inputs:
-      - "server.ts"
-      - "tsconfig.json"
-      - "package.json"
+      - 'server.ts'
+      - 'tsconfig.json'
+      - 'package.json'
+    outputs: []
+    options:
+      mergeOutputs: replace
 
-  typecheck:
-    command: npm run typecheck
+  type-check:
+    script: 'tsc --noEmit'
     inputs:
-      - "server.ts"
-      - "tsconfig.json"
+      - 'server.ts'
+      - 'tsconfig.json'
+
+  lint:
+    script: 'biome check server.ts'
+    inputs:
+      - 'server.ts'
 
   start:
     command: npm start
-    local: true
+    options:
+      persistent: true
