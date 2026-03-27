@@ -22,7 +22,7 @@
     "paths": {
       "@/*": ["./src/*"]
     },
-    "outDir": "../../.moon/cache/types/apps/app"
+    "outDir": "dist"
   },
   "include": [
     "next-env.d.ts",
