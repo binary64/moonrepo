@@ -14,7 +14,7 @@
 | NUC (master) | v1.33.6+rke2r1 | v1.35.1+rke2r1 |
 | Jupiter (agent) | v1.34.4+rke2r1 | v1.35.1+rke2r1 |
 
-> ⚠️ **Version mismatch:** master is two minor versions behind Jupiter. Always upgrade the
+> ⚠️ **Version mismatch:** master is one minor version behind Jupiter. Always upgrade the
 > control-plane first, then agents — never upgrade an agent to a version newer than the
 > control-plane server.
 
