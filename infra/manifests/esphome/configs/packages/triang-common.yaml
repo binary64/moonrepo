@@ -21,6 +21,9 @@ logger:
 mqtt:
   broker: !secret mqtt_broker
   port: !secret mqtt_port
+  # Mosquitto runs plain MQTT on 1883 — disable TLS to avoid
+  # esp-tls "Connection reset by peer" errors on ESP-IDF builds.
+  ssl: false
 
 esp32_ble_tracker:
   scan_parameters:
