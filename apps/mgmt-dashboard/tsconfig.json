@@ -28,7 +28,7 @@
         "./src/*"
       ]
     },
-    "outDir": "../../.moon/cache/types/apps/mgmt-dashboard"
+    "outDir": "dist"
   },
   "include": [
     "next-env.d.ts",
