@@ -13,7 +13,8 @@ ota:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
-  power_save_mode: NONE
+  power_save_mode: LIGHT  # was NONE — allows modem sleep between transmissions
+  output_power: 15dB      # was 20dB default — significant heat reduction
 
 logger:
   level: WARN
@@ -21,14 +22,11 @@ logger:
 mqtt:
   broker: !secret mqtt_broker
   port: !secret mqtt_port
-  # Mosquitto runs plain MQTT on 1883 — disable TLS to avoid
-  # esp-tls "Connection reset by peer" errors on ESP-IDF builds.
-  ssl: false
 
 esp32_ble_tracker:
   scan_parameters:
-    interval: 320ms
-    window: 300ms
+    interval: 500ms  # was 320ms
+    window: 200ms    # was 300ms; duty cycle reduced from 94% to 40%
     active: false
     continuous: true
 
@@ -69,3 +67,8 @@ sensor:
   # - platform: ble_rssi
   #   service_uuid: "PLACEHOLDER"
   #   name: "dog_rssi"
+
+  # Internal temperature monitoring
+  - platform: internal_temperature
+    name: "${friendly_name} Temperature"
+    update_interval: 60s
