@@ -8,7 +8,7 @@
 // Config (env vars):
 //   GITHUB_WEBHOOK_SECRET  — required, HMAC-SHA256 secret for signature verification
 //   OPENCLAW_GATEWAY_URL   — default http://localhost:6798
-//   OPENCLAW_SESSION_KEY   — default agent:main:telegram:direct:james
+//   OPENCLAW_SESSION_KEY   — required, OpenClaw session key for notification delivery
 //   PORT                   — default 3200
 
 import crypto from "node:crypto";
@@ -17,13 +17,22 @@ import https from "node:https";
 import express, { type Request, type Response } from "express";
 
 const PORT = parseInt(process.env.PORT || "3200", 10);
+if (!Number.isFinite(PORT) || PORT < 1 || PORT > 65535) {
+  console.error(`Invalid PORT: ${process.env.PORT} (must be 1-65535)`);
+  process.exit(1);
+}
+
 const WEBHOOK_SECRET = process.env.GITHUB_WEBHOOK_SECRET || "";
 const GATEWAY_URL = process.env.OPENCLAW_GATEWAY_URL || "http://localhost:6798";
-const SESSION_KEY =
-  process.env.OPENCLAW_SESSION_KEY || "agent:main:telegram:direct:james";
+const SESSION_KEY = process.env.OPENCLAW_SESSION_KEY || "";
 
 if (!WEBHOOK_SECRET) {
   console.error("GITHUB_WEBHOOK_SECRET is required");
+  process.exit(1);
+}
+
+if (!SESSION_KEY) {
+  console.error("OPENCLAW_SESSION_KEY is required");
   process.exit(1);
 }
 
@@ -36,6 +45,12 @@ const GATEWAY_TIMEOUT_MS = parseInt(
   process.env.GATEWAY_TIMEOUT_MS || "10000",
   10,
 );
+if (!Number.isFinite(GATEWAY_TIMEOUT_MS) || GATEWAY_TIMEOUT_MS < 0) {
+  console.error(
+    `Invalid GATEWAY_TIMEOUT_MS: ${process.env.GATEWAY_TIMEOUT_MS} (must be >= 0)`,
+  );
+  process.exit(1);
+}
 
 const app = express();
 
@@ -281,8 +296,8 @@ async function sendGatewayMessage(
       );
     });
 
-    req.on("error", (err) => {
-      console.error("Gateway request failed:", err);
+    req.on("error", (err: Error) => {
+      console.error("Gateway request failed:", err.message);
       reject(err);
     });
 
