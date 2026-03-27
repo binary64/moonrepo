@@ -33,7 +33,7 @@
 
 ```bash
 # SSH into the NUC
-ssh user@192.168.1.201
+ssh user@<NUC_IP>
 
 # Download and install the intermediate RKE2 server version (v1.34)
 curl -sfL https://get.rke2.io | sudo INSTALL_RKE2_VERSION=v1.34.4+rke2r1 sh -
@@ -54,7 +54,7 @@ Expected: `master` should now show `v1.34.4+rke2r1`.
 
 ```bash
 # SSH into the NUC (if not already connected)
-ssh user@192.168.1.201
+ssh user@<NUC_IP>
 
 # Download and install the target RKE2 server version (v1.35)
 curl -sfL https://get.rke2.io | sudo INSTALL_RKE2_VERSION=v1.35.1+rke2r1 sh -
