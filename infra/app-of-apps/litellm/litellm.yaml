@@ -14,7 +14,7 @@ spec:
     #    The published Helm repo (berriai.github.io/litellm) has a broken index —
     #    it references a tgz that returns 404.  Pulling from git is more reliable.
     - repoURL: https://github.com/BerriAI/litellm.git
-      targetRevision: v1.82.3-stable
+      targetRevision: v1.82.3-stable.patch.2
       path: deploy/charts/litellm-helm
       helm:
         valueFiles:
@@ -39,13 +39,13 @@ spec:
       managedFieldsManagers:
         - kubectl-client-side-apply
         - kubectl-create
-      jsonPointers:
-        - /data
-        - /stringData
+      jqPathExpressions:
+        - .data
+        - .stringData
     - group: gateway.networking.k8s.io
       kind: HTTPRoute
-      jsonPointers:
-        - /status
+      jqPathExpressions:
+        - .status
 
   destination:
     server: https://kubernetes.default.svc
@@ -59,7 +59,6 @@ spec:
       - CreateNamespace=true
       - RespectIgnoreDifferences=true
       - SkipDryRunOnMissingResource=true
-      - ServerSideApply=true
     retry:
       limit: -1
       backoff:
