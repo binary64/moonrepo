@@ -101,6 +101,32 @@ When you need to rotate the Cloudflare API token:
 
 ## Secrets Reference
 
+### ptt-server-secret
+
+- **Purpose**: Credentials for the PTT (push-to-talk) server pod
+- **Namespace**: `ptt-server`
+- **Keys**:
+  - `ha-token` — Home Assistant long-lived access token for device control
+  - `openai-api-key` — OpenAI API key for speech-to-text transcription
+  - `gateway-token` — OpenClaw Gateway auth token (LAN-only, `ws://192.168.1.201:18789`)
+  - `ptt-api-token` — Bearer token for authenticating inbound requests to the PTT server HTTP API (used by watch/phone clients to submit PTT audio)
+- **Sealed secret file**: `infra/manifests/ptt-server/ptt-server-secret.yaml`
+- **Used by**: `infra/manifests/ptt-server/deployment.yaml`
+
+To seal a new token:
+
+```bash
+kubectl create secret generic ptt-server-secret \
+  --namespace ptt-server \
+  --from-literal=ha-token="<token>" \
+  --from-literal=openai-api-key="<key>" \
+  --from-literal=gateway-token="<token>" \
+  --from-literal=ptt-api-token="<token>" \
+  --dry-run=client -o yaml \
+| kubeseal --context prod --controller-namespace sealed-secrets --format yaml \
+> infra/manifests/ptt-server/ptt-server-secret.yaml
+```
+
 ### gha-runner-secret
 
 - **Purpose**: GitHub PAT for the self-hosted GHA runner to authenticate with GitHub and register as a runner for `binary64/ocdesktop`
