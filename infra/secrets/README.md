@@ -117,6 +117,7 @@ To seal a new/rotated token:
 read -rs GH_PAT
 umask 077
 PAT_FILE="$(mktemp /tmp/gha-pat.XXXXXX)"
+chmod 600 "$PAT_FILE"  # Explicit 600: readable only by current user
 trap 'rm -f "$PAT_FILE"; unset GH_PAT' EXIT
 printf '%s' "$GH_PAT" > "$PAT_FILE"
 
