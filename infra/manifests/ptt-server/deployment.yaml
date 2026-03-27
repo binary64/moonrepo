@@ -46,6 +46,9 @@ spec:
                   name: ptt-server-secret
                   key: openai-api-key
             - name: OPENCLAW_GATEWAY_URL
+              # LAN-only: gateway binds 0.0.0.0:18789 on the NUC (192.168.1.201)
+              # with token auth. Not internet-routable — acceptable threat model
+              # for home lab. Token is in the sealed secret, not the URL.
               value: "ws://192.168.1.201:18789"
             - name: OPENCLAW_GATEWAY_TOKEN
               valueFrom:
