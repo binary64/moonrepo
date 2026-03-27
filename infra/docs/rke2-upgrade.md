@@ -76,14 +76,14 @@ Expected: `master` should now show `v1.35.1+rke2r1`.
 Before touching the agent, confirm the control-plane is healthy:
 
 ```bash
-# All nodes should show Ready
-kubectl get nodes
+# All nodes should show Ready (run from NUC using RKE2 kubeconfig)
+sudo /var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml get nodes
 
 # Core system pods should all be Running
-kubectl get pods -n kube-system
+sudo /var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml get pods -n kube-system
 
 # Check ArgoCD apps are synced (may take a few minutes after restart)
-kubectl get applications -n argocd
+sudo /var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml get applications -n argocd
 ```
 
 ### 4. Upgrade the agent (Jupiter)
@@ -93,7 +93,7 @@ kubectl get applications -n argocd
 ssh user@<JUPITER_PUBLIC_IP>
 
 # Download and install the new RKE2 agent version
-curl -sfL https://get.rke2.io | sudo INSTALL_RKE2_VERSION=v1.35.1+rke2r1 sh -
+curl -sfL https://get.rke2.io | sudo INSTALL_RKE2_VERSION=v1.35.1+rke2r1 INSTALL_RKE2_TYPE=agent sh -
 
 # Restart the RKE2 agent to apply the new version
 sudo systemctl restart rke2-agent
@@ -105,8 +105,8 @@ sudo systemctl status rke2-agent
 ### 5. Verify full cluster health
 
 ```bash
-# From NUC or any kubectl-enabled machine:
-kubectl get nodes
+# From NUC using RKE2 kubeconfig:
+sudo /var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml get nodes
 
 # Expected output (both nodes Ready, both on v1.35.1+rke2r1):
 # NAME          STATUS   ROLES                       AGE   VERSION
