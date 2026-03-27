@@ -6,6 +6,9 @@ javascript:
   packageManager: "bun"
   syncProjectWorkspaceDependencies: true
 
+# bun: block required when javascript.packageManager = "bun"
+bun: {}
+
 # Keep node: section to activate the Node.js toolchain
 node: {}
 
