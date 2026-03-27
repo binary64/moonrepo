@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: ptt-server
   namespace: ptt-server
+  annotations:
+    moonrepo.dev/skip-local: "true"
   labels:
     app: ptt-server
 spec:
