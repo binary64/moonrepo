@@ -53,8 +53,7 @@ async function fetchIcecastFallback(): Promise<{
     // ICECAST_URL env var allows overriding the Icecast endpoint.
     // Default: NodePort on NUC (192.168.1.201:30100) — accessible from within
     // the k8s cluster since Icecast runs as a NodePort service.
-    const icecastUrl =
-      process.env.ICECAST_URL || "http://192.168.1.201:30100";
+    const icecastUrl = process.env.ICECAST_URL || "http://192.168.1.201:30100";
     const res = await fetch(`${icecastUrl}/status-json.xsl`, {
       signal: AbortSignal.timeout(3000),
     });
