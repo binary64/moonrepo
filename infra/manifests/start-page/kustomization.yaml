@@ -5,6 +5,7 @@ resources:
   - namespace.yaml
   - deployment.yaml
   - service.yaml
+  - route.yaml
 
 configMapGenerator:
   - name: start-page-html
