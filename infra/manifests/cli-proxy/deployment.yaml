@@ -22,6 +22,9 @@ spec:
       # Schedule on Jupiter VPS worker node
       nodeSelector:
         kubernetes.io/hostname: vmi3137202
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: cli-proxy
           # CLIProxyAPI: wraps CLI OAuth tokens as OpenAI/Gemini/Claude-compatible endpoints
@@ -31,6 +34,11 @@ spec:
             - name: api
               containerPort: 8317
               protocol: TCP
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           env:
             - name: TZ
               value: Europe/London
