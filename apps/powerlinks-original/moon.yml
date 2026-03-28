@@ -1,0 +1,22 @@
+$schema: "https://moonrepo.dev/schemas/project.json"
+language: 'node'
+layer: 'application'
+tags:
+  - static
+
+tasks:
+  build:
+    command: "bash build.sh"
+    inputs:
+      - "public/**/*"
+    outputs:
+      - ".vercel/output"
+
+  deploy:
+    command: "npx vercel@latest deploy --prebuilt --yes --token $VERCEL_TOKEN"
+    env:
+      VERCEL_PROJECT_ID: "prj_JMx0HhqE6N0aOV4SWW67lM1ezacZ"
+    deps:
+      - "~:build"
+    options:
+      runInCI: true
