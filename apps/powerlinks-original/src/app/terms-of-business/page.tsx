@@ -4,11 +4,12 @@ export const metadata: Metadata = { title: "Terms of Business" };
 
 export default function TermsOfBusiness() {
   return (
-    <main className="main">
+    <main className="x-main">
       <div className="container">
-        <div className="content-box">
-          <h2>Terms of Business</h2>
-
+        <header className="entry-header">
+          <h1>Terms of Business</h1>
+        </header>
+        <div className="entry-content">
           <h3>Product Liability</h3>
           <p>
             All products sold by &apos;Powerlinks&apos; are covered by product
@@ -20,13 +21,11 @@ export default function TermsOfBusiness() {
             for example where a standard quality chain is fitted to a 1000cc
             machine.
           </p>
-
           <h3>General Conditions</h3>
           <p>
             All goods and services shall remain the property of
             &apos;Powerlinks&apos; until paid in full.
           </p>
-
           <h3>Product Information</h3>
           <p>
             Where manufacturers names and part numbers have been used they are
@@ -38,7 +37,6 @@ export default function TermsOfBusiness() {
             seller and purchaser to be satisfied that the product is wholly
             appropriate for the intended use.
           </p>
-
           <h3>Prices and VAT</h3>
           <p>
             Orders are accepted on the basis that prices are subject to
@@ -47,7 +45,6 @@ export default function TermsOfBusiness() {
             items except for 0% rated items, thus all prices shown are inclusive
             of VAT.
           </p>
-
           <h3>Warranty Returns</h3>
           <p>
             Goods returned which have been correctly supplied may be subject to

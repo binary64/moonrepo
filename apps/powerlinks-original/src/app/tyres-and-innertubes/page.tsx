@@ -4,10 +4,12 @@ export const metadata: Metadata = { title: "Tyres and Innertubes" };
 
 export default function TyresAndInnertubes() {
   return (
-    <main className="main">
+    <main className="x-main">
       <div className="container">
-        <div className="content-box">
-          <h2>Tyres and Innertubes</h2>
+        <header className="entry-header">
+          <h1>Tyres and Innertubes</h1>
+        </header>
+        <div className="entry-content">
           <h3>Tyres</h3>
           <p>
             We have tyres available for most motorcycle wheels. If the tyre you

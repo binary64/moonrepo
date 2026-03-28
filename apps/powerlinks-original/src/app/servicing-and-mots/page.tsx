@@ -4,10 +4,12 @@ export const metadata: Metadata = { title: "Servicing and MOTs" };
 
 export default function ServicingAndMots() {
   return (
-    <main className="main">
+    <main className="x-main">
       <div className="container">
-        <div className="content-box">
-          <h2>Servicing and MOTs</h2>
+        <header className="entry-header">
+          <h1>Servicing and MOTs</h1>
+        </header>
+        <div className="entry-content">
           <p>
             As well as being providers of spares at our unit, we service and MOT
             bikes.

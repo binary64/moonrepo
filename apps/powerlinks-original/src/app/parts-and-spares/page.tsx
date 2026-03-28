@@ -4,10 +4,12 @@ export const metadata: Metadata = { title: "Parts and Spares" };
 
 export default function PartsAndSpares() {
   return (
-    <main className="main">
+    <main className="x-main">
       <div className="container">
-        <div className="content-box">
-          <h2>Parts and Spares</h2>
+        <header className="entry-header">
+          <h1>Parts and Spares</h1>
+        </header>
+        <div className="entry-content">
           <p>
             Many spare parts are available for your bike. If we do not have
             stock we can usually source anything you require very quickly.

@@ -1,29 +1,15 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 
 export const metadata: Metadata = { title: "Chain Guide and Kit Prices" };
 
 export default function Chains() {
   return (
-    <main className="main">
+    <main className="x-main">
       <div className="container">
-        <div className="content-box">
-          <h2>Chain Guide and Kit Prices</h2>
-          <Image
-            src="/images/chain.jpg"
-            alt="Motorcycle drive chain"
-            width={400}
-            height={460}
-            style={{
-              width: "100%",
-              maxWidth: 300,
-              height: "auto",
-              borderRadius: 8,
-              float: "right",
-              marginLeft: "1rem",
-              marginBottom: "1rem",
-            }}
-          />
+        <header className="entry-header">
+          <h1>Chain Guide and Kit Prices</h1>
+        </header>
+        <div className="entry-content">
           <p>
             Our stock of drive chains covers a range of makes and prices. It is
             vital that the correct chain is fitted to your motorbike. Below is a

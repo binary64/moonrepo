@@ -4,10 +4,12 @@ export const metadata: Metadata = { title: "Batteries" };
 
 export default function Batteries() {
   return (
-    <main className="main">
+    <main className="x-main">
       <div className="container">
-        <div className="content-box">
-          <h2>Batteries</h2>
+        <header className="entry-header">
+          <h1>Batteries</h1>
+        </header>
+        <div className="entry-content">
           <p>
             Most types of lead/acid batteries are held in stock (dry charged 6v
             and 12v). Others can be obtained from manufacturers GS, Yuasa and

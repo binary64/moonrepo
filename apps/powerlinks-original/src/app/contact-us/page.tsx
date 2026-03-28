@@ -4,13 +4,15 @@ export const metadata: Metadata = { title: "Contact Us" };
 
 export default function ContactUs() {
   return (
-    <main className="main">
+    <main className="x-main">
       <div className="container">
-        <div className="content-box">
-          <h2>Contact Us</h2>
+        <header className="entry-header">
+          <h1>Contact Us</h1>
+        </header>
+        <div className="entry-content">
           <div className="contact-grid">
             <div className="contact-card">
-              <h3>Visit Us</h3>
+              <h3>By post or to visit us:</h3>
               <p>
                 Powerlinks
                 <br />
@@ -28,7 +30,7 @@ export default function ContactUs() {
               </p>
             </div>
             <div className="contact-card">
-              <h3>Telephone / Fax</h3>
+              <h3>Telephone/Fax</h3>
               <p>
                 <strong>T:</strong> <a href="tel:01425472100">01425 472100</a>
                 <br />

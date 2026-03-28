@@ -1,27 +1,15 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 
 export const metadata: Metadata = { title: "Sprockets" };
 
 export default function Sprockets() {
   return (
-    <main className="main">
+    <main className="x-main">
       <div className="container">
-        <div className="content-box">
-          <h2>Sprockets</h2>
-          <Image
-            src="/images/sprockets.jpg"
-            alt="Motorcycle sprockets available at Powerlinks"
-            width={600}
-            height={346}
-            style={{
-              width: "100%",
-              maxWidth: 500,
-              height: "auto",
-              borderRadius: 8,
-              marginBottom: "1rem",
-            }}
-          />
+        <header className="entry-header">
+          <h1>Sprockets</h1>
+        </header>
+        <div className="entry-content">
           <p>
             There are a huge number of sprockets manufactured and so therefore
             we cannot list them all here.
