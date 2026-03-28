@@ -17,7 +17,7 @@ data:
     go2rtc:
       streams:
         front_door:
-          - "rtsp://ring-mqtt.ring-mqtt.svc:8554/5c475e55fb69_live"
+          - "rtsp://ring-mqtt.ring-mqtt.svc:8554/5c475e55fb69_event"
 
     cameras:
       front_door:
