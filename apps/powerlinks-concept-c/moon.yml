@@ -6,7 +6,7 @@ tags:
 
 tasks:
   build:
-    command: "bash -c 'mkdir -p .vercel/output/static && echo {\"version\":3} > .vercel/output/config.json && cp -r public/* .vercel/output/static/'"
+    command: "bash build.sh"
     inputs:
       - "public/**/*"
     outputs:
