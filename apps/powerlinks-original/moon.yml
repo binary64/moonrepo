@@ -1,6 +1,6 @@
 $schema: "https://moonrepo.dev/schemas/project.json"
-language: 'node'
-layer: 'application'
+language: "node"
+layer: "application"
 tags:
   - next
 
@@ -14,6 +14,9 @@ tasks:
     inputs:
       - "src/**/*"
       - "public/**/*"
+      - "next.config.ts"
+      - "next-env.d.ts"
+      - "tsconfig.json"
     outputs:
       - "out"
   deploy:
