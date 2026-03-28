@@ -1,3 +1,4 @@
 {
+  "_note": "outputDirectory is used for local 'vercel dev' and non-prebuilt invocations only. The CI deploy uses --prebuilt and reads from .vercel/output/ directly.",
   "outputDirectory": "public"
 }

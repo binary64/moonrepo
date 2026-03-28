@@ -13,9 +13,7 @@ tasks:
       - ".vercel/output"
 
   deploy:
-    command: "npx vercel@latest deploy --prebuilt --yes --token $VERCEL_TOKEN"
-    env:
-      VERCEL_PROJECT_ID: "prj_mR2kUeUFkfBgPX6pyEylxEEE0Pof"
+    command: "npx vercel@39 deploy --prebuilt --yes --token $VERCEL_TOKEN"
     deps:
       - "~:build"
     options:

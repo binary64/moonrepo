@@ -142,7 +142,7 @@ footer a{color:var(--amber-light);text-decoration:none}
 
 <nav class="nav" id="nav">
   <a href="#" class="nav-brand">Powerlinks</a>
-  <button class="nav-toggle" onclick="this.parentElement.classList.toggle('open')" aria-label="Menu">☰</button>
+  <button type="button" class="nav-toggle" onclick="this.parentElement.classList.toggle('open')" aria-label="Menu">☰</button>
   <ul class="nav-links">
     <li><a href="#about">About</a></li>
     <li><a href="#services">Services</a></li>
@@ -262,13 +262,13 @@ footer a{color:var(--amber-light);text-decoration:none}
             <label for="service">Service Required</label>
             <select id="service">
               <option value="">Select a service...</option>
-              <option>Full Service</option>
-              <option>MOT</option>
-              <option>Chain & Sprocket Replacement</option>
-              <option>Tyre Fitting</option>
-              <option>Battery Replacement</option>
-              <option>General Repair</option>
-              <option>Other</option>
+              <option value="full_service">Full Service</option>
+              <option value="mot">MOT</option>
+              <option value="chain_sprocket">Chain &amp; Sprocket Replacement</option>
+              <option value="tyre_fitting">Tyre Fitting</option>
+              <option value="battery_replacement">Battery Replacement</option>
+              <option value="general_repair">General Repair</option>
+              <option value="other">Other</option>
             </select>
           </div>
           <div>
