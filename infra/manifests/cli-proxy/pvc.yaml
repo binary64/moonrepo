@@ -8,6 +8,7 @@ metadata:
   namespace: cli-proxy
   annotations:
     argocd.argoproj.io/sync-options: Prune=false
+    moonrepo.dev/skip-local: "true"
 spec:
   accessModes:
     - ReadWriteOnce

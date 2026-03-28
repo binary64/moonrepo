@@ -3,6 +3,8 @@ kind: HTTPRoute
 metadata:
   name: cli-proxy
   namespace: cli-proxy
+  annotations:
+    moonrepo.dev/skip-local: "true"
 spec:
   parentRefs:
     - group: gateway.networking.k8s.io
@@ -11,6 +13,8 @@ spec:
       namespace: istio-system
       sectionName: https
   hostnames:
+    # External access required: exposes CLI OAuth tokens as OpenAI/Gemini/Claude-compatible
+    # endpoints -- must be reachable from external clients (not just within the cluster).
     - "cliproxy.brandwhisper.cloud"
   rules:
     - matches:
