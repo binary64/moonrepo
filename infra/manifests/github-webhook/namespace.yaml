@@ -4,3 +4,5 @@ metadata:
   name: github-webhook
   annotations:
     moonrepo.dev/skip-local: "true"
+    # Bootstrap resource — must exist before workloads (wave 2)
+    argocd.argoproj.io/sync-wave: "-2"

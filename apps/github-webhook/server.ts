@@ -220,18 +220,27 @@ async function notifyPRs(
     }
 
     const isSuccess = ["success", "neutral", "skipped"].includes(conclusion);
-    let message: string;
+    // NOTE: conclusion is scoped to this single workflow_run/check_suite, not
+    // the aggregate PR status — a passing Lint run does not mean all CI is green.
+    const emoji = isSuccess ? "✅" : "🔴";
+    const message = `${emoji} PR #${prNumber} — ${branch}: ${checkName} ${conclusion}\n${prUrl}`;
 
-    if (isSuccess) {
-      message = `✅ PR #${prNumber} — ${branch}: all checks green\n${prUrl}`;
-    } else {
-      message = `🔴 PR #${prNumber} — ${branch}: CI failed (check: ${checkName})\n${prUrl}`;
+    console.log("Notify PR:", prNumber, checkName, conclusion);
+    // Only mark as sent after successful delivery — wrap per-PR so one failure
+    // Only mark as sent after successful delivery — wrap per-PR so one failure
+    // doesn't block notifications for remaining PRs in this event.
+    try {
+      await sendGatewayMessage(message, dedupeKey);
+      lastNotified.set(stateKey, conclusion);
+    } catch (err: unknown) {
+      console.error(
+        "Failed to notify for PR",
+        prNumber,
+        ":",
+        err instanceof Error ? err.message : String(err),
+      );
+      // Do not rethrow — allow remaining PRs to be notified independently
     }
-
-    console.log(`Notifying for PR #${prNumber}: ${conclusion}`);
-    // Only mark as sent after successful delivery
-    await sendGatewayMessage(message, dedupeKey);
-    lastNotified.set(stateKey, conclusion);
   }
 }
 
