@@ -866,7 +866,7 @@ function sendToOpenClaw(text: string, cb: (err: Error | null) => void, customSes
 
 // ── LLM-powered session routing ───────────────────────────────────────────────
 const ROUTING_OPTIONS: Array<{ session: string; label: string; desc: string }> = [
-  { session: 'agent:main:telegram:direct:james',         label: 'James DM',        desc: 'General questions, personal tasks, anything not clearly matching a project' },
+  { session: 'agent:main:telegram:direct:dm',         label: 'Direct DM',        desc: 'General questions, personal tasks, anything not clearly matching a project' },
   { session: 'agent:main:telegram:group:-5166572823',    label: 'arthur-haiku',     desc: 'moonrepo, k8s, kubernetes, CI, PRs, infra, deployments, ArgoCD, Docker, cluster, Jupiter, NUC' },
   { session: 'agent:main:telegram:group:-5173870517',    label: 'arthur-saas',      desc: 'SaaS business ideas, Notion, biz projects' },
   { session: 'agent:main:telegram:group:-5297868919',    label: 'arthur-smarthome', desc: 'Home Assistant, Nest speakers, lights, Roomba, ESPHome, Zigbee, MQTT, home automation' },
@@ -905,7 +905,7 @@ async function pickSessionViaLLM(text: string): Promise<string> {
             console.log(`[${ts()}] 🧠 Routed "${text.slice(0, 40)}" → ${ROUTING_OPTIONS[idx].label}`);
             resolve(ROUTING_OPTIONS[idx].session);
           } else {
-            console.warn(`[${ts()}] ⚠️ LLM returned unexpected: "${reply}" — defaulting to James DM`);
+            console.warn(`[${ts()}] ⚠️ LLM returned unexpected: "${reply}" — defaulting to Direct DM`);
             resolve(ROUTING_OPTIONS[0].session);
           }
         } catch (e) {
@@ -934,10 +934,10 @@ async function transcribeAndRoute(wavBuffer: Buffer): Promise<void> {
   if (isHallucination(text)) { console.log(`[${ts()}] 🚫 Hallucination: "${text}"`); return; }
   console.log(`[${ts()}] 🗣️ "${text}"`);
 
-  // 1. Echo to James's DM immediately (he sees it on Telegram)
-  sendViaGateway(`⌚ ${text}`, 'agent:main:telegram:direct:james', (err) => {
+  // 1. Echo to the DM session immediately (he sees it on Telegram)
+  sendViaGateway(`⌚ ${text}`, 'agent:main:telegram:direct:dm', (err) => {
     if (err) console.error(`[${ts()}] Echo failed: ${err.message}`);
-    else console.log(`[${ts()}] 📱 Echoed to James DM`);
+    else console.log(`[${ts()}] 📱 Echoed to Direct DM`);
   });
 
   // 2. LLM picks best session
