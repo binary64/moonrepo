@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -27,7 +23,7 @@
         "./*"
       ]
     },
-    "outDir": "../../.moon/cache/types/apps/radio-web"
+    "outDir": "dist"
   },
   "include": [
     "next-env.d.ts",
