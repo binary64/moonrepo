@@ -13,10 +13,6 @@ spec:
     targetRevision: 0.3.51
     helm:
       values: |
-        # Enable host networking for LAN device discovery (TP-Link, mDNS, etc.)
-        hostNetwork: true
-        dnsPolicy: ClusterFirstWithHostNet
-
         # Disable AppArmor so HA can access DBus for Bluetooth (BLE discovery).
         # Without this, AppArmor blocks DBus method calls with AccessDenied.
         podAnnotations:
