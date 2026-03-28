@@ -14,7 +14,10 @@ function getServerClient() {
     link: new HttpLink({
       uri: HASURA_HTTP,
       headers: { "x-hasura-admin-secret": ADMIN_SECRET },
-      fetch,
+      // Wrap fetch with a 5 s timeout so a slow/stalled Hasura never blocks the
+      // handler indefinitely — consistent with the 3 s timeout on Icecast fetches.
+      fetch: (uri, options) =>
+        fetch(uri, { ...options, signal: AbortSignal.timeout(5000) }),
     }),
     cache: new InMemoryCache(),
     defaultOptions: {
