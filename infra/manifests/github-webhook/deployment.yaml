@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: github-webhook
+  namespace: github-webhook
+  annotations:
+    # Skip local execution — uses hostNetwork, which would bind host ports
+    moonrepo.dev/skip-local: "true"
+  labels:
+    app: github-webhook
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: github-webhook
+  template:
+    metadata:
+      labels:
+        app: github-webhook
+    spec:
+      # Run on Jupiter — needs localhost access to OpenClaw Gateway (:6798)
+      # Label the node: kubectl label node vmi3137202 brandwhisper.cloud/node-role=jupiter
+      automountServiceAccountToken: false
+      nodeSelector:
+        brandwhisper.cloud/node-role: jupiter
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: github-webhook
+          # Tag is replaced by the docker.yml GHA workflow on every master push.
+          # Do not push this manifest with :latest — use a pinned SHA or semver tag.
+          image: ghcr.io/binary64/github-webhook:1.0.0
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3200
+              protocol: TCP
+          env:
+            - name: PORT
+              value: "3200"
+            - name: OPENCLAW_GATEWAY_URL
+              value: "http://127.0.0.1:6798"
+            - name: OPENCLAW_SESSION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: github-webhook-secret
+                  key: session-key
+            - name: GITHUB_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: github-webhook-secret
+                  key: webhook-secret
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3200
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3200
+            initialDelaySeconds: 5
+            periodSeconds: 10
