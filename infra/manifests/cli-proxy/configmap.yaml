@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cli-proxy-config
+  namespace: cli-proxy
+data:
+  config.yaml: |
+    # CLIProxyAPI configuration
+    # https://github.com/router-for-me/CLIProxyAPI
+
+    # Bind to all interfaces inside the container
+    host: "0.0.0.0"
+    port: 8317
+
+    tls:
+      enable: false
+      cert: ""
+      key: ""
+
+    remote-management:
+      allow-remote: false
+      secret-key: ""
+      disable-control-panel: false
+
+    # Auth tokens are persisted at /root/.cli-proxy-api (mounted PVC)
+    auth-dir: "~/.cli-proxy-api"
+
+    # Replace with your actual API keys; manage secrets outside this ConfigMap
+    api-keys:
+      - "CHANGE_ME_API_KEY_1"
+
+    debug: false
+
+    routing:
+      strategy: "round-robin"
+
+    request-retry: 3
+    max-retry-credentials: 0
+    max-retry-interval: 30
+
+    quota-exceeded:
+      switch-project: true
+      switch-preview-model: true
+
+    usage-statistics-enabled: false
+    logging-to-file: false
+    commercial-mode: false
