@@ -1,7 +1,8 @@
 $schema: "https://moonrepo.dev/schemas/project.json"
 language: "node"
 layer: "application"
-tags: []
+tags:
+  - next
 
 tasks:
   lint:
