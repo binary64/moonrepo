@@ -1,0 +1,21 @@
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: authentik-ext-auth
+  namespace: istio-system
+spec:
+  selector:
+    matchLabels:
+      gateway.networking.k8s.io/gateway-name: gateway
+  action: CUSTOM
+  provider:
+    name: "authentik"
+  rules:
+    - to:
+        - operation:
+            hosts:
+              - "frigate.brandwhisper.cloud"
+              - "zigbee.brandwhisper.cloud"
+              - "mgmt.brandwhisper.cloud"
+              - "start.brandwhisper.cloud"
+              - "llm.brandwhisper.cloud"
