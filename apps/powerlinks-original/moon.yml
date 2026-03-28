@@ -2,16 +2,20 @@ $schema: "https://moonrepo.dev/schemas/project.json"
 language: 'node'
 layer: 'application'
 tags:
-  - static
+  - next
 
 tasks:
+  lint:
+    command: "biome check ."
+  type-check:
+    command: "tsc --noEmit"
   build:
-    command: "bash build.sh"
+    command: "next build"
     inputs:
+      - "src/**/*"
       - "public/**/*"
     outputs:
-      - ".vercel/output"
-
+      - "out"
   deploy:
     command: "npx vercel@latest deploy --prebuilt --yes --token $VERCEL_TOKEN"
     env:
