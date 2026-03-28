@@ -1,0 +1,118 @@
+name: Deploy Powerlinks Concepts to Vercel
+
+on:
+  pull_request:
+    paths:
+      - 'apps/powerlinks-concept-*/**'
+  push:
+    branches: [master]
+    paths:
+      - 'apps/powerlinks-concept-*/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      concept-a: ${{ steps.changes.outputs.concept-a }}
+      concept-b: ${{ steps.changes.outputs.concept-b }}
+      concept-c: ${{ steps.changes.outputs.concept-c }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            concept-a:
+              - 'apps/powerlinks-concept-a/**'
+            concept-b:
+              - 'apps/powerlinks-concept-b/**'
+            concept-c:
+              - 'apps/powerlinks-concept-c/**'
+
+  deploy-concept-a:
+    needs: detect
+    if: needs.detect.outputs.concept-a == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to Vercel
+        id: deploy
+        working-directory: apps/powerlinks-concept-a
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            URL=$(npx vercel@latest --prod --yes --token ${{ secrets.VERCEL_TOKEN }})
+          else
+            URL=$(npx vercel@latest --yes --token ${{ secrets.VERCEL_TOKEN }})
+          fi
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: prj_mR2kUeUFkfBgPX6pyEylxEEE0Pof
+      - name: Comment PR
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: concept-a
+          message: |
+            🏍️ **Concept A — Local Legend** deployed!
+            🔗 ${{ steps.deploy.outputs.url }}
+
+  deploy-concept-b:
+    needs: detect
+    if: needs.detect.outputs.concept-b == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to Vercel
+        id: deploy
+        working-directory: apps/powerlinks-concept-b
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            URL=$(npx vercel@latest --prod --yes --token ${{ secrets.VERCEL_TOKEN }})
+          else
+            URL=$(npx vercel@latest --yes --token ${{ secrets.VERCEL_TOKEN }})
+          fi
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: prj_dnpMxijXHOkGRCz9jtiLViDwW6bB
+      - name: Comment PR
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: concept-b
+          message: |
+            🏍️ **Concept B — Parts Machine** deployed!
+            🔗 ${{ steps.deploy.outputs.url }}
+
+  deploy-concept-c:
+    needs: detect
+    if: needs.detect.outputs.concept-c == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to Vercel
+        id: deploy
+        working-directory: apps/powerlinks-concept-c
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            URL=$(npx vercel@latest --prod --yes --token ${{ secrets.VERCEL_TOKEN }})
+          else
+            URL=$(npx vercel@latest --yes --token ${{ secrets.VERCEL_TOKEN }})
+          fi
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: prj_Hlj3woAA4ml8jVqY289jJRJ9KxNY
+      - name: Comment PR
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: concept-c
+          message: |
+            🏍️ **Concept C — Modern Garage** deployed!
+            🔗 ${{ steps.deploy.outputs.url }}
