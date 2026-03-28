@@ -40,7 +40,10 @@ if (!SESSION_KEY) {
 let parsedGatewayUrl: URL;
 try {
   parsedGatewayUrl = new URL(GATEWAY_URL);
-  if (parsedGatewayUrl.protocol !== "http:" && parsedGatewayUrl.protocol !== "https:") {
+  if (
+    parsedGatewayUrl.protocol !== "http:" &&
+    parsedGatewayUrl.protocol !== "https:"
+  ) {
     throw new Error(`Unsupported protocol: ${parsedGatewayUrl.protocol}`);
   }
 } catch (err: unknown) {
