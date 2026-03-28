@@ -6,4 +6,3 @@ pre-commit:
       stage_fixed: true
     moon-sync:
       run: moon sync
-      stage_fixed: true
