@@ -14,6 +14,9 @@ spec:
       namespace: istio-system
       sectionName: https
   hostnames:
+    # Uses root domain github-webhook.brandwhisper.cloud (not *.home.brandwhisper.cloud)
+    # because GitHub webhook callbacks require public/external access.
+    # This is an intentional exception to the usual internal-only pattern.
     - "github-webhook.brandwhisper.cloud"
   rules:
     - matches:
