@@ -5,6 +5,7 @@ metadata:
   namespace: cli-proxy
   annotations:
     moonrepo.dev/skip-local: "true"
+    argocd.argoproj.io/sync-wave: "2"
   labels:
     app: cli-proxy
 spec:
@@ -19,10 +20,14 @@ spec:
       labels:
         app: cli-proxy
     spec:
+      automountServiceAccountToken: false
       # Schedule on Jupiter VPS worker node
       nodeSelector:
         kubernetes.io/hostname: vmi3137202
       securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
         seccompProfile:
           type: RuntimeDefault
       containers:
@@ -36,6 +41,7 @@ spec:
               protocol: TCP
           securityContext:
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
             capabilities:
               drop:
                 - ALL
