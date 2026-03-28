@@ -100,7 +100,10 @@ export async function GET() {
       }));
     } catch (err) {
       // GraphQL unavailable — no history, that's OK
-      console.warn("GraphQL history fetch failed, returning empty history", err);
+      console.warn(
+        "GraphQL history fetch failed, returning empty history",
+        err,
+      );
     }
 
     const result: RadioData = {
