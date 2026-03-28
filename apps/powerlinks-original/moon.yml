@@ -10,6 +10,9 @@ tasks:
   type-check:
     command: "tsc --noEmit"
   build:
+    command: "npx vercel@latest build --yes --token $VERCEL_TOKEN"
+    env:
+      VERCEL_PROJECT_ID: "prj_JMx0HhqE6N0aOV4SWW67lM1ezacZ"
     inputs:
       - "src/**/*"
       - "public/**/*"
@@ -17,7 +20,7 @@ tasks:
       - "next-env.d.ts"
       - "tsconfig.json"
     outputs:
-      - "out"
+      - ".vercel/output"
   deploy:
     command: "npx vercel@latest deploy --prebuilt --yes --token $VERCEL_TOKEN"
     env:
