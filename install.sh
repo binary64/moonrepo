@@ -126,7 +126,10 @@ spec:
             maxDuration: 15m
 EOF
 
-curl -sfL https://get.rke2.io | sudo sh -
+# Pin RKE2 to a known stable version to prevent accidental upgrades during re-installs.
+# Current cluster: master v1.33.6+rke2r1, Jupiter agent v1.34.4+rke2r1.
+# Target: v1.35.1+rke2r1 — see infra/docs/rke2-upgrade.md for the upgrade runbook.
+curl -sfL https://get.rke2.io | sudo INSTALL_RKE2_VERSION=v1.35.1+rke2r1 sh -
 
 sudo systemctl enable rke2-server
 
