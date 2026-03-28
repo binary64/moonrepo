@@ -1,0 +1,11 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.3.13/schema.json",
+  "extends": ["../../biome.json"],
+  "vcs": {
+    "enabled": false
+  },
+  "files": {
+    "ignoreUnknown": true,
+    "includes": ["!tsconfig.json", "!tsconfig*.json", "!sessions.json"]
+  }
+}
