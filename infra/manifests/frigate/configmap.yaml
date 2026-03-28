@@ -62,8 +62,8 @@ data:
         enabled: true
         ffmpeg:
           inputs:
-            - path: rtsp://127.0.0.1:8554/esp_cam_1
-              input_args: preset-rtsp-restream
+            - path: http://192.168.1.11:80/
+              input_args: -r 5
               roles:
                 - detect
                 - record
