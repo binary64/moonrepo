@@ -25,4 +25,4 @@ tasks:
     deps:
       - "~:build"
     options:
-      runInCI: true
+      runInCI: false
