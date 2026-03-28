@@ -24,8 +24,9 @@ data:
       secret-key: ""
       disable-control-panel: false
 
-    # Auth tokens are persisted at /root/.cli-proxy-api (mounted PVC)
-    auth-dir: "~/.cli-proxy-api"
+    # Auth tokens are persisted at /data/cli-proxy-api (mounted PVC)
+    # Using /data instead of /root to be compatible with runAsNonRoot (UID 1000)
+    auth-dir: "/data/cli-proxy-api"
 
     # API keys are injected at runtime via CLI_PROXY_API_KEY env var (from Secret)
     # The container reads config.yaml but api-keys are overridden by environment
