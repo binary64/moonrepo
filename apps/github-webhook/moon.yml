@@ -1,0 +1,31 @@
+layer: application
+language: typescript
+
+tasks:
+  build:
+    # Compiles to dist/ — required for docker image and `npm start`
+    script: 'tsc'
+    inputs:
+      - '*.ts'
+      - 'tsconfig.json'
+      - 'package.json'
+    outputs:
+      - 'dist/**/*'
+    options:
+      mergeOutputs: replace
+
+  type-check:
+    script: 'tsc --noEmit'
+    inputs:
+      - '*.ts'
+      - 'tsconfig.json'
+
+  lint:
+    script: 'biome check server.ts'
+    inputs:
+      - 'server.ts'
+
+  start:
+    command: npm start
+    options:
+      persistent: true
