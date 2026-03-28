@@ -92,7 +92,11 @@ export async function GET() {
         query: RadioStateDocument,
       });
       const playHistory = data?.radio_play_history || [];
-      // Skip the first entry (current track) — Icecast is the live source
+      // Skip the first entry (current track) — Icecast is the live source of truth.
+      // Note: slice(1) assumes Hasura received the insert before Icecast reflected the
+      // new track. Since announce-track.sh fires the Hasura insert in the background,
+      // this ordering is not guaranteed. For a non-critical history display this is
+      // acceptable, but a small window exists where the first history row could be skipped.
       history = playHistory.slice(1).map((h) => ({
         timestamp: h.played_at ?? "",
         artist: h.artist,
