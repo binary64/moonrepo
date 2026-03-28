@@ -91,6 +91,41 @@ data:
           threshold: 25
           contour_area: 15
 
+      esp_cam_2:
+        enabled: true
+        ffmpeg:
+          inputs:
+            - path: http://192.168.1.41:80/
+              input_args: -r 5
+              roles:
+                - detect
+                - record
+        detect:
+          enabled: true
+          width: 800
+          height: 600
+          fps: 5
+        record:
+          enabled: true
+          retain:
+            days: 7
+            mode: motion
+          events:
+            retain:
+              default: 14
+        snapshots:
+          enabled: true
+          retain:
+            default: 14
+        objects:
+          track:
+            - person
+            - dog
+            - cat
+        motion:
+          threshold: 25
+          contour_area: 15
+
     detectors:
       cpu1:
         type: cpu
