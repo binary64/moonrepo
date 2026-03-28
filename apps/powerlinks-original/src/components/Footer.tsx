@@ -12,6 +12,10 @@ const NAV_ITEMS = [
   { href: "/contact-us", label: "Contact Us" },
 ];
 
+/**
+ * Renders the global footer navigation and copyright line.
+ * @returns {JSX.Element}
+ */
 export default function Footer() {
   return (
     <footer className="x-colophon">

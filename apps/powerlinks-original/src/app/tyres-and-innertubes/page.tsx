@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Tyres and Innertubes" };
 
+/**
+ * Tyres and Innertubes page — covers tyre and inner tube stock and fitting service.
+ * @returns {JSX.Element}
+ */
 export default function TyresAndInnertubes() {
   return (
     <main className="x-main">

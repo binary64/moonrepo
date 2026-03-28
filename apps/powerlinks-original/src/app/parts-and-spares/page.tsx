@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Parts and Spares" };
 
+/**
+ * Parts and Spares page — lists stock categories and brands available at Powerlinks.
+ * @returns {JSX.Element}
+ */
 export default function PartsAndSpares() {
   return (
     <main className="x-main">
@@ -15,7 +19,11 @@ export default function PartsAndSpares() {
             stock we can usually source anything you require very quickly.
             Please give us a call with your requirements, making sure you have
             all the relevant information about your bike with you. Call us now
-            on <strong>01425 472100</strong>. We keep stocks of:
+            on{" "}
+            <strong>
+              <a href="tel:+441425472100">01425 472100</a>
+            </strong>
+            . We keep stocks of:
           </p>
           <ul>
             <li>

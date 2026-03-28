@@ -1,5 +1,9 @@
 import Image from "next/image";
 
+/**
+ * Home page — introduction to Powerlinks motorcycle parts and servicing.
+ * @returns {JSX.Element}
+ */
 export default function Home() {
   return (
     <main className="x-main">
@@ -30,7 +34,10 @@ export default function Home() {
             your Triumph or Japanese brand motorcycles including Honda, Suzuki,
             Kawasaki or Yamaha.
           </p>
-          <h2>Call us now on 01425 472100.</h2>
+          <p className="cta-phone">
+            Call us now on{" "}
+            <a href="tel:+441425472100">01425 472100</a>.
+          </p>
         </div>
       </div>
     </main>

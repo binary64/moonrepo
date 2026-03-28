@@ -17,6 +17,10 @@ const NAV_ITEMS = [
   { href: "/contact-us", label: "Contact Us" },
 ];
 
+/**
+ * Site-wide header with logo and responsive navigation menu.
+ * Highlights the active route and exposes a mobile toggle with full ARIA support.
+ */
 export default function Header() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -42,10 +46,12 @@ export default function Header() {
             className="nav-toggle"
             onClick={() => setMenuOpen(!menuOpen)}
             aria-label="Navigation"
+            aria-expanded={menuOpen}
+            aria-controls="primary-navigation"
           >
             ☰ Navigation
           </button>
-          <ul className={`nav-list ${menuOpen ? "open" : ""}`}>
+          <ul id="primary-navigation" className={`nav-list ${menuOpen ? "open" : ""}`}>
             {NAV_ITEMS.map((item) => (
               <li key={item.href}>
                 <Link

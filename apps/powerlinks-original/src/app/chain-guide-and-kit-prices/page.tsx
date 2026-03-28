@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Chain Guide and Kit Prices" };
 
+/**
+ * Chain Guide and Kit Prices page — covers the range of drive chains stocked.
+ * @returns {JSX.Element}
+ */
 export default function Chains() {
   return (
     <main className="x-main">

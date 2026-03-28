@@ -19,7 +19,7 @@ tasks:
     outputs:
       - "out"
   deploy:
-    command: "npx vercel@latest deploy out --yes --token $VERCEL_TOKEN"
+    command: "npx vercel@50.37.3 deploy out --yes --token $VERCEL_TOKEN"
     env:
       VERCEL_PROJECT_ID: "prj_JMx0HhqE6N0aOV4SWW67lM1ezacZ"
     deps:

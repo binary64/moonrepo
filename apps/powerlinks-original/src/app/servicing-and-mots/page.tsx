@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Servicing and MOTs" };
 
+/**
+ * Servicing and MOTs page — describes bike servicing, MOTs, and restoration services.
+ * @returns {JSX.Element}
+ */
 export default function ServicingAndMots() {
   return (
     <main className="x-main">

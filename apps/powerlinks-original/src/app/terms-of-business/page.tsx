@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Terms of Business" };
 
+/**
+ * Terms of Business page — product liability, general conditions, warranty and pricing terms.
+ * @returns {JSX.Element}
+ */
 export default function TermsOfBusiness() {
   return (
     <main className="x-main">

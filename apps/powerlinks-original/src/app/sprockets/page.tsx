@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = { title: "Sprockets" };
 
+/**
+ * Sprockets page — describes the range of sprockets stocked and ordering details.
+ * @returns {JSX.Element}
+ */
 export default function Sprockets() {
   return (
     <main className="x-main">
@@ -30,7 +35,7 @@ export default function Sprockets() {
           </p>
           <p>
             For availability, prices and advice please{" "}
-            <a href="/contact-us">contact us</a>; we will always endeavour to
+            <Link href="/contact-us">contact us</Link>; we will always endeavour to
             give you the best prices we can.
           </p>
         </div>

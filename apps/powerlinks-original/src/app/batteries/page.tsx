@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Batteries" };
 
+/**
+ * Batteries page — lists battery stock and brands stocked by Powerlinks.
+ * @returns {JSX.Element}
+ */
 export default function Batteries() {
   return (
     <main className="x-main">
@@ -22,7 +26,10 @@ export default function Batteries() {
           </p>
           <p>
             For the correct application for your bike please give us a call on{" "}
-            <strong>01425 472100</strong>.
+            <strong>
+              <a href="tel:+441425472100">01425 472100</a>
+            </strong>
+            .
           </p>
         </div>
       </div>

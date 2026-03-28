@@ -24,7 +24,7 @@ html {
 
 body {
   font-family:
-    "Lato", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Lato, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
@@ -293,5 +293,26 @@ a:hover {
   }
   .cta-phone {
     font-size: 22px;
+  }
+}
+
+/* Keyboard focus styles */
+a:focus-visible,
+.nav-list a:focus-visible,
+.nav-toggle:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  a,
+  .nav-list a {
+    transition: none;
   }
 }
