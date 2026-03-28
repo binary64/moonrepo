@@ -24,7 +24,7 @@ spec:
         - name: cli-proxy
           # CLIProxyAPI: wraps CLI OAuth tokens as OpenAI/Gemini/Claude-compatible endpoints
           # https://github.com/router-for-me/CLIProxyAPI
-          image: eceasy/cli-proxy-api:latest
+          image: eceasy/cli-proxy-api:v6.9.4
           ports:
             - name: api
               containerPort: 8317
@@ -32,6 +32,11 @@ spec:
           env:
             - name: TZ
               value: Europe/London
+            - name: CLI_PROXY_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cli-proxy-api-key
+                  key: api-key
           resources:
             requests:
               cpu: 50m

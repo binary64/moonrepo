@@ -25,9 +25,9 @@ data:
     # Auth tokens are persisted at /root/.cli-proxy-api (mounted PVC)
     auth-dir: "~/.cli-proxy-api"
 
-    # Replace with your actual API keys; manage secrets outside this ConfigMap
-    api-keys:
-      - "CHANGE_ME_API_KEY_1"
+    # API keys are injected at runtime via CLI_PROXY_API_KEY env var (from Secret)
+    # The container reads config.yaml but api-keys are overridden by environment
+    api-keys: []
 
     debug: false
 
