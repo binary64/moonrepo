@@ -35,8 +35,8 @@ export default function Sprockets() {
           </p>
           <p>
             For availability, prices and advice please{" "}
-            <Link href="/contact-us">contact us</Link>; we will always endeavour to
-            give you the best prices we can.
+            <Link href="/contact-us">contact us</Link>; we will always endeavour
+            to give you the best prices we can.
           </p>
         </div>
       </div>

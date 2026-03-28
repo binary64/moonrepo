@@ -51,7 +51,10 @@ export default function Header() {
           >
             ☰ Navigation
           </button>
-          <ul id="primary-navigation" className={`nav-list ${menuOpen ? "open" : ""}`}>
+          <ul
+            id="primary-navigation"
+            className={`nav-list ${menuOpen ? "open" : ""}`}
+          >
             {NAV_ITEMS.map((item) => (
               <li key={item.href}>
                 <Link

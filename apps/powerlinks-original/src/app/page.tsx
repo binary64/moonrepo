@@ -35,8 +35,7 @@ export default function Home() {
             Kawasaki or Yamaha.
           </p>
           <p className="cta-phone">
-            Call us now on{" "}
-            <a href="tel:+441425472100">01425 472100</a>.
+            Call us now on <a href="tel:+441425472100">01425 472100</a>.
           </p>
         </div>
       </div>

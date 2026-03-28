@@ -38,8 +38,7 @@ export default function ContactUs() {
               <p>
                 <strong>T:</strong> <a href="tel:01425472100">01425 472100</a>
                 <br />
-                <strong>F:</strong>{" "}
-                <a href="tel:+441425472123">01425 472123</a>
+                <strong>F:</strong> <a href="tel:+441425472123">01425 472123</a>
               </p>
             </div>
             <div className="contact-card">
