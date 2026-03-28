@@ -73,12 +73,28 @@ async function fetchIcecastFallback(): Promise<{
         },
       };
     }
-  } catch {
+  } catch (err) {
     // Icecast unavailable
+    console.warn("Icecast fetch failed, returning defaults", err);
   }
   return { listeners: 0, listenerPeak: 0, streamStart: "", nowPlaying: null };
 }
 
+/**
+ * GET /api/radio
+ *
+ * Returns the current radio state as a {@link RadioData} JSON object.
+ *
+ * - **Now-playing & listener stats**: always fetched live from Icecast via
+ *   {@link fetchIcecastFallback}. Icecast is the authoritative source of truth.
+ * - **Track history**: fetched from Hasura GraphQL. If GraphQL is unavailable,
+ *   history is returned as an empty array — now-playing is unaffected.
+ * - **Graceful degradation**: if Icecast is unreachable, `nowPlaying` is `null`
+ *   and listener counts default to `0`.
+ *
+ * Response shape: {@link RadioData}
+ * Error response: `{ error: string }` with HTTP 500.
+ */
 export async function GET() {
   try {
     // Always get now-playing from Icecast (live source of truth)
@@ -92,12 +108,16 @@ export async function GET() {
         query: RadioStateDocument,
       });
       const playHistory = data?.radio_play_history || [];
-      // Skip the first entry (current track) — Icecast is the live source of truth.
-      // Note: slice(1) assumes Hasura received the insert before Icecast reflected the
-      // new track. Since announce-track.sh fires the Hasura insert in the background,
-      // this ordering is not guaranteed. For a non-critical history display this is
-      // acceptable, but a small window exists where the first history row could be skipped.
-      history = playHistory.slice(1).map((h) => ({
+      // Skip the first history entry only when Icecast has a live now-playing track —
+      // the first DB row represents the current track already shown via Icecast.
+      // If Icecast is unavailable (nowPlaying === null), keep all history rows so we
+      // don't silently discard the most recent entry.
+      // Note: this assumes Hasura received the insert before Icecast reflected the new
+      // track. Since announce-track.sh fires the insert in the background, a small race
+      // window exists — acceptable for a non-critical history display.
+      const historyRows =
+        icecast.nowPlaying === null ? playHistory : playHistory.slice(1);
+      history = historyRows.map((h) => ({
         timestamp: h.played_at ?? "",
         artist: h.artist,
         title: h.title,
