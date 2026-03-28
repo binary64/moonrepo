@@ -36,6 +36,21 @@ if (!SESSION_KEY) {
   process.exit(1);
 }
 
+// Validate GATEWAY_URL at startup
+let parsedGatewayUrl: URL;
+try {
+  parsedGatewayUrl = new URL(GATEWAY_URL);
+  if (parsedGatewayUrl.protocol !== "http:" && parsedGatewayUrl.protocol !== "https:") {
+    throw new Error(`Unsupported protocol: ${parsedGatewayUrl.protocol}`);
+  }
+} catch (err: unknown) {
+  console.error(
+    "Invalid OPENCLAW_GATEWAY_URL:",
+    err instanceof Error ? err.message : String(err),
+  );
+  process.exit(1);
+}
+
 // Deduplication: repoFullName+prNumber → lastNotifiedConclusion
 // Keyed by repo+PR to avoid cross-repo collisions on shared PR numbers.
 // Written only after successful gateway delivery to avoid suppressing retries on failure.
@@ -129,7 +144,7 @@ app.post("/webhook", async (req: Request, res: Response) => {
 
 type PullRequestRef = {
   number: number;
-  head: { ref: string };
+  head: { ref: string; sha: string };
   html_url?: string;
 };
 
@@ -203,12 +218,13 @@ async function notifyPRs(
   for (const pr of prs) {
     const prNumber = pr.number;
     const branch = pr.head.ref;
+    const headSha = pr.head.sha;
     const prUrl =
       pr.html_url || `https://github.com/${repoFullName}/pull/${prNumber}`;
 
-    // Dedupe key is scoped to repo+PR+conclusion to be globally unique across repos
-    const dedupeKey = `${repoFullName}-pr-${prNumber}-${conclusion}`;
-    const stateKey = `${repoFullName}-pr-${prNumber}`;
+    // Dedupe key scoped to repo+PR+commit+conclusion for per-attempt deduplication
+    const dedupeKey = `${repoFullName}-pr-${prNumber}-${headSha}-${conclusion}`;
+    const stateKey = `${repoFullName}-pr-${prNumber}-${headSha}`;
 
     // Skip if we already successfully delivered this conclusion for this PR
     const lastConclusion = lastNotified.get(stateKey);
@@ -226,7 +242,6 @@ async function notifyPRs(
     const message = `${emoji} PR #${prNumber} — ${branch}: ${checkName} ${conclusion}\n${prUrl}`;
 
     console.log("Notify PR:", prNumber, checkName, conclusion);
-    // Only mark as sent after successful delivery — wrap per-PR so one failure
     // Only mark as sent after successful delivery — wrap per-PR so one failure
     // doesn't block notifications for remaining PRs in this event.
     try {
@@ -265,7 +280,7 @@ async function sendGatewayMessage(
     },
   });
 
-  const url = new URL("/rpc", GATEWAY_URL);
+  const url = new URL("/rpc", parsedGatewayUrl);
   const isHttps = url.protocol === "https:";
   const transport = isHttps ? https : http;
   const defaultPort = isHttps ? 443 : 80;

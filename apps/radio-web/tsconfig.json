@@ -27,7 +27,7 @@
         "./*"
       ]
     },
-    "outDir": "../../.moon/cache/types/apps/radio-web"
+    "outDir": "dist"
   },
   "include": [
     "next-env.d.ts",
