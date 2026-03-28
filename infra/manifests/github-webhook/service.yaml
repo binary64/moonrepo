@@ -5,6 +5,7 @@ metadata:
   namespace: github-webhook
   annotations:
     moonrepo.dev/skip-local: "true"
+    argocd.argoproj.io/sync-wave: "2"
   labels:
     app: github-webhook
 spec:
