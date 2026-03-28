@@ -1,6 +1,7 @@
 #!/bin/bash
 # Track change hook — logs play history, writes now-playing, updates Icecast
 # metadata, and writes a new-track-event for dj-brain to consume.
+# Replaces the old radio-listener-monitor service for track logging.
 #
 # Reads track info from state files written by Liquidsoap:
 #   /state/current-track-path  — full path to the track
@@ -41,6 +42,35 @@ echo "$TIMESTAMP  $TRACK_NAME  ($TRACK_FILE)" >> "$HISTORY_LOG"
 # Write now-playing for instant lookups
 PRETTY_NAME="$TRACK_NAME"
 echo "$PRETTY_NAME" > /state/radio-now-playing
+
+# ─── Log to Hasura play history ───
+# Parse artist - title from PRETTY_NAME (matches what Icecast shows)
+ARTIST=""
+TITLE=""
+if [[ "$PRETTY_NAME" == *" - "* ]]; then
+    ARTIST="${PRETTY_NAME%% - *}"
+    TITLE="${PRETTY_NAME#* - }"
+else
+    TITLE="$PRETTY_NAME"
+fi
+
+HASURA_URL="${HASURA_URL:-https://hasura.brandwhisper.cloud/v1/graphql}"
+HASURA_SECRET="${HASURA_ADMIN_SECRET:-}"
+
+# Fire and forget — don't block track playback if Hasura is down
+(
+    CURL_ARGS=(-s --max-time 5 -X POST "$HASURA_URL" -H "Content-Type: application/json")
+    if [ -n "$HASURA_SECRET" ]; then
+        CURL_ARGS+=(-H "x-hasura-admin-secret: $HASURA_SECRET")
+    fi
+    curl "${CURL_ARGS[@]}" \
+        -d "$(jq -n \
+            --arg artist "$ARTIST" \
+            --arg title "$TITLE" \
+            --arg played_at "$TIMESTAMP" \
+            '{query: "mutation($artist: String!, $title: String!, $played_at: timestamptz!) { insert_radio_play_history_one(object: {artist: $artist, title: $title, played_at: $played_at}) { id } }", variables: {artist: $artist, title: $title, played_at: $played_at}}'
+        )" >/dev/null 2>&1 || true
+) &
 
 # Update Icecast stream metadata via Liquidsoap telnet (local — same container)
 echo "meta.update $PRETTY_NAME" | nc -w1 127.0.0.1 1234 >/dev/null 2>&1 || true

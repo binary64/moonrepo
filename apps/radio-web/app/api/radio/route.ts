@@ -50,9 +50,11 @@ async function fetchIcecastFallback(): Promise<{
   nowPlaying: { artist: string; title: string; raw: string } | null;
 }> {
   try {
+    // ICECAST_URL env var allows overriding the Icecast endpoint.
+    // Default: NodePort on NUC (192.168.1.201:30100) — accessible from within
+    // the k8s cluster since Icecast runs as a NodePort service.
     const icecastUrl =
-      process.env.ICECAST_URL ||
-      "http://icecast.radio-dj.svc.cluster.local:8100";
+      process.env.ICECAST_URL || "http://192.168.1.201:30100";
     const res = await fetch(`${icecastUrl}/status-json.xsl`, {
       signal: AbortSignal.timeout(3000),
     });
@@ -80,74 +82,33 @@ async function fetchIcecastFallback(): Promise<{
 
 export async function GET() {
   try {
-    const client = getServerClient();
+    // Always get now-playing from Icecast (live source of truth)
+    const icecast = await fetchIcecastFallback();
 
-    // Try GraphQL first, fall back to Icecast
+    // Get history from GraphQL (if available)
     let history: TrackEntry[] = [];
-    let nowPlaying: RadioData["nowPlaying"] = null;
-    let listeners = 0;
-    let listenerPeak = 0;
-    let streamStart = "";
-
     try {
+      const client = getServerClient();
       const { data } = await client.query<RadioStateQuery>({
         query: RadioStateDocument,
       });
-
       const playHistory = data?.radio_play_history || [];
-      if (playHistory.length > 0) {
-        // First entry is now playing
-        const np = playHistory[0];
-        nowPlaying = {
-          artist: np.artist,
-          title: np.title,
-          raw: `${np.artist} - ${np.title}`,
-        };
-
-        // Rest is history (already newest first)
-        history = playHistory.slice(1).map((h) => ({
-          timestamp: h.played_at ?? "",
-          artist: h.artist,
-          title: h.title,
-        }));
-      }
-
-      const snap = data?.radio_listener_snapshots?.[0];
-      if (snap) {
-        listeners = snap.count;
-        listenerPeak = snap.peak;
-      }
+      // Skip the first entry (current track) — Icecast is the live source
+      history = playHistory.slice(1).map((h) => ({
+        timestamp: h.played_at ?? "",
+        artist: h.artist,
+        title: h.title,
+      }));
     } catch {
-      // GraphQL unavailable — full fallback to Icecast
-    }
-
-    // If no data from GraphQL, fall back to Icecast
-    if (!nowPlaying) {
-      const icecast = await fetchIcecastFallback();
-      nowPlaying = icecast.nowPlaying;
-      listeners = icecast.listeners;
-      listenerPeak = icecast.listenerPeak;
-      streamStart = icecast.streamStart;
-    }
-
-    // Always supplement listener count from Icecast (it's the live source)
-    if (listeners === 0) {
-      const icecast = await fetchIcecastFallback();
-      if (icecast.listeners > 0) {
-        listeners = icecast.listeners;
-        listenerPeak = Math.max(listenerPeak, icecast.listenerPeak);
-      }
-      if (!streamStart && icecast.streamStart) {
-        streamStart = icecast.streamStart;
-      }
+      // GraphQL unavailable — no history, that's OK
     }
 
     const result: RadioData = {
-      nowPlaying,
-      listeners,
-      listenerPeak,
+      nowPlaying: icecast.nowPlaying,
+      listeners: icecast.listeners,
+      listenerPeak: icecast.listenerPeak,
       serverName: "Arthur Radio",
-      streamStart,
+      streamStart: icecast.streamStart,
       history,
       fetchedAt: new Date().toISOString(),
     };
