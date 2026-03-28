@@ -14,6 +14,8 @@ tasks:
 
   deploy:
     command: "npx vercel@latest deploy --prebuilt --yes --token $VERCEL_TOKEN"
+    env:
+      VERCEL_PROJECT_ID: "prj_dnpMxijXHOkGRCz9jtiLViDwW6bB"
     deps:
       - "~:build"
     options:
