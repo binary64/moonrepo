@@ -1,8 +1,7 @@
 $schema: "https://moonrepo.dev/schemas/project.json"
 language: "node"
 layer: "application"
-tags:
-  - next
+tags: []
 
 tasks:
   lint:
@@ -10,7 +9,6 @@ tasks:
   type-check:
     command: "tsc --noEmit"
   build:
-    command: "next build"
     inputs:
       - "src/**/*"
       - "public/**/*"
