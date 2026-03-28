@@ -17,6 +17,8 @@ data:
       streams:
         front_door:
           - "rtsp://ring-mqtt.ring-mqtt.svc:8554/5c475e55fb69_live"
+        esp_cam_1:
+          - "http://192.168.1.11:80/"
 
     cameras:
       front_door:
@@ -54,6 +56,28 @@ data:
         motion:
           threshold: 30
           contour_area: 10
+
+      esp_cam_1:
+        enabled: true
+        ffmpeg:
+          inputs:
+            - path: rtsp://127.0.0.1:8554/esp_cam_1
+              input_args: preset-rtsp-restream
+              roles:
+                - detect
+        detect:
+          enabled: true
+          width: 800
+          height: 600
+          fps: 5
+        objects:
+          track:
+            - person
+            - dog
+            - cat
+        motion:
+          threshold: 25
+          contour_area: 15
 
     detectors:
       cpu1:
