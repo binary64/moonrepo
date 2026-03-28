@@ -15,6 +15,29 @@ spec:
       values: |
         profile: ambient
 
+        meshConfig:
+          extensionProviders:
+            - name: "authentik"
+              envoyExtAuthzHttp:
+                service: "authentik-server.authentik.svc.cluster.local"
+                port: 80
+                pathPrefix: "/outpost.goauthentik.io/auth/envoy"
+                headersToDownstreamOnAllow:
+                  - cookie
+                  - set-cookie
+                headersToUpstreamOnAllow:
+                  - set-cookie
+                  - x-authentik-*
+                headersToDownstreamOnDeny:
+                  - set-cookie
+                  - location
+                  - content-type
+                includeRequestHeadersInCheck:
+                  - cookie
+                  - x-forwarded-for
+                  - x-forwarded-proto
+                  - x-forwarded-host
+
         pilot:
           resources:
             requests:
