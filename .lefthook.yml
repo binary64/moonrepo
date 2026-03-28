@@ -1,7 +1,7 @@
 pre-commit:
   commands:
     biome-check:
-      glob: "*.{ts,tsx,js,jsx,json,css}"
+      glob: "**/*.{ts,tsx,js,jsx,json,css}"
       run: npx biome check --write --staged {staged_files}
       stage_fixed: true
     moon-sync:
