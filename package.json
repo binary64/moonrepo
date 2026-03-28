@@ -8,7 +8,7 @@
     "infra/*"
   ],
   "scripts": {
-    "prepare": "[ -z \"$CI\" ] && lefthook install || true",
+    "prepare": "if [ -z \"$CI\" ]; then lefthook install; fi",
     "dev": "moon run :dev",
     "build": "moon run :build",
     "lint": "moon run :lint",
