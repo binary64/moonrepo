@@ -15,8 +15,8 @@ spec:
   ignoreDifferences:
     - group: gateway.networking.k8s.io
       kind: HTTPRoute
-      jsonPointers:
-        - /status
+      jqPathExpressions:
+        - .status
 
   syncPolicy:
     automated:
