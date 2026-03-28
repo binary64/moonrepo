@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const STREAM_URL = process.env.NEXT_PUBLIC_STREAM_URL ?? "http://192.168.1.201:30100/stream";
+const STREAM_URL =
+  process.env.NEXT_PUBLIC_STREAM_URL ?? "http://192.168.1.201:30100/stream";
 const RETRY_CAP_MS = 10000;
 const SKIP_TIMEOUT_MS = 15000;
 
