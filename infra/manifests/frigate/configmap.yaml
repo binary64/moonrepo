@@ -18,8 +18,6 @@ data:
       streams:
         front_door:
           - "rtsp://ring-mqtt.ring-mqtt.svc:8554/5c475e55fb69_live"
-        esp_cam_1:
-          - "http://192.168.1.11:80/"
 
     cameras:
       front_door:
