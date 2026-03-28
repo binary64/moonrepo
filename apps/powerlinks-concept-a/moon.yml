@@ -3,3 +3,18 @@ language: 'node'
 layer: 'application'
 tags:
   - static
+
+tasks:
+  build:
+    command: "bash -c 'mkdir -p .vercel/output/static && echo {\"version\":3} > .vercel/output/config.json && cp -r public/* .vercel/output/static/'"
+    inputs:
+      - "public/**/*"
+    outputs:
+      - ".vercel/output"
+
+  deploy:
+    command: "npx vercel@latest deploy --prebuilt --yes"
+    deps:
+      - "~:build"
+    options:
+      runInCI: true
