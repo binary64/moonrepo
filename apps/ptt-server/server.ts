@@ -145,16 +145,16 @@ const SAMPLE_RATE = 16000;
 const BYTES_PER_SAMPLE = 2;
 
 // VAD config
+const FRAME_SAMPLES = 512; // Silero VAD v6.2 only accepts 512-sample frames at 16kHz.
+const FRAME_BYTES = FRAME_SAMPLES * BYTES_PER_SAMPLE;
+const FRAME_MS = (FRAME_SAMPLES / SAMPLE_RATE) * 1000;
 const SPEECH_THRESHOLD = 0.85;
 const SILENCE_AFTER_SPEECH_MS = 1600;
 const MIN_SPEECH_MS = 400;
-const MIN_SPEECH_FRAMES = 10; // Silero v6.2 requires 512-sample frames (32ms each). 10 × 32ms = 320ms minimum speech, matching legacy behaviour (was 5 × 96ms = 480ms with 1536-sample frames).
+const MIN_SPEECH_FRAMES = Math.ceil(MIN_SPEECH_MS / FRAME_MS); // Derived from MIN_SPEECH_MS to keep speech-start and completion thresholds in sync.
 const STALE_SPEECH_TIMEOUT_MS = 5000;
 const MAX_SPEECH_MS = 20000;
 const PRE_SPEECH_BUFFER_MS = 300;
-const FRAME_SAMPLES = 512; // Silero VAD v6.2 only accepts 512-sample frames at 16kHz. Legacy v4 used 1536 — keeping that caused ONNX LSTM tensor shape errors on every inference.
-const FRAME_BYTES = FRAME_SAMPLES * BYTES_PER_SAMPLE;
-const FRAME_MS = (FRAME_SAMPLES / SAMPLE_RATE) * 1000;
 
 // Silero ONNX model
 let ortSession: ort.InferenceSession | null = null;
