@@ -51,6 +51,7 @@ if [[ "$PRETTY_NAME" == *" - "* ]]; then
     ARTIST="${PRETTY_NAME%% - *}"
     TITLE="${PRETTY_NAME#* - }"
 else
+    ARTIST="Unknown"
     TITLE="$PRETTY_NAME"
 fi
 
