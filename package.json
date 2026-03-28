@@ -8,6 +8,7 @@
     "infra/*"
   ],
   "scripts": {
+    "prepare": "if [ -z \"$CI\" ]; then lefthook install; fi",
     "dev": "moon run :dev",
     "build": "moon run :build",
     "lint": "moon run :lint",
@@ -23,7 +24,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.13",
-    "dorita980": "3.1.11"
+    "dorita980": "3.1.11",
+    "lefthook": "^1.11.0"
   },
   "overrides": {
     "hono": ">=4.12.4",
