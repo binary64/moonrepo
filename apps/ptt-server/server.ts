@@ -227,6 +227,7 @@ async function runVADFrame(
     sr: vadState.sr,
     state: vadState.state,
   });
+  if (!result) throw new Error("VAD inference failed: ortSession returned undefined");
   vadState.state = result.stateN as ort.Tensor;
   return (result.output.data as Float32Array)[0];
 }
