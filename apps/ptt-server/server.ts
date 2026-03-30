@@ -227,7 +227,8 @@ async function runVADFrame(
     sr: vadState.sr,
     state: vadState.state,
   });
-  if (!result) throw new Error("VAD inference failed: ortSession returned undefined");
+  if (!result)
+    throw new Error("VAD inference failed: ortSession returned undefined");
   vadState.state = result.stateN as ort.Tensor;
   return (result.output.data as Float32Array)[0];
 }
@@ -388,9 +389,9 @@ function updateHABattery(level: number, charging: boolean): void {
       },
     },
     (res) => {
-      let body = "";
+      let _body = "";
       res.on("data", (c: string) => {
-        body += c;
+        _body += c;
       });
       res.on("end", () => {
         if (res.statusCode === 200 || res.statusCode === 201) {
