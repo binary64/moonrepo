@@ -11,11 +11,18 @@ spec:
   provider:
     name: "authentik"
   rules:
+    # Z2M: protect UI but allow API access (Z2M has its own token auth)
+    - to:
+        - operation:
+            hosts:
+              - "zigbee.brandwhisper.cloud"
+            notPaths:
+              - "/api/*"
+    # All other protected hosts: full SSO on all paths
     - to:
         - operation:
             hosts:
               - "frigate.brandwhisper.cloud"
-              - "zigbee.brandwhisper.cloud"
               - "mgmt.brandwhisper.cloud"
               - "start.brandwhisper.cloud"
               - "llm.brandwhisper.cloud"
