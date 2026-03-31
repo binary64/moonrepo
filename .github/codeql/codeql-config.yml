@@ -1,0 +1,10 @@
+name: "CodeQL Config"
+
+# Disable queries that produce false positives with Fastify's plugin-based rate limiting.
+# @fastify/rate-limit with `global: true` or per-route `config.rateLimit` covers all routes,
+# but CodeQL's js/missing-rate-limiting rule does not trace through Fastify plugin registration.
+disable-default-queries: false
+
+query-filters:
+  - exclude:
+      id: js/missing-rate-limiting
