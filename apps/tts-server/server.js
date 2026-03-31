@@ -90,7 +90,7 @@ function normaliseUtterances(body) {
 
 // ─── Setup & Start ───
 async function start() {
-  const app = Fastify({ logger: false });
+  const app = Fastify({ logger: false, bodyLimit: 102400 }); // 100KB — matches prior Express limit
 
   await app.register(fastifyRateLimit, {
     global: true,
@@ -98,7 +98,6 @@ async function start() {
     timeWindow: 60_000,
     skipOnError: false,
     errorResponseBuilder: () => ({ error: "Too many requests" }),
-    skip: (req) => req.url === "/health",
   });
 
   // Auth preHandler
@@ -149,10 +148,10 @@ async function start() {
       console.error(`[${token}] Pre-generation failed:`, err.message);
     });
 
-    const host = request.headers.host || `192.168.1.201:${PORT}`;
+    const baseUrl = process.env.PUBLIC_URL || `http://192.168.1.201:${PORT}`;
     return reply.send({
       token,
-      url: `http://${host}/play/${token}`,
+      url: `${baseUrl.replace(/\/+$/, "")}/play/${token}`,
       utteranceCount: utterances.length,
       totalChars,
     });
@@ -200,7 +199,9 @@ async function start() {
           setTimeout(() => {
             try {
               fs.unlinkSync(job.mp3Path);
-            } catch {}
+            } catch {
+              // Intentionally ignoring cleanup errors — file removal is best-effort
+            }
             jobs.delete(token);
           }, 5000);
         });
@@ -214,7 +215,7 @@ async function start() {
   );
 
   // ─── GET /health ───
-  app.get("/health", async () => {
+  app.get("/health", { config: { rateLimit: false } }, async () => {
     return { status: "ok", jobs: jobs.size, uptime: process.uptime() };
   });
 
