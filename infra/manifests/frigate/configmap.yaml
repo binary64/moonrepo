@@ -21,7 +21,7 @@ data:
 
     cameras:
       front_door:
-        enabled: true
+        enabled: false  # DISABLED: Ring battery dead since 2026-03-28. Re-enable when charged.
         ffmpeg:
           inputs:
             - path: rtsp://127.0.0.1:8554/front_door
