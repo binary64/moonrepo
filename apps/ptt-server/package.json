@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "express": "^4.21.0",
+    "express": "^5.2.1",
     "express-rate-limit": "^7.5.0",
     "onnxruntime-node": "^1.24.1",
     "ws": "^8.19.0"
