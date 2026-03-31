@@ -97,9 +97,7 @@ fastify.post("/webhook", async (request, reply) => {
     return reply.code(400).send({ error: "Invalid payload type" });
   }
 
-  const expected =
-    "sha256=" +
-    crypto.createHmac("sha256", WEBHOOK_SECRET).update(rawBody).digest("hex");
+  const expected = `sha256=${crypto.createHmac("sha256", WEBHOOK_SECRET).update(rawBody).digest("hex")}`;
 
   const sigBuf = Buffer.from(sig);
   const expBuf = Buffer.from(expected);
