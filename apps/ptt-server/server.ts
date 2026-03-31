@@ -1132,8 +1132,8 @@ function sendToOpenClaw(
 const ROUTING_OPTIONS: Array<{ session: string; label: string; desc: string }> =
   [
     {
-      session: "agent:main:telegram:direct:james",
-      label: "James DM",
+      session: "agent:main:telegram:direct:dm",
+      label: "Direct DM",
       desc: "General questions, personal tasks, anything not clearly matching a project",
     },
     {
@@ -1204,7 +1204,7 @@ async function pickSessionViaLLM(text: string): Promise<string> {
               resolve(ROUTING_OPTIONS[idx].session);
             } else {
               console.warn(
-                `[${ts()}] ⚠️ LLM returned unexpected: "${reply}" — defaulting to James DM`,
+                `[${ts()}] ⚠️ LLM returned unexpected: "${reply}" — defaulting to Direct DM`,
               );
               resolve(ROUTING_OPTIONS[0].session);
             }
@@ -1302,11 +1302,11 @@ async function transcribeAndRoute(wavBuffer: Buffer): Promise<void> {
   }
   console.log(`[${ts()}] 🗣️ "${text}"`);
 
-  // 1. Echo to James's DM immediately (he sees it on Telegram)
-  const echoSession = "agent:main:telegram:direct:james";
+  // 1. Echo to the DM session immediately (he sees it on Telegram)
+  const echoSession = "agent:main:telegram:direct:dm";
   sendViaGateway(`⌚ ${text}`, echoSession, (err) => {
     if (err) console.error(`[${ts()}] Echo failed: ${err.message}`);
-    else console.log(`[${ts()}] 📱 Echoed to James DM`);
+    else console.log(`[${ts()}] 📱 Echoed to Direct DM`);
   });
 
   // 2. LLM picks best session
@@ -1319,7 +1319,7 @@ async function transcribeAndRoute(wavBuffer: Buffer): Promise<void> {
       else console.log(`[${ts()}] ✅ Turn sent to ${routedSession}`);
     });
   } else {
-    console.log(`[${ts()}] ✅ Routed to James DM (already echoed)`);
+    console.log(`[${ts()}] ✅ Routed to Direct DM (already echoed)`);
   }
 }
 
