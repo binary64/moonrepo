@@ -282,7 +282,11 @@ const PTT_API_TOKEN = process.env.PTT_API_TOKEN || "";
 const app = Fastify({ logger: false });
 
 async function setupFastify(): Promise<void> {
-  await app.register(fastifyRateLimit, { global: false });
+  await app.register(fastifyRateLimit, {
+    global: true,
+    max: 60,
+    timeWindow: 60000,
+  });
 
   // Auth preHandler
   const verifyApiToken = async (
