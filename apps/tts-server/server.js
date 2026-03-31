@@ -17,13 +17,10 @@
  *   Jupiter → HA play_media(url) → Nest GETs /play/abc123 → server calls Hume → streams MP3
  */
 
-const express = require('express');
+const Fastify = require('fastify');
+const fastifyRateLimit = require('@fastify/rate-limit');
 const crypto = require('crypto');
 const fs = require('fs');
-const rateLimit = require('express-rate-limit');
-
-const app = express();
-app.use(express.json({ limit: '100kb' }));
 
 const PORT = process.env.TTS_PORT || 3090;
 const AUTH_TOKEN = process.env.TTS_AUTH_TOKEN || '';
@@ -41,15 +38,6 @@ if (!HUME_API_KEY) {
 // Default voice config
 const DEFAULT_VOICE = { name: 'Arthur', provider: 'CUSTOM_VOICE' };
 
-// Rate limiting — exempt /health
-const limiter = rateLimit({
-  windowMs: 60_000,
-  max: 30,
-  skip: (req) => req.path === '/health',
-  message: { error: 'Too many requests' },
-});
-app.use(limiter);
-
 // In-memory store: token → job
 const jobs = new Map();
 
@@ -65,17 +53,8 @@ setInterval(() => {
   }
 }, 60_000);
 
-// Auth middleware
-function authCheck(req, res, next) {
-  if (!AUTH_TOKEN) return next();
-  const provided = (req.headers.authorization || '').replace('Bearer ', '');
-  if (provided !== AUTH_TOKEN) return res.status(401).json({ error: 'Unauthorized' });
-  next();
-}
-
 // ─── Normalise input to utterances array ───
 function normaliseUtterances(body) {
-  // New format: { utterances: [{ text, acting?, voice? }] }
   if (Array.isArray(body.utterances) && body.utterances.length > 0) {
     return body.utterances.map(u => ({
       text: String(u.text || '').trim(),
@@ -84,7 +63,6 @@ function normaliseUtterances(body) {
     })).filter(u => u.text.length > 0);
   }
 
-  // Legacy format: { text, acting?, voice? }
   if (body.text && typeof body.text === 'string') {
     return [{
       text: body.text.trim(),
@@ -96,101 +74,130 @@ function normaliseUtterances(body) {
   return [];
 }
 
-// ─── POST /prepare ───
-app.post('/prepare', authCheck, (req, res) => {
-  const utterances = normaliseUtterances(req.body);
+// ─── Setup & Start ───
+async function start() {
+  const app = Fastify({ logger: false });
 
-  if (utterances.length === 0) {
-    return res.status(400).json({
-      error: 'No utterances provided',
-      usage: {
-        array: '{ utterances: [{ text: "Hello", acting: "warm" }, ...] }',
-        legacy: '{ text: "Hello", acting: "warm" }',
-      },
-    });
-  }
+  await app.register(fastifyRateLimit, {
+    global: true,
+    max: 30,
+    timeWindow: 60_000,
+    skipOnError: false,
+    errorResponseBuilder: () => ({ error: 'Too many requests' }),
+    skip: (req) => req.url === '/health',
+  });
 
-  // Validate total text length
-  const totalChars = utterances.reduce((sum, u) => sum + u.text.length, 0);
-  if (totalChars > 10000) {
-    return res.status(400).json({ error: `Total text too long (${totalChars}/10000 chars)` });
-  }
-
-  const token = crypto.randomBytes(16).toString('hex');
-  const job = {
-    utterances,
-    createdAt: Date.now(),
-    status: 'pending',
-    mp3Path: null,
-    error: null,
+  // Auth preHandler
+  const authCheck = async (request, reply) => {
+    if (!AUTH_TOKEN) return;
+    const provided = ((request.headers.authorization || '')).replace('Bearer ', '');
+    if (provided !== AUTH_TOKEN) {
+      return reply.code(401).send({ error: 'Unauthorized' });
+    }
   };
 
-  jobs.set(token, job);
+  // ─── POST /prepare ───
+  app.post('/prepare', { preHandler: authCheck }, async (request, reply) => {
+    const utterances = normaliseUtterances(request.body);
 
-  // Pre-generate immediately
-  generateTTS(token, job).catch(err => {
-    console.error(`[${token}] Pre-generation failed:`, err.message);
-  });
-
-  const host = req.headers.host || `192.168.1.201:${PORT}`;
-  res.json({
-    token,
-    url: `http://${host}/play/${token}`,
-    utteranceCount: utterances.length,
-    totalChars,
-  });
-});
-
-// ─── GET /play/:token ───
-app.get('/play/:token', async (req, res) => {
-  const { token } = req.params;
-  const job = jobs.get(token);
-
-  if (!job) {
-    return res.status(404).json({ error: 'Token not found or expired' });
-  }
-
-  try {
-    // Wait for generation (up to 30s for multi-utterance)
-    const deadline = Date.now() + 30_000;
-    while (job.status === 'pending' || job.status === 'generating') {
-      if (Date.now() > deadline) {
-        return res.status(504).json({ error: 'TTS generation timed out' });
-      }
-      await sleep(200);
+    if (utterances.length === 0) {
+      return reply.code(400).send({
+        error: 'No utterances provided',
+        usage: {
+          array: '{ utterances: [{ text: "Hello", acting: "warm" }, ...] }',
+          legacy: '{ text: "Hello", acting: "warm" }',
+        },
+      });
     }
 
-    if (job.status === 'error') {
-      return res.status(500).json({ error: 'TTS generation failed', detail: job.error });
+    const totalChars = utterances.reduce((sum, u) => sum + u.text.length, 0);
+    if (totalChars > 10000) {
+      return reply.code(400).send({ error: `Total text too long (${totalChars}/10000 chars)` });
     }
 
-    if (!job.mp3Path || !fs.existsSync(job.mp3Path)) {
-      return res.status(500).json({ error: 'MP3 file not found' });
-    }
+    const token = crypto.randomBytes(16).toString('hex');
+    const job = {
+      utterances,
+      createdAt: Date.now(),
+      status: 'pending',
+      mp3Path: null,
+      error: null,
+    };
 
-    const stat = fs.statSync(job.mp3Path);
-    res.setHeader('Content-Type', 'audio/mpeg');
-    res.setHeader('Content-Length', stat.size);
-    res.setHeader('Cache-Control', 'no-cache');
+    jobs.set(token, job);
 
-    const stream = fs.createReadStream(job.mp3Path);
-    stream.pipe(res);
-
-    stream.on('end', () => {
-      setTimeout(() => {
-        try { fs.unlinkSync(job.mp3Path); } catch {}
-        jobs.delete(token);
-      }, 5000);
+    generateTTS(token, job).catch(err => {
+      console.error(`[${token}] Pre-generation failed:`, err.message);
     });
-  } catch (err) {
-    console.error('[play] error:', err.message);
-    if (!res.headersSent) res.status(500).json({ error: 'Internal error' });
-  }
-});
 
-// ─── GET /health ───
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', jobs: jobs.size, uptime: process.uptime() });
+    const host = request.headers.host || `192.168.1.201:${PORT}`;
+    return reply.send({
+      token,
+      url: `http://${host}/play/${token}`,
+      utteranceCount: utterances.length,
+      totalChars,
+    });
+  });
+
+  // ─── GET /play/:token ───
+  app.get('/play/:token', async (request, reply) => {
+    const { token } = request.params;
+    const job = jobs.get(token);
+
+    if (!job) {
+      return reply.code(404).send({ error: 'Token not found or expired' });
+    }
+
+    try {
+      const deadline = Date.now() + 30_000;
+      while (job.status === 'pending' || job.status === 'generating') {
+        if (Date.now() > deadline) {
+          return reply.code(504).send({ error: 'TTS generation timed out' });
+        }
+        await sleep(200);
+      }
+
+      if (job.status === 'error') {
+        return reply.code(500).send({ error: 'TTS generation failed', detail: job.error });
+      }
+
+      if (!job.mp3Path || !fs.existsSync(job.mp3Path)) {
+        return reply.code(500).send({ error: 'MP3 file not found' });
+      }
+
+      const stat = fs.statSync(job.mp3Path);
+      reply.header('Content-Type', 'audio/mpeg');
+      reply.header('Content-Length', stat.size);
+      reply.header('Cache-Control', 'no-cache');
+
+      const stream = fs.createReadStream(job.mp3Path);
+      stream.on('end', () => {
+        setTimeout(() => {
+          try { fs.unlinkSync(job.mp3Path); } catch {}
+          jobs.delete(token);
+        }, 5000);
+      });
+      return reply.send(stream);
+    } catch (err) {
+      console.error('[play] error:', err.message);
+      if (!reply.sent) return reply.code(500).send({ error: 'Internal error' });
+    }
+  });
+
+  // ─── GET /health ───
+  app.get('/health', async () => {
+    return { status: 'ok', jobs: jobs.size, uptime: process.uptime() };
+  });
+
+  await app.listen({ port: PORT, host: '0.0.0.0' });
+  console.log('TTS Server listening on :%d', PORT);
+  console.log('Hume API key: %s', HUME_API_KEY ? 'configured' : 'MISSING');
+  console.log('Auth: %s', AUTH_TOKEN ? 'enabled' : 'disabled');
+}
+
+start().catch(err => {
+  console.error('Failed to start:', err);
+  process.exit(1);
 });
 
 // ─── Hume TTS Generation ───
@@ -199,14 +206,11 @@ async function generateTTS(token, job) {
   const outputPath = `/tmp/tts-${token}.mp3`;
 
   try {
-    // Build Hume utterances array — each segment gets its own acting instructions
     const humeUtterances = job.utterances.map(u => {
       const entry = { text: u.text };
       if (u.voice && typeof u.voice === 'object') {
-        // Pass voice object through as-is (e.g. {id: "..."} or {name: "...", provider: "..."})
         entry.voice = u.voice;
       } else if (u.voice && typeof u.voice === 'string') {
-        // String voice name → Hume custom voice lookup
         entry.voice = { name: u.voice, provider: 'CUSTOM_VOICE' };
       } else {
         entry.voice = { ...DEFAULT_VOICE };
@@ -235,8 +239,6 @@ async function generateTTS(token, job) {
     const data = await resp.json();
     if (data.status_code) throw new Error(data.message || 'Hume error');
 
-    // Hume returns one audio per generation — with multiple utterances
-    // they're concatenated into a single audio output
     const b64 = data.generations?.[0]?.audio;
     if (!b64) throw new Error('No audio in response');
 
@@ -255,10 +257,3 @@ async function generateTTS(token, job) {
 function sleep(ms) {
   return new Promise(r => setTimeout(r, ms));
 }
-
-// ─── Start ───
-app.listen(PORT, '0.0.0.0', () => {
-  console.log('TTS Server listening on :%d', PORT);
-  console.log('Hume API key: %s', HUME_API_KEY ? 'configured' : 'MISSING');
-  console.log('Auth: %s', AUTH_TOKEN ? 'enabled' : 'disabled');
-});
