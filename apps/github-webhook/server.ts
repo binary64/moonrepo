@@ -291,10 +291,14 @@ async function sendGatewayMessage(
   });
 }
 
-fastify.listen({ port: PORT, host: "0.0.0.0" }, (err) => {
-  if (err) {
+async function start() {
+  try {
+    await fastify.listen({ port: PORT, host: "0.0.0.0" });
+    console.log(`github-webhook server listening on port ${PORT}`);
+  } catch (err) {
     console.error(err);
     process.exit(1);
   }
-  console.log(`github-webhook server listening on port ${PORT}`);
-});
+}
+
+start();

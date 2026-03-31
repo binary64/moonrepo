@@ -32,6 +32,12 @@ const GATEWAY_TOKEN = process.env.OPENCLAW_GATEWAY_TOKEN || "";
 const OPENAI_KEY = process.env.OPENAI_API_KEY || "";
 
 // Fail-fast: validate required env vars before starting
+if (!GATEWAY_TOKEN) {
+  console.error(
+    "FATAL: OPENCLAW_GATEWAY_TOKEN is not set. Cannot send to gateway — exiting.",
+  );
+  process.exit(1);
+}
 if (!OPENAI_KEY) {
   console.error(
     "FATAL: OPENAI_API_KEY is not set. Cannot transcribe audio — exiting.",
@@ -218,7 +224,10 @@ async function runVADFrame(
     1,
     float32Frame.length,
   ]);
-  const result = await ortSession?.run({
+  if (!ortSession) {
+    throw new Error("VAD ortSession is not initialised");
+  }
+  const result = await ortSession.run({
     input,
     sr: vadState.sr,
     state: vadState.state,
@@ -380,7 +389,9 @@ async function setupFastify(): Promise<void> {
     },
     async (_request, reply) => {
       try {
-        const sessions = JSON.parse(fs.readFileSync(SESSIONS_FILE, "utf-8"));
+        const sessions = JSON.parse(
+          await fs.promises.readFile(SESSIONS_FILE, "utf-8"),
+        );
         return reply.send({ sessions });
       } catch {
         return reply.code(500).send({ error: "Failed to read sessions.json" });
@@ -471,7 +482,7 @@ function updateHABattery(level: number, charging: boolean): void {
 
 // ── HTTP server + WebSocket ──
 
-const server = http.createServer(app.server);
+const server = app.server;
 const wss = new WebSocketServer({ server, path: "/ws" });
 
 wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
@@ -609,9 +620,12 @@ wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
           charging?: boolean;
           session?: string;
         };
-        if (msg.type === "battery") {
-          if ((msg.level ?? -1) >= 0)
-            updateHABattery(msg.level!, msg.charging ?? false);
+        if (
+          msg.type === "battery" &&
+          typeof msg.level === "number" &&
+          msg.level >= 0
+        ) {
+          updateHABattery(msg.level, msg.charging ?? false);
         } else if (msg.type === "switch_session" && msg.session) {
           handleSessionSwitch(msg.session);
         }
