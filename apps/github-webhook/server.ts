@@ -85,7 +85,7 @@ fastify.addContentTypeParser(
 );
 
 fastify.post("/webhook", async (request, reply) => {
-  const sig = (request.headers["x-hub-signature-256"] as string | undefined);
+  const sig = request.headers["x-hub-signature-256"] as string | undefined;
   if (!sig) {
     console.warn("Missing X-Hub-Signature-256 header");
     return reply.code(401).send({ error: "Missing signature" });
