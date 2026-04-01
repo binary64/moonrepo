@@ -1,7 +1,7 @@
 {
   "name": "ptt-server",
   "version": "2.0.0",
-  "description": "Watch PTT voice receiver — Silero VAD + Whisper transcription + OpenClaw gateway routing",
+  "description": "Watch PTT voice receiver \u2014 Silero VAD + Whisper transcription + OpenClaw gateway routing",
   "main": "dist/server.js",
   "scripts": {
     "build": "tsc",
@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "express": "^4.21.0",
+    "express": "^5.2.1",
     "express-rate-limit": "^7.5.0",
     "onnxruntime-node": "^1.24.1",
     "ws": "^8.19.0"
