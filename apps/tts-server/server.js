@@ -65,6 +65,7 @@ setInterval(() => {
 
 // ─── Normalise input to utterances array ───
 function normaliseUtterances(body) {
+  if (!body || typeof body !== "object") return [];
   if (Array.isArray(body.utterances) && body.utterances.length > 0) {
     return body.utterances
       .map((u) => ({
@@ -249,17 +250,25 @@ async function generateTTS(token, job) {
       return entry;
     });
 
-    const resp = await fetch("https://api.hume.ai/v0/tts", {
-      method: "POST",
-      headers: {
-        "X-Hume-Api-Key": HUME_API_KEY,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        utterances: humeUtterances,
-        format: { type: "mp3" },
-      }),
-    });
+    const humeAbort = new AbortController();
+    const humeTimeout = setTimeout(() => humeAbort.abort(), 30_000);
+    let resp;
+    try {
+      resp = await fetch("https://api.hume.ai/v0/tts", {
+        method: "POST",
+        headers: {
+          "X-Hume-Api-Key": HUME_API_KEY,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          utterances: humeUtterances,
+          format: { type: "mp3" },
+        }),
+        signal: humeAbort.signal,
+      });
+    } finally {
+      clearTimeout(humeTimeout);
+    }
 
     if (!resp.ok) {
       const body = await resp.text();

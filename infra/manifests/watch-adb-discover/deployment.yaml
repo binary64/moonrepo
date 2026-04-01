@@ -5,6 +5,9 @@ metadata:
   namespace: watch-adb-discover
   labels:
     app: watch-adb-discover
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"
+    moonrepo.dev/skip-local: "true"
 spec:
   replicas: 1
   strategy:

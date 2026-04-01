@@ -75,64 +75,68 @@ fastify.get("/health", async () => {
   return { ok: true };
 });
 
-// Raw body needed for HMAC signature verification
-fastify.addContentTypeParser(
-  "application/json",
-  { parseAs: "buffer" },
-  (_req, body, done) => {
-    done(null, body);
-  },
-);
+// Scope the raw-buffer JSON parser to the webhook route only via an encapsulated
+// plugin so the rest of the service keeps Fastify's default JSON parsing.
+fastify.register(async (webhookPlugin) => {
+  // Raw body needed for HMAC signature verification
+  webhookPlugin.addContentTypeParser(
+    "application/json",
+    { parseAs: "buffer" },
+    (_req, body, done) => {
+      done(null, body);
+    },
+  );
 
-fastify.post("/webhook", async (request, reply) => {
-  const sig = request.headers["x-hub-signature-256"] as string | undefined;
-  if (!sig) {
-    console.warn("Missing X-Hub-Signature-256 header");
-    return reply.code(401).send({ error: "Missing signature" });
-  }
+  webhookPlugin.post("/webhook", async (request, reply) => {
+    const sig = request.headers["x-hub-signature-256"] as string | undefined;
+    if (!sig) {
+      console.warn("Missing X-Hub-Signature-256 header");
+      return reply.code(401).send({ error: "Missing signature" });
+    }
 
-  const rawBody = request.body as Buffer;
-  if (!Buffer.isBuffer(rawBody)) {
-    console.warn("Webhook payload is not a raw JSON buffer");
-    return reply.code(400).send({ error: "Invalid payload type" });
-  }
+    const rawBody = request.body as Buffer;
+    if (!Buffer.isBuffer(rawBody)) {
+      console.warn("Webhook payload is not a raw JSON buffer");
+      return reply.code(400).send({ error: "Invalid payload type" });
+    }
 
-  const expected = `sha256=${crypto.createHmac("sha256", WEBHOOK_SECRET).update(rawBody).digest("hex")}`;
+    const expected = `sha256=${crypto.createHmac("sha256", WEBHOOK_SECRET).update(rawBody).digest("hex")}`;
 
-  const sigBuf = Buffer.from(sig);
-  const expBuf = Buffer.from(expected);
-  if (
-    sigBuf.length !== expBuf.length ||
-    !crypto.timingSafeEqual(sigBuf, expBuf)
-  ) {
-    console.warn("Invalid webhook signature");
-    return reply.code(401).send({ error: "Invalid signature" });
-  }
+    const sigBuf = Buffer.from(sig);
+    const expBuf = Buffer.from(expected);
+    if (
+      sigBuf.length !== expBuf.length ||
+      !crypto.timingSafeEqual(sigBuf, expBuf)
+    ) {
+      console.warn("Invalid webhook signature");
+      return reply.code(401).send({ error: "Invalid signature" });
+    }
 
-  const event = request.headers["x-github-event"] as string | undefined;
-  let payload: Record<string, unknown>;
+    const event = request.headers["x-github-event"] as string | undefined;
+    let payload: Record<string, unknown>;
 
-  try {
-    payload = JSON.parse(rawBody.toString());
-  } catch (err: unknown) {
-    console.error(
-      "Failed to parse webhook payload:",
-      err instanceof Error ? err.message : String(err),
-    );
-    return reply.code(400).send({ error: "Invalid JSON payload" });
-  }
+    try {
+      payload = JSON.parse(rawBody.toString());
+    } catch (err: unknown) {
+      console.error(
+        "Failed to parse webhook payload:",
+        err instanceof Error ? err.message : String(err),
+      );
+      return reply.code(400).send({ error: "Invalid JSON payload" });
+    }
 
-  try {
-    await handleEvent(event || "", payload);
-    return reply.code(200).send({ ok: true });
-  } catch (err: unknown) {
-    console.error(
-      "Error handling event:",
-      err instanceof Error ? err.message : String(err),
-    );
-    return reply.code(500).send({ error: "Internal server error" });
-  }
-});
+    try {
+      await handleEvent(event || "", payload);
+      return reply.code(200).send({ ok: true });
+    } catch (err: unknown) {
+      console.error(
+        "Error handling event:",
+        err instanceof Error ? err.message : String(err),
+      );
+      return reply.code(500).send({ error: "Internal server error" });
+    }
+  });
+}); // end webhookPlugin
 
 type PullRequestRef = {
   number: number;

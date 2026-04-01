@@ -145,13 +145,21 @@ function recordMetric(entry: LatencyEntry): void {
       transcriptionArr.reduce((a, b) => a + b, 0) / transcriptionArr.length,
     );
     metrics.p95TranscriptionMs =
-      transcriptionArr[Math.floor(transcriptionArr.length * 0.95)] || 0;
+      transcriptionArr[
+        Math.min(
+          Math.ceil(transcriptionArr.length * 0.95) - 1,
+          transcriptionArr.length - 1,
+        )
+      ] || 0;
   }
   if (e2eArr.length > 0) {
     metrics.avgEndToEndMs = Math.round(
       e2eArr.reduce((a, b) => a + b, 0) / e2eArr.length,
     );
-    metrics.p95EndToEndMs = e2eArr[Math.floor(e2eArr.length * 0.95)] || 0;
+    metrics.p95EndToEndMs =
+      e2eArr[
+        Math.min(Math.ceil(e2eArr.length * 0.95) - 1, e2eArr.length - 1)
+      ] || 0;
   }
   if (vadArr.length > 0) {
     metrics.avgVadSpeechMs = Math.round(
@@ -432,7 +440,6 @@ function updateHABattery(level: number, charging: boolean): void {
   if (!HA_TOKEN) return;
   const now = Date.now();
   if (now - lastBatteryUpdate < 5 * 60 * 1000 && level > 0) return;
-  lastBatteryUpdate = now;
 
   const state = {
     state: level,
@@ -469,14 +476,21 @@ function updateHABattery(level: number, charging: boolean): void {
       });
       res.on("end", () => {
         if (res.statusCode === 200 || res.statusCode === 201) {
+          lastBatteryUpdate = now;
           console.log(
             `[${ts()}] 🔋 Watch battery: ${level}%${charging ? " ⚡" : ""}`,
+          );
+        } else {
+          console.error(
+            `[${ts()}] HA battery update failed: HTTP ${res.statusCode} — ${body.slice(0, 200)}`,
           );
         }
       });
     },
   );
-  req.on("error", () => {});
+  req.on("error", (err: Error) => {
+    console.error(`[${ts()}] HA battery request error: ${err.message}`);
+  });
   req.end(data);
 }
 
@@ -935,6 +949,81 @@ interface TranscribeResult {
   quickCommand: boolean;
 }
 
+// Pure transcription — calls Whisper but does NOT send to any session.
+// Returns trimmed text, empty string for silence/hallucinations, or rejects on error.
+function transcribeOnly(wavBuffer: Buffer): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const boundary = `----WatchPTT${Date.now()}`;
+    const prompt =
+      "Arthur, radio on, lights off, TV on, skip track, what's the weather [BRITISH]";
+
+    const pre = Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="audio.wav"\r\nContent-Type: audio/wav\r\n\r\n`,
+    );
+    const post = Buffer.from(
+      `\r\n--${boundary}\r\nContent-Disposition: form-data; name="model"\r\n\r\nwhisper-1\r\n` +
+        `--${boundary}\r\nContent-Disposition: form-data; name="language"\r\n\r\nen\r\n` +
+        `--${boundary}\r\nContent-Disposition: form-data; name="response_format"\r\n\r\ntext\r\n` +
+        `--${boundary}\r\nContent-Disposition: form-data; name="prompt"\r\n\r\n${prompt}\r\n` +
+        `--${boundary}--\r\n`,
+    );
+    const body = Buffer.concat([pre, wavBuffer, post]);
+
+    const apiReq = https.request(
+      {
+        hostname: "api.openai.com",
+        path: "/v1/audio/transcriptions",
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${OPENAI_KEY}`,
+          "Content-Type": `multipart/form-data; boundary=${boundary}`,
+          "Content-Length": body.length,
+        },
+      },
+      (apiRes) => {
+        let data = "";
+        apiRes.on("data", (c: string) => {
+          data += c;
+        });
+        apiRes.on("end", () => {
+          clearTimeout(whisperTimeout);
+          if (apiRes.statusCode !== 200)
+            return reject(new Error(`Whisper ${apiRes.statusCode}: ${data}`));
+          const text = data.trim();
+          console.log(`[${ts()}] 🗣️ Whisper: [len:${text.length}]`);
+          if (!text || text.length < 2) return resolve("");
+          if (isHallucination(text)) {
+            console.log(
+              `[${ts()}] 🚫 Filtered hallucination: [len:${text.length}]`,
+            );
+            metrics.totalHallucinations++;
+            const snapshot = JSON.stringify(metrics, null, 2);
+            metricsWrite = metricsWrite
+              .then(() => fs.promises.writeFile(METRICS_FILE, snapshot))
+              .catch((err: Error) =>
+                console.error(
+                  `[${ts()}] Failed to persist hallucination count: ${err.message}`,
+                ),
+              );
+            return resolve("");
+          }
+          resolve(text);
+        });
+      },
+    );
+
+    const whisperTimeout = setTimeout(() => {
+      apiReq.destroy(new Error("Whisper API timeout after 30s"));
+    }, 30000);
+
+    apiReq.on("error", (err: Error) => {
+      clearTimeout(whisperTimeout);
+      reject(err);
+    });
+    apiReq.end(body);
+  });
+}
+
 function transcribeAndSend(
   wavBuffer: Buffer,
   sessionKey: string,
@@ -1222,15 +1311,13 @@ async function pickSessionViaLLM(text: string): Promise<string> {
   });
 }
 
-// Transcribe raw PCM buffer and route via LLM, echo to Telegram immediately
+// Transcribe raw PCM buffer and route via LLM, echo to Telegram immediately.
+// Uses transcribeOnly (pure) to avoid the double-dispatch that would occur if
+// transcribeAndSend were called here before also sending via routedSession below.
 async function transcribeAndRoute(wavBuffer: Buffer): Promise<void> {
   let text: string;
   try {
-    const result = await transcribeAndSend(wavBuffer, MAIN_SESSION);
-    text =
-      typeof result === "object"
-        ? (result as { text: string }).text
-        : (result as string);
+    text = await transcribeOnly(wavBuffer);
   } catch (e) {
     console.error(`[${ts()}] ❌ Whisper failed: ${(e as Error).message}`);
     return;
