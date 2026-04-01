@@ -8,6 +8,9 @@
     "start": "next start",
     "lint": "eslint"
   },
+  "overrides": {
+    "picomatch": "4.0.4"
+  },
   "dependencies": {
     "next-auth": "^4.24.13",
     "@radix-ui/react-avatar": "^1.1.11",
