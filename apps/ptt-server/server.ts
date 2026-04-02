@@ -145,7 +145,10 @@ const SAMPLE_RATE = 16000;
 const BYTES_PER_SAMPLE = 2;
 
 // VAD config
-const SPEECH_THRESHOLD = 0.85;
+const FRAME_SAMPLES = 512; // Silero VAD v6.2 only accepts 512-sample frames at 16kHz.
+const FRAME_BYTES = FRAME_SAMPLES * BYTES_PER_SAMPLE;
+const FRAME_MS = (FRAME_SAMPLES / SAMPLE_RATE) * 1000;
+const SPEECH_THRESHOLD = 0.50; // Lowered from 0.85 — Silero v6.2 at 32ms frames peaks ~0.6-0.7, 0.85 was unreachable
 const SILENCE_AFTER_SPEECH_MS = 1600;
 const MIN_SPEECH_MS = 400;
 const MIN_SPEECH_FRAMES = 5;
