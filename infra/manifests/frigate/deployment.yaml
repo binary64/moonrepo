@@ -5,6 +5,7 @@ metadata:
   namespace: frigate
   annotations:
     moonrepo.dev/skip-local: "true"
+    reloader.stakater.com/auto: "true"
   labels:
     app: frigate
 spec:
