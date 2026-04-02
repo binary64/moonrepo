@@ -47,6 +47,8 @@ sensor:
     ibeacon_major: 100
     ibeacon_minor: 40004
     name: "phone1_rssi"
+    on_value:
+      - lambda: 'id(last_publish_ms) = millis();'
 
   # Watch 1 (iBeacon via HA companion app on Galaxy Watch)
   - platform: ble_rssi
@@ -54,6 +56,8 @@ sensor:
     ibeacon_major: 100
     ibeacon_minor: 40004
     name: "watch1_rssi"
+    on_value:
+      - lambda: 'id(last_publish_ms) = millis();'
 
   # Phone 2 (iBeacon)
   - platform: ble_rssi
@@ -61,6 +65,8 @@ sensor:
     ibeacon_major: 100
     ibeacon_minor: 40004
     name: "phone2_rssi"
+    on_value:
+      - lambda: 'id(last_publish_ms) = millis();'
 
   # Watch 2 (iBeacon — UUID TBD)
   # - platform: ble_rssi
@@ -78,3 +84,5 @@ sensor:
   - platform: internal_temperature
     name: "${friendly_name} Temperature"
     update_interval: 60s
+    on_value:
+      - lambda: 'id(last_publish_ms) = millis();'

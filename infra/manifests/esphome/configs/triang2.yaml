@@ -12,5 +12,29 @@ esp32:
   framework:
     type: arduino
 
+globals:
+  - id: last_publish_ms
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+
+output:
+  - platform: gpio
+    pin:
+      number: GPIO2
+      inverted: false
+    id: status_led_out
+
+interval:
+  - interval: 1s
+    then:
+      - if:
+          condition:
+            lambda: 'return millis() - id(last_publish_ms) < 10000;'
+          then:
+            - output.turn_on: status_led_out
+          else:
+            - output.turn_off: status_led_out
+
 packages:
   common: !include packages/triang-common.yaml
