@@ -11,5 +11,8 @@
     "@11ty/eleventy": "^3.0.0",
     "@11ty/eleventy-plugin-rss": "^2.0.2",
     "markdown-it": "^14.0.0"
+  },
+  "overrides": {
+    "picomatch": ">=4.0.4"
   }
 }
