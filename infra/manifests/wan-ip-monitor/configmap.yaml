@@ -32,7 +32,7 @@ data:
     mkdir -p "${STATE_DIR}"
 
     # Fetch current WAN IP
-    CURRENT_IP=$(curl -sS --max-time 10 https://ifconfig.me/ip || curl -sS --max-time 10 https://api.ipify.org || echo "")
+    CURRENT_IP=$(curl -fsS --max-time 10 https://ifconfig.me/ip || curl -fsS --max-time 10 https://api.ipify.org || echo "")
 
     if [ -z "${CURRENT_IP}" ]; then
       echo "ERROR: Failed to fetch WAN IP"
