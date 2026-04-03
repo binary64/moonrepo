@@ -12,5 +12,4 @@ metadata:
     app.kubernetes.io/name: wan-ip-monitor
     app.kubernetes.io/part-of: monitoring
 data:
-  # Replace with your New Relic account ID (found at one.eu.newrelic.com → User → Account)
-  NR_ACCOUNT_ID: "REPLACE_WITH_NR_ACCOUNT_ID"
+  NR_ACCOUNT_ID: "6794449"
