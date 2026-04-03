@@ -1,0 +1,15 @@
+# New Relic account ID (not sensitive — appears in NR URLs/dashboards).
+# Set NR_ACCOUNT_ID to your New Relic account number before applying,
+# or update the value below after obtaining it from your NR account settings.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wan-ip-monitor-config
+  namespace: newrelic
+  annotations:
+    moonrepo.dev/skip-local: "true"
+  labels:
+    app.kubernetes.io/name: wan-ip-monitor
+    app.kubernetes.io/part-of: monitoring
+data:
+  NR_ACCOUNT_ID: "6794449"

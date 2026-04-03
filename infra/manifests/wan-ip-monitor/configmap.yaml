@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wan-ip-monitor-script
+  namespace: newrelic
+  annotations:
+    moonrepo.dev/skip-local: "true"
+  labels:
+    app.kubernetes.io/name: wan-ip-monitor
+    app.kubernetes.io/part-of: monitoring
+data:
+  check-wan-ip.sh: |
+    #!/bin/sh
+    set -e
+
+    # Validate required env vars before doing anything
+    if [ -z "${NR_ACCOUNT_ID}" ] || [ "${NR_ACCOUNT_ID}" = "REPLACE_WITH_NR_ACCOUNT_ID" ]; then
+      echo "ERROR: NR_ACCOUNT_ID is not set or is still the placeholder value."
+      echo "       Set it in infra/manifests/wan-ip-monitor/config.yaml before deploying."
+      exit 1
+    fi
+
+    if [ -z "${NR_LICENSE_KEY}" ]; then
+      echo "ERROR: NR_LICENSE_KEY is not set. Ensure the newrelic-secret Secret exists."
+      exit 1
+    fi
+
+    STATE_DIR="/state"
+    STATE_FILE="${STATE_DIR}/last-known-ip"
+    NR_ENDPOINT="https://insights-collector.eu01.nr-data.net/v1/accounts/${NR_ACCOUNT_ID}/events"
+
+    mkdir -p "${STATE_DIR}"
+
+    # Fetch current WAN IP
+    CURRENT_IP=$(curl -fsS --max-time 10 https://ifconfig.me/ip || curl -fsS --max-time 10 https://api.ipify.org || echo "")
+
+    if [ -z "${CURRENT_IP}" ]; then
+      echo "ERROR: Failed to fetch WAN IP"
+      exit 1
+    fi
+
+    echo "Current WAN IP: ${CURRENT_IP}"
+
+    # Read last known IP (empty if first run)
+    if [ -f "${STATE_FILE}" ]; then
+      LAST_IP=$(cat "${STATE_FILE}")
+    else
+      LAST_IP=""
+    fi
+
+    # Only send event if IP has changed (or first run)
+    if [ "${CURRENT_IP}" != "${LAST_IP}" ]; then
+      echo "WAN IP changed: '${LAST_IP}' -> '${CURRENT_IP}'"
+
+      TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+      PAYLOAD="[{\"eventType\":\"WanIpChange\",\"newIp\":\"${CURRENT_IP}\",\"oldIp\":\"${LAST_IP}\",\"timestamp\":\"${TIMESTAMP}\",\"node\":\"nuc\"}]"
+
+      HTTP_STATUS=$(curl -sS --max-time 15 \
+        -X POST \
+        -H "Content-Type: application/json" \
+        -H "Api-Key: ${NR_LICENSE_KEY}" \
+        --data "${PAYLOAD}" \
+        --write-out "%{http_code}" \
+        --output /dev/null \
+        "${NR_ENDPOINT}")
+
+      if [ "${HTTP_STATUS}" = "200" ]; then
+        echo "Event sent to New Relic (HTTP ${HTTP_STATUS})"
+        echo "${CURRENT_IP}" > "${STATE_FILE}"
+      else
+        echo "ERROR: New Relic API returned HTTP ${HTTP_STATUS}"
+        exit 1
+      fi
+    else
+      echo "WAN IP unchanged: ${CURRENT_IP}"
+    fi
