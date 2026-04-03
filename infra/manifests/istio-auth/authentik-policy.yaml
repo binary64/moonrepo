@@ -15,7 +15,6 @@ spec:
         - operation:
             hosts:
               - "frigate.brandwhisper.cloud"
-              - "zigbee.brandwhisper.cloud"
               - "mgmt.brandwhisper.cloud"
               - "start.brandwhisper.cloud"
               - "llm.brandwhisper.cloud"
