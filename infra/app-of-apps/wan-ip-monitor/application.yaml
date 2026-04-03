@@ -3,6 +3,12 @@ kind: Application
 metadata:
   name: wan-ip-monitor
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+    moonrepo.dev/skip-local: "true"
+  labels:
+    app.kubernetes.io/name: wan-ip-monitor
+    app.kubernetes.io/part-of: monitoring
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:

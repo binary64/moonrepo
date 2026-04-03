@@ -3,6 +3,11 @@ kind: CronJob
 metadata:
   name: wan-ip-monitor
   namespace: newrelic
+  annotations:
+    moonrepo.dev/skip-local: "true"
+  labels:
+    app.kubernetes.io/name: wan-ip-monitor
+    app.kubernetes.io/part-of: monitoring
 spec:
   # Run every 5 minutes
   schedule: "*/5 * * * *"
@@ -12,6 +17,9 @@ spec:
   jobTemplate:
     spec:
       template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: wan-ip-monitor
         spec:
           # Must run on the NUC (master node) — only node with real WAN access
           nodeSelector:
@@ -24,12 +32,26 @@ spec:
               effect: NoSchedule
               operator: Exists
           restartPolicy: OnFailure
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
           containers:
             - name: wan-ip-monitor
-              image: curlimages/curl:latest
+              image: curlimages/curl:8.18.0
               command:
                 - /bin/sh
                 - /scripts/check-wan-ip.sh
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop:
+                    - ALL
               env:
                 - name: NR_LICENSE_KEY
                   valueFrom:

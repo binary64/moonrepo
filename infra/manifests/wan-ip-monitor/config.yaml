@@ -6,6 +6,11 @@ kind: ConfigMap
 metadata:
   name: wan-ip-monitor-config
   namespace: newrelic
+  annotations:
+    moonrepo.dev/skip-local: "true"
+  labels:
+    app.kubernetes.io/name: wan-ip-monitor
+    app.kubernetes.io/part-of: monitoring
 data:
   # Replace with your New Relic account ID (found at one.eu.newrelic.com → User → Account)
   NR_ACCOUNT_ID: "REPLACE_WITH_NR_ACCOUNT_ID"
