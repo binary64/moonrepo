@@ -38,3 +38,13 @@ spec:
       type: Literal
       literal:
         value: eu-west-2
+    # New Relic User API key (for alert/workflow provisioning)
+    # Create secret with:
+    #   kubectl create secret generic newrelic-api-key-pulumi \
+    #     --namespace=pulumi-operator-system \
+    #     --from-literal=apiKey=NRAK-...
+    NEW_RELIC_API_KEY:
+      type: Secret
+      secret:
+        name: newrelic-api-key-pulumi
+        key: apiKey
