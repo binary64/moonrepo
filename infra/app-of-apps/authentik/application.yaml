@@ -29,6 +29,15 @@ spec:
                 secretKeyRef:
                   name: authentik-pg-app
                   key: password
+          volumes:
+            - name: branding-blueprint
+              configMap:
+                name: authentik-branding-blueprint
+          volumeMounts:
+            - name: branding-blueprint
+              mountPath: /blueprints/custom/branding.yaml
+              subPath: branding.yaml
+              readOnly: true
 
         worker:
           nodeSelector:
