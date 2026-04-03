@@ -18,7 +18,14 @@ import * as pulumi from "@pulumi/pulumi";
 const config = new pulumi.Config();
 
 const nrAccountId = config.require("newrelic-account-id");
-const nrApiKey = config.requireSecret("newrelic-api-key");
+// config.requireSecret is the primary source; fall back to the NEW_RELIC_API_KEY
+// env var injected by the Pulumi Operator (via stack.yaml envRefs) so both
+// local `pulumi up` (with `pulumi config set --secret`) and the in-cluster
+// operator work without extra glue.
+const nrApiKey =
+  process.env.NEW_RELIC_API_KEY
+    ? pulumi.secret(process.env.NEW_RELIC_API_KEY)
+    : config.requireSecret("newrelic-api-key");
 const nrNotifyEmail = config.requireSecret("newrelic-notify-email");
 
 // ─── Provider ────────────────────────────────────────────────────────────────
@@ -32,13 +39,13 @@ const nrProvider = new newrelic.Provider("newrelic", {
 // ─── Alert Policy ─────────────────────────────────────────────────────────────
 
 const nucOfflinePolicy = new newrelic.AlertPolicy(
-  "nuc-offline-policy",
+  "moonrepo-nuc-offline-policy",
   {
     name: "NUC Offline",
     // Open one incident per policy (aggregate multiple conditions if added later)
     incidentPreference: "PER_CONDITION_AND_TARGET",
   },
-  { provider: nrProvider },
+  { provider: nrProvider, protect: true },
 );
 
 // ─── NRQL Alert Condition (lost-signal / expiration) ─────────────────────────
@@ -49,7 +56,7 @@ const nucOfflinePolicy = new newrelic.AlertPolicy(
 // is driven entirely by the lost-signal expiration setting.
 
 const nucOfflineCondition = new newrelic.NrqlAlertCondition(
-  "nuc-offline-condition",
+  "moonrepo-nuc-offline-condition",
   {
     accountId: nrAccountId,
     policyId: nucOfflinePolicy.id,
@@ -90,7 +97,7 @@ const nucOfflineCondition = new newrelic.NrqlAlertCondition(
 // ─── Notification Destination (email) ────────────────────────────────────────
 
 const emailDestination = new newrelic.NotificationDestination(
-  "nuc-offline-email-dest",
+  "moonrepo-nuc-offline-email-dest",
   {
     name: "Cluster Alerts Email",
     type: "EMAIL",
@@ -107,7 +114,7 @@ const emailDestination = new newrelic.NotificationDestination(
 // ─── Notification Channel ─────────────────────────────────────────────────────
 
 const emailChannel = new newrelic.NotificationChannel(
-  "nuc-offline-email-channel",
+  "moonrepo-nuc-offline-email-channel",
   {
     name: "Cluster Alerts Email",
     type: "EMAIL",
@@ -129,7 +136,7 @@ const emailChannel = new newrelic.NotificationChannel(
 // This one routes any issue from the NUC Offline policy to email.
 
 const nucOfflineWorkflow = new newrelic.Workflow(
-  "nuc-offline-workflow",
+  "moonrepo-nuc-offline-workflow",
   {
     name: "NUC Offline Workflow",
     mutingRulesHandling: "DONT_NOTIFY_FULLY_MUTED_ISSUES",
