@@ -8,6 +8,9 @@ metadata:
     networking.istio.io/service-type: LoadBalancer
 spec:
   gatewayClassName: istio
+  addresses:
+  - type: IPAddress
+    value: "84.69.17.64"
   listeners:
   - name: default
     port: 80
