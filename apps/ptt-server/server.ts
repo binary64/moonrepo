@@ -240,6 +240,11 @@ async function runVADFrame(
     sr: vadState.sr,
     state: vadState.state,
   });
+  if (!result.stateN || !result.output) {
+    throw new Error(
+      "VAD model returned unexpected output — missing stateN or output",
+    );
+  }
   vadState.state = result.stateN as ort.Tensor;
   return (result.output.data as Float32Array)[0];
 }
