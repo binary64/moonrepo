@@ -1,0 +1,86 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: wan-ip-monitor
+  namespace: newrelic
+  annotations:
+    moonrepo.dev/skip-local: "true"
+  labels:
+    app.kubernetes.io/name: wan-ip-monitor
+    app.kubernetes.io/part-of: monitoring
+spec:
+  # Run every 5 minutes
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: wan-ip-monitor
+        spec:
+          # Must run on the NUC (master node) — only node with real WAN access
+          nodeSelector:
+            node-role.kubernetes.io/master: "true"
+          tolerations:
+            - key: node-role.kubernetes.io/master
+              effect: NoSchedule
+              operator: Exists
+            - key: node-role.kubernetes.io/control-plane
+              effect: NoSchedule
+              operator: Exists
+          restartPolicy: OnFailure
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: wan-ip-monitor
+              image: curlimages/curl:8.18.0
+              command:
+                - /bin/sh
+                - /scripts/check-wan-ip.sh
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop:
+                    - ALL
+              env:
+                - name: NR_LICENSE_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: newrelic-secret
+                      key: licenseKey
+                - name: NR_ACCOUNT_ID
+                  valueFrom:
+                    configMapKeyRef:
+                      name: wan-ip-monitor-config
+                      key: NR_ACCOUNT_ID
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 16Mi
+                limits:
+                  cpu: 100m
+                  memory: 64Mi
+              volumeMounts:
+                - name: scripts
+                  mountPath: /scripts
+                - name: state
+                  mountPath: /state
+          volumes:
+            - name: scripts
+              configMap:
+                name: wan-ip-monitor-script
+                defaultMode: 0755
+            - name: state
+              hostPath:
+                path: /tmp/wan-ip-monitor
+                type: DirectoryOrCreate
