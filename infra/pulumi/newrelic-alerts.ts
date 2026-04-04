@@ -22,10 +22,9 @@ const nrAccountId = config.require("newrelic-account-id");
 // env var injected by the Pulumi Operator (via stack.yaml envRefs) so both
 // local `pulumi up` (with `pulumi config set --secret`) and the in-cluster
 // operator work without extra glue.
-const nrApiKey =
-  process.env.NEW_RELIC_API_KEY
-    ? pulumi.secret(process.env.NEW_RELIC_API_KEY)
-    : config.requireSecret("newrelic-api-key");
+const nrApiKey = process.env.NEW_RELIC_API_KEY
+  ? pulumi.secret(process.env.NEW_RELIC_API_KEY)
+  : config.requireSecret("newrelic-api-key");
 const nrNotifyEmail = config.requireSecret("newrelic-notify-email");
 
 // ─── Provider ────────────────────────────────────────────────────────────────
