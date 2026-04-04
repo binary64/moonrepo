@@ -9,6 +9,7 @@
     "@pulumi/cloudflare": "^5",
     "@pulumi/github": "^6.12.1",
     "@pulumi/kubernetes": "^4",
+    "@pulumi/newrelic": "^5",
     "@pulumi/pulumi": "^3"
   },
   "overrides": {
