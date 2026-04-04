@@ -1,0 +1,36 @@
+authentik:
+  secret_key: "CHANGE_ME_USE_SEALED_SECRET"
+  postgresql:
+    host: "authentik-pg-rw"
+    port: 5432
+    database: "authentik"
+    user: "authentik"
+
+server:
+  nodeSelector:
+    kubernetes.io/hostname: vmi3137202
+  env:
+    - name: AUTHENTIK_POSTGRESQL__PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: authentik-pg-app
+          key: password
+  volumes:
+    - name: branding-blueprint
+      configMap:
+        name: authentik-branding-blueprint
+  volumeMounts:
+    - name: branding-blueprint
+      mountPath: /blueprints/custom/branding.yaml
+      subPath: branding.yaml
+      readOnly: true
+
+worker:
+  nodeSelector:
+    kubernetes.io/hostname: vmi3137202
+  env:
+    - name: AUTHENTIK_POSTGRESQL__PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: authentik-pg-app
+          key: password
