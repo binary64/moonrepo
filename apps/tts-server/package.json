@@ -9,5 +9,8 @@
   "dependencies": {
     "express": "^4.21.0",
     "express-rate-limit": "^7.5.0"
+  },
+  "overrides": {
+    "path-to-regexp": "0.1.13"
   }
 }
