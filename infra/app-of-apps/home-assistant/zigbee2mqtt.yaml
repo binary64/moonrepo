@@ -12,6 +12,10 @@ spec:
       jqPathExpressions:
         - .spec.volumeClaimTemplates[]?.spec.volumeMode
         - .spec.volumeClaimTemplates[]?.status
+    - group: ""
+      kind: Service
+      jqPathExpressions:
+        - .spec.ports[]?.nodePort
   project: default
   source:
     repoURL: https://charts.zigbee2mqtt.io/
@@ -58,7 +62,6 @@ spec:
         service:
           type: NodePort
           port: 8080
-          nodePort: 30080
 
         statefulset:
           podAnnotations:
