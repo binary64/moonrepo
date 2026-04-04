@@ -3,42 +3,32 @@ kind: Application
 metadata:
   name: authentik
   namespace: argocd
+  annotations:
+    moonrepo.dev/skip-local: "true"
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   project: default
-  source:
-    repoURL: https://charts.goauthentik.io
-    targetRevision: "2025.10.3"
-    chart: authentik
-    helm:
-      releaseName: authentik
-      values: |
-        authentik:
-          secret_key: "CHANGE_ME_USE_SEALED_SECRET"
-          postgresql:
-            host: "authentik-pg-rw"
-            port: 5432
-            database: "authentik"
-            user: "authentik"
 
-        server:
-          nodeSelector:
-            kubernetes.io/hostname: vmi3137202
-          env:
-            - name: AUTHENTIK_POSTGRESQL__PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: authentik-pg-app
-                  key: password
+  # Multi-source: Helm chart from upstream + values + branding ConfigMap from our git
+  sources:
+    # 1. Authentik Helm chart
+    - repoURL: https://charts.goauthentik.io
+      targetRevision: "2025.10.3"
+      chart: authentik
+      helm:
+        releaseName: authentik
+        valueFiles:
+          - $values/infra/helm-values/authentik/values.yaml
 
-        worker:
-          nodeSelector:
-            kubernetes.io/hostname: vmi3137202
-          env:
-            - name: AUTHENTIK_POSTGRESQL__PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: authentik-pg-app
-                  key: password
+    # 2. Values file reference (our git)
+    - repoURL: https://github.com/binary64/moonrepo.git
+      targetRevision: master
+      ref: values
+
+    # 3. Branding ConfigMap (must be in ArgoCD render scope to be deployed)
+    - repoURL: https://github.com/binary64/moonrepo.git
+      targetRevision: master
+      path: infra/app-of-apps/authentik/branding
 
   destination:
     server: https://kubernetes.default.svc
