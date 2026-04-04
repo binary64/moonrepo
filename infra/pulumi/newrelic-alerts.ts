@@ -8,7 +8,8 @@
  *
  * The New Relic infrastructure agent (nri-bundle) is deployed as a DaemonSet on
  * the cluster.  It emits `SystemSample` events for every node, including the NUC
- * (hostname: "master").  When those events stop arriving for ≥10 minutes we open
+ * (hostname configurable via `newrelic-nuc-hostname`, default "master").
+ * When those events stop arriving for ≥10 minutes we open
  * an incident and send an email.
  */
 
@@ -26,6 +27,7 @@ const nrApiKey = process.env.NEW_RELIC_API_KEY
   ? pulumi.secret(process.env.NEW_RELIC_API_KEY)
   : config.requireSecret("newrelic-api-key");
 const nrNotifyEmail = config.requireSecret("newrelic-notify-email");
+const nucHostname = config.get("newrelic-nuc-hostname") ?? "master";
 
 // ─── Provider ────────────────────────────────────────────────────────────────
 
@@ -59,15 +61,14 @@ const nucOfflineCondition = new newrelic.NrqlAlertCondition(
   {
     accountId: nrAccountId,
     policyId: nucOfflinePolicy.id,
-    name: "NUC host not reporting (master)",
-    description:
-      "Opens when the NUC (hostname: master) stops sending SystemSample events for ≥10 minutes.",
+    name: pulumi.interpolate`NUC host not reporting (${nucHostname})`,
+    description: pulumi.interpolate`Opens when the NUC (hostname: ${nucHostname}) stops sending SystemSample events for ≥10 minutes.`,
     type: "static",
     enabled: true,
 
     nrql: {
       // SystemSample is emitted by the nri-infrastructure DaemonSet
-      query: "SELECT count(*) FROM SystemSample WHERE hostname = 'master'",
+      query: pulumi.interpolate`SELECT count(*) FROM SystemSample WHERE hostname = '${nucHostname}'`,
     },
 
     // ── Lost-signal (expiration) settings ──
