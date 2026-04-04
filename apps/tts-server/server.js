@@ -19,8 +19,8 @@
 
 const Fastify = require("fastify");
 const fastifyRateLimit = require("@fastify/rate-limit");
-const crypto = require("crypto");
-const fs = require("fs");
+const crypto = require("node:crypto");
+const fs = require("node:fs");
 
 const PORT = process.env.TTS_PORT || 3090;
 const AUTH_TOKEN = process.env.TTS_AUTH_TOKEN || "";
@@ -67,7 +67,7 @@ setInterval(() => {
 
 // ─── Normalise input to utterances array ───
 function normaliseUtterances(body) {
-  if (!body || typeof body !== "object") return [];
+  if (!body || typeof body !== "object" || Array.isArray(body)) return [];
   if (Array.isArray(body.utterances) && body.utterances.length > 0) {
     return body.utterances
       .map((u) => ({

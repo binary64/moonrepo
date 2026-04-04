@@ -60,20 +60,23 @@ interface QuickCommandRegistry {
 }
 
 let quickCommands: Record<string, QuickCommand> = {};
-try {
-  const reg = JSON.parse(
-    fs.readFileSync(QUICK_COMMANDS_PATH, "utf-8"),
-  ) as QuickCommandRegistry;
-  quickCommands = reg.commands || {};
-  console.log(`Loaded ${Object.keys(quickCommands).length} quick commands`);
-} catch (err) {
-  const e = err as NodeJS.ErrnoException;
-  if (e.code === "ENOENT") {
-    console.warn("⚠️ Quick commands registry not found — skipping");
-  } else {
-    console.error(
-      `Failed to load quick commands from ${QUICK_COMMANDS_PATH}: ${e.message}`,
-    );
+
+async function loadQuickCommands(): Promise<void> {
+  try {
+    const reg = JSON.parse(
+      await fs.promises.readFile(QUICK_COMMANDS_PATH, "utf-8"),
+    ) as QuickCommandRegistry;
+    quickCommands = reg.commands || {};
+    console.log(`Loaded ${Object.keys(quickCommands).length} quick commands`);
+  } catch (err) {
+    const e = err as NodeJS.ErrnoException;
+    if (e.code === "ENOENT") {
+      console.warn("⚠️ Quick commands registry not found — skipping");
+    } else {
+      console.error(
+        `Failed to load quick commands from ${QUICK_COMMANDS_PATH}: ${e.message}`,
+      );
+    }
   }
 }
 
@@ -139,27 +142,24 @@ function recordMetric(entry: LatencyEntry): void {
     .filter(Boolean)
     .sort((a, b) => a - b);
   const vadArr = latencies.map((l) => l.vadSpeechMs).filter(Boolean);
+  const p95Index = (values: number[]): number =>
+    Math.max(
+      0,
+      Math.min(values.length - 1, Math.ceil(values.length * 0.95) - 1),
+    );
 
   if (transcriptionArr.length > 0) {
     metrics.avgTranscriptionMs = Math.round(
       transcriptionArr.reduce((a, b) => a + b, 0) / transcriptionArr.length,
     );
     metrics.p95TranscriptionMs =
-      transcriptionArr[
-        Math.min(
-          Math.ceil(transcriptionArr.length * 0.95) - 1,
-          transcriptionArr.length - 1,
-        )
-      ] || 0;
+      transcriptionArr[p95Index(transcriptionArr)] || 0;
   }
   if (e2eArr.length > 0) {
     metrics.avgEndToEndMs = Math.round(
       e2eArr.reduce((a, b) => a + b, 0) / e2eArr.length,
     );
-    metrics.p95EndToEndMs =
-      e2eArr[
-        Math.min(Math.ceil(e2eArr.length * 0.95) - 1, e2eArr.length - 1)
-      ] || 0;
+    metrics.p95EndToEndMs = e2eArr[p95Index(e2eArr)] || 0;
   }
   if (vadArr.length > 0) {
     metrics.avgVadSpeechMs = Math.round(
@@ -639,12 +639,9 @@ wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
           charging?: boolean;
           session?: string;
         };
-        if (
-          msg.type === "battery" &&
-          typeof msg.level === "number" &&
-          msg.level >= 0
-        ) {
-          updateHABattery(msg.level, msg.charging ?? false);
+        const level = msg.level;
+        if (msg.type === "battery" && typeof level === "number" && level >= 0) {
+          updateHABattery(level, msg.charging ?? false);
         } else if (msg.type === "switch_session" && msg.session) {
           handleSessionSwitch(msg.session);
         }
@@ -1361,6 +1358,7 @@ function ts(): string {
 
 initVAD()
   .then(async () => {
+    await loadQuickCommands();
     await setupFastify();
     await app.ready();
     server.listen(PORT, "0.0.0.0", () => {
