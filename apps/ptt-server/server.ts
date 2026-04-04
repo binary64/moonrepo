@@ -387,9 +387,9 @@ function updateHABattery(level: number, charging: boolean): void {
       },
     },
     (res) => {
-      let body = "";
+      let _body = "";
       res.on("data", (c: string) => {
-        body += c;
+        _body += c;
       });
       res.on("end", () => {
         if (res.statusCode === 200 || res.statusCode === 201) {
@@ -417,7 +417,7 @@ app.get("/metrics", (_req: Request, res: Response) => {
       ts: l.ts,
       transcriptionMs: l.transcriptionMs,
       endToEndMs: l.endToEndMs,
-      quickCommand: !!l.quickCommand,
+      quickCommand: Boolean(l.quickCommand),
     })),
   };
   res.json(summaryOut);
@@ -544,7 +544,7 @@ wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
             vadSpeechMs,
             endToEndMs,
             quickCommand:
-              typeof result === "object" ? !!result.quickCommand : false,
+              typeof result === "object" ? Boolean(result.quickCommand) : false,
           });
         }
       })
