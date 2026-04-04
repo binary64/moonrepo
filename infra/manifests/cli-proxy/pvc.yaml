@@ -1,0 +1,18 @@
+# PVC for CLIProxyAPI auth data directory (/data/cli-proxy-api).
+# Stores OAuth tokens for CLI providers (Gemini, Claude, Codex, etc.).
+# Prune=false prevents ArgoCD from deleting tokens on app removal.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cli-proxy-auth
+  namespace: cli-proxy
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+    moonrepo.dev/skip-local: "true"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: local-path

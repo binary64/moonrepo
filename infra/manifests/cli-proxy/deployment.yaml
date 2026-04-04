@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cli-proxy
+  namespace: cli-proxy
+  annotations:
+    moonrepo.dev/skip-local: "true"
+    argocd.argoproj.io/sync-wave: "2"
+  labels:
+    app: cli-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cli-proxy
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: cli-proxy
+    spec:
+      automountServiceAccountToken: false
+      # Schedule on Jupiter VPS worker node
+      nodeSelector:
+        kubernetes.io/hostname: vmi3137202
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: cli-proxy
+          # CLIProxyAPI: wraps CLI OAuth tokens as OpenAI/Gemini/Claude-compatible endpoints
+          # https://github.com/router-for-me/CLIProxyAPI
+          image: eceasy/cli-proxy-api:v6.9.4
+          imagePullPolicy: Always
+          ports:
+            - name: api
+              containerPort: 8317
+              protocol: TCP
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          env:
+            - name: TZ
+              value: Europe/London
+            - name: CLI_PROXY_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cli-proxy-api-key
+                  key: api-key
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          volumeMounts:
+            - name: config
+              mountPath: /CLIProxyAPI/config.yaml
+              subPath: config.yaml
+              readOnly: true
+            - name: auth-data
+              mountPath: /data/cli-proxy-api
+          livenessProbe:
+            tcpSocket:
+              port: 8317
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            tcpSocket:
+              port: 8317
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: cli-proxy-config
+        - name: auth-data
+          persistentVolumeClaim:
+            claimName: cli-proxy-auth
