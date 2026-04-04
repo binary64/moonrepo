@@ -16,8 +16,9 @@ data:
 
     go2rtc:
       streams:
+        # Live stream (_live) removed - continuous Ring cloud streaming drains doorbell battery
+        # Event stream (_event) retained for playback of recorded motion clips
         front_door:
-          - "rtsp://ring-mqtt.ring-mqtt.svc:8554/5c475e55fb69_live"
           - "rtsp://ring-mqtt.ring-mqtt.svc:8554/5c475e55fb69_event"
 
     cameras:
