@@ -141,3 +141,6 @@ const _vercelProjectIdPawpicksSecret = new github.ActionsSecret(
 // Exports
 export const zoneId = zone.zoneId;
 export const tokenId = certManagerToken.id;
+
+// New Relic alerts
+export * from "./newrelic-alerts";
