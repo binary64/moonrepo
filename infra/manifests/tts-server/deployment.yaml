@@ -21,7 +21,7 @@ spec:
         - name: ghcr-pull
       containers:
         - name: tts-server
-          image: ghcr.io/binary64/tts-server:8cc46fb
+          image: ghcr.io/binary64/tts-server:bc3b441
           ports:
             - containerPort: 3090
               protocol: TCP

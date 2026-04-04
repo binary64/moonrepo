@@ -23,7 +23,7 @@ spec:
         - name: ptt-server
           # Tag is replaced by the docker.yml GHA workflow on every master push.
           # Do not push this manifest with :latest — use a pinned SHA or semver tag.
-          image: ghcr.io/binary64/ptt-server:3901750
+          image: ghcr.io/binary64/ptt-server:bc3b441
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 9876
