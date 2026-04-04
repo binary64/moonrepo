@@ -57,7 +57,9 @@ setInterval(() => {
       if (job.mp3Path)
         try {
           fs.unlinkSync(job.mp3Path);
-        } catch {}
+        } catch {
+          // Best-effort cleanup only; the periodic sweep should not crash on stale temp files.
+        }
       jobs.delete(token);
     }
   }
