@@ -7,7 +7,6 @@ metadata:
     argocd.argoproj.io/instance: authentik
   annotations:
     moonrepo.dev/skip-local: "true"
-    argocd.argoproj.io/sync-wave: "2"
 data:
   branding.yaml: |
     # yaml-language-server: $schema=https://goauthentik.io/blueprints/schema.json
