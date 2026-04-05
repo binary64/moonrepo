@@ -155,6 +155,7 @@
         "@pulumi/cloudflare": "^5",
         "@pulumi/github": "^6.12.1",
         "@pulumi/kubernetes": "^4",
+        "@pulumi/newrelic": "^5",
         "@pulumi/pulumi": "^3",
       },
       "devDependencies": {
@@ -180,8 +181,10 @@
   ],
   "overrides": {
     "@hono/node-server": ">=1.19.10",
+    "defu": "6.1.5",
     "effect": "3.20.0",
     "hono": ">=4.12.4",
+    "lodash": "4.18.0",
     "minimatch": "10.2.3",
     "path-to-regexp": "0.1.13",
     "picomatch": "4.0.4",
@@ -687,6 +690,8 @@
     "@pulumi/github": ["@pulumi/github@6.12.1", "", { "dependencies": { "@pulumi/pulumi": "^3.142.0" } }, "sha512-OsbQgF8go/tA1PuMhFq7O0XVfYbwRk0/LHaZTH6OFO395SufdFFa1go3IeXvJCSA5oDCbdULerGg4n9sP8vTLg=="],
 
     "@pulumi/kubernetes": ["@pulumi/kubernetes@4.28.0", "", { "dependencies": { "@pulumi/pulumi": "^3.142.0", "glob": "^12.0.0", "shell-quote": "^1.6.1" } }, "sha512-tdoUN7blJv1rrwr+2Pc55CP/+L1sMkH3z5Y7DI2yfNiGgdeaOHYia+hYsnLgR4HtBSfIfuBVWxGkZwGWOgUmOQ=="],
+
+    "@pulumi/newrelic": ["@pulumi/newrelic@5.64.1", "", { "dependencies": { "@pulumi/pulumi": "^3.142.0" } }, "sha512-ADeDgSLz2BGjNJhlWMHp/5VFo9tPBbLT9+mVNIp87PZPUU00UxBrtDpDhFhERO5ig4njGisYuXuFGY4gTOLnXg=="],
 
     "@pulumi/pulumi": ["@pulumi/pulumi@3.228.0", "", { "dependencies": { "@grpc/grpc-js": "^1.10.1", "@logdna/tail-file": "^2.0.6", "@npmcli/arborist": "^9.0.0", "@opentelemetry/api": "^1.9", "@opentelemetry/exporter-trace-otlp-grpc": "^0.57", "@opentelemetry/exporter-zipkin": "^1.30", "@opentelemetry/instrumentation": "^0.57", "@opentelemetry/instrumentation-grpc": "^0.57", "@opentelemetry/resources": "^1.30", "@opentelemetry/sdk-trace-base": "^1.30", "@opentelemetry/sdk-trace-node": "^1.30", "@types/google-protobuf": "^3.15.5", "@types/semver": "^7.5.6", "@types/tmp": "^0.2.6", "execa": "^5.1.0", "fdir": "^6.5.0", "google-protobuf": "^3.21.4", "got": "^11.8.6", "ini": "^2.0.0", "js-yaml": "^3.14.2", "minimist": "^1.2.6", "normalize-package-data": "^6.0.0", "package-directory": "^8.1.0", "picomatch": "^3.0.1", "require-from-string": "^2.0.1", "semver": "^7.5.2", "source-map-support": "^0.5.6", "tmp": "^0.2.4", "upath": "^1.1.0" }, "peerDependencies": { "ts-node": ">= 7.0.1 < 12", "typescript": ">= 3.8.3 < 6" }, "optionalPeers": ["ts-node"] }, "sha512-yAwieapB/Huro8/psool1sKhe2rGT80GTnEFLDWbKPHTMo6oSegGb6aYg+bzPuC3vgBOn2dnHkobSuwbBhQ7gQ=="],
 
@@ -1230,7 +1235,7 @@
 
     "define-properties": ["define-properties@1.2.1", "", { "dependencies": { "define-data-property": "^1.0.1", "has-property-descriptors": "^1.0.0", "object-keys": "^1.1.1" } }, "sha512-8QmQKqEASLd5nx0U1B1okLElbUuuttJ/AnYmRXbbbGDWh6uS208EjD4Xqq/I9wK7u0v6O08XhTWnt5XtEbR6Dg=="],
 
-    "defu": ["defu@6.1.4", "", {}, "sha512-mEQCMmwJu317oSz8CwdIOdwf3xMif1ttiM8LTufzc3g6kR+9Pe236twL8j3IYT1F7GfRgGcW6MWxzZjLIkuHIg=="],
+    "defu": ["defu@6.1.5", "", {}, "sha512-pwdBJxJuJXmqrLO6s0VBmfbRz+G7FUzkjldAsdi9Yrv86mPyzq0ll1o8+8gB4Gsr6GJHbK1Lh3ngllgTInDCjA=="],
 
     "delayed-stream": ["delayed-stream@1.0.0", "", {}, "sha512-ZySD7Nf91aLB0RxL4KGrKHBXl7Eds1DAmEdcoVawXnLD7SDhpNgtuII2aAkg7a7QS41jxPSZ17p4VdGnMHk3MQ=="],
 
@@ -1840,7 +1845,7 @@
 
     "locate-path": ["locate-path@6.0.0", "", { "dependencies": { "p-locate": "^5.0.0" } }, "sha512-iPZK6eYjbxRu3uB4/WZ3EsEIMJFMqAoopl3R+zuq0UjcAm/MO6KCweDgPfP3elTztoKP3KtnVHxTn2NHBSDVUw=="],
 
-    "lodash": ["lodash@4.17.21", "", {}, "sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg=="],
+    "lodash": ["lodash@4.18.0", "", {}, "sha512-l1mfj2atMqndAHI3ls7XqPxEjV2J9ZkcNyHpoZA3r2T1LLwDB69jgkMWh71YKwhBbK0G2f4WSn05ahmQXVxupA=="],
 
     "lodash.camelcase": ["lodash.camelcase@4.3.0", "", {}, "sha512-TwuEnCnxbc3rAvhf/LbG7tJUDzhqXyFnv3dtzLOPgCG/hODL7WFnsbwktkD7yUV0RrreP/l1PALq/YSg6VvjlA=="],
 
