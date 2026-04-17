@@ -9,6 +9,93 @@ on:
       - '*'
 
 jobs:
+  discover-plugins:
+    name: Discover plugins
+    runs-on: ubuntu-latest
+    outputs:
+      plugins: ${{ steps.discover.outputs.plugins }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: discover
+        run: |
+          plugins=$(ls -1 infra/.proto/plugins/*.toml 2>/dev/null | xargs -I {} basename {} .toml | jq -R -s -c 'split("\n") | map(select(. != ""))')
+          echo "plugins=$plugins" >> "$GITHUB_OUTPUT"
+          echo "Found $(echo "$plugins" | jq length) plugins"
+
+  test-plugins:
+    name: Test plugin: ${{ matrix.plugin }}
+    needs: discover-plugins
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        plugin: ${{ fromJson(needs.discover-plugins.outputs.plugins) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Test ${{ matrix.plugin }}
+        run: |
+          echo "Testing plugin: ${{ matrix.plugin }}"
+          plugin_file="infra/.proto/plugins/${{ matrix.plugin }}.toml"
+          
+          if [[ ! -f "$plugin_file" ]]; then
+            echo "Plugin file not found: $plugin_file"
+            exit 1
+          fi
+
+          echo "--- Plugin content ---"
+          cat "$plugin_file"
+
+      - name: Validate TOML schema
+        run: |
+          PLUGIN_FILE="infra/.proto/plugins/${{ matrix.plugin }}.toml" python3 -c "
+import tomllib, sys, os
+
+with open(os.environ['PLUGIN_FILE'], 'rb') as f:
+    p = tomllib.load(f)
+
+errs = []
+
+for field in ['name', 'type']:
+    if field not in p:
+        errs.append(f'Missing required field: {field}')
+
+valid_types = ['language', 'dependency-manager', 'package-manager', 'cli']
+if p.get('type') not in valid_types:
+    errs.append(f\"Invalid type '{p.get('type')}', expected one of: {valid_types}\")
+
+if 'platform' not in p:
+    errs.append('Missing required section: [platform]')
+else:
+    oses = [k for k in p['platform'] if k in ('linux', 'macos', 'windows')]
+    if not oses:
+        errs.append('platform must define at least one of: linux, macos, windows')
+    for os_name in oses:
+        if 'download-file' not in p['platform'][os_name]:
+            errs.append(f'platform.{os_name} missing required: download-file')
+
+if 'install' not in p:
+    errs.append('Missing required section: [install]')
+elif 'download-url' not in p['install']:
+    errs.append('install missing required: download-url')
+
+if 'resolve' not in p:
+    errs.append('Missing required section: [resolve]')
+elif not any(k in p['resolve'] for k in ('git-url', 'manifest-url', 'versions')):
+    errs.append('resolve must have git-url, manifest-url, or versions')
+
+if errs:
+    for e in errs:
+        print(f'  ✗ {e}')
+    sys.exit(1)
+else:
+    print('  ✓ schema valid')
+"
+
   proto-plugins:
     name: Validate Proto Plugins
     runs-on: ubuntu-latest
