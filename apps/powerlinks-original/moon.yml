@@ -1,0 +1,28 @@
+$schema: "https://moonrepo.dev/schemas/project.json"
+language: "node"
+layer: "application"
+tags:
+  - next
+
+tasks:
+  lint:
+    command: "biome check ."
+  type-check:
+    command: "tsc --noEmit"
+  build:
+    inputs:
+      - "src/**/*"
+      - "public/**/*"
+      - "next.config.ts"
+      - "next-env.d.ts"
+      - "tsconfig.json"
+    outputs:
+      - "out"
+  deploy:
+    command: "npx vercel@50.37.3 deploy out --yes --token $VERCEL_TOKEN"
+    env:
+      VERCEL_PROJECT_ID: "prj_JMx0HhqE6N0aOV4SWW67lM1ezacZ"
+    deps:
+      - "~:build"
+    options:
+      runInCI: false
