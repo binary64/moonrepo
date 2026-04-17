@@ -174,8 +174,9 @@ volumeMounts:
 
 # ── Service ────────────────────────────────────────────────────────────────
 service:
-  type: ClusterIP
+  type: NodePort
   port: 4000
+  nodePort: 31100
 
 # ── Resources ─────────────────────────────────────────────────────────────
 resources:
