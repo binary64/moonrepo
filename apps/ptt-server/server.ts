@@ -495,7 +495,7 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: "/ws" });
 
 wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
-  const url = new URL(req.url!, `http://${req.headers.host}`);
+  const url = new URL(req.url ?? "/", `http://${req.headers.host}`);
   const initialSessionKey = url.searchParams.get("session") || MAIN_SESSION;
 
   const sessionStates = new Map<number, SessionState>();
@@ -509,9 +509,10 @@ wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
     index: number;
     state: SessionState;
   } {
-    if (sessionKeyToIndex.has(sessionKey)) {
-      const index = sessionKeyToIndex.get(sessionKey)!;
-      return { index, state: sessionStates.get(index)! };
+    const existingIndex = sessionKeyToIndex.get(sessionKey);
+    if (existingIndex !== undefined) {
+      const existingState = sessionStates.get(existingIndex);
+      if (existingState) return { index: existingIndex, state: existingState };
     }
     const index = nextIndex++;
     const state = createSessionState(sessionKey);
@@ -585,7 +586,7 @@ wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
 
   function handleSessionSwitch(newSessionKey: string): void {
     const oldIndex = targetIndex;
-    const { index, state } = getOrCreateSession(newSessionKey);
+    const { index } = getOrCreateSession(newSessionKey);
     console.log(
       `[${ts()}] 🔄 Session switch: index ${oldIndex} → ${index} (${newSessionKey})`,
     );
@@ -630,8 +631,8 @@ wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
           session?: string;
         };
         if (msg.type === "battery") {
-          if ((msg.level ?? -1) >= 0)
-            updateHABattery(msg.level!, msg.charging ?? false);
+          if (msg.level != null && msg.level >= 0)
+            updateHABattery(msg.level, msg.charging ?? false);
         } else if (msg.type === "switch_session" && msg.session) {
           handleSessionSwitch(msg.session);
         }
