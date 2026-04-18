@@ -1,0 +1,63 @@
+# Hermes Agent Integration
+
+This directory holds everything needed for the **Hermes agent** (running on the
+Contabo VPS storage node `contabo-portsmouth`) to integrate with moonrepo
+infra. Hermes runs as the `hermes` user and is joined to the RKE2 cluster as a
+storage-tainted worker node, so it can reach any ClusterIP/pod directly via
+flannel — no VPN needed.
+
+## What lives here
+
+| Path | Purpose |
+|------|---------|
+| `skills/` | Hermes skills committed to IaC (source of truth). Synced into `~/.hermes/skills/` by `bootstrap-env.sh`. |
+| `bootstrap-env.sh` | Host-side bootstrap: pulls secrets from AWS Secrets Manager, writes a 0600 env file, and symlinks skills. Idempotent. |
+| `env.template` | Reference list of env vars hermes consumes. |
+
+## Secret flow (current: host-side)
+
+```
+AWS Secrets Manager (moonrepo/hermes-*)
+    ↓ (bootstrap-env.sh via aws CLI)
+/home/hermes/.hermes/.env  (0600, gitignored, never leaves host)
+    ↓
+hermes agent picks up env on next reload
+```
+
+No secret material is ever committed to git. The script fails loudly if AWS
+creds are missing.
+
+## Secret flow (future: in-cluster)
+
+Once hermes is migrated to a Deployment in the `hermes-system` namespace, the
+same secrets will be surfaced as a SealedSecret via
+`infra/secrets/sync-secrets.sh` (already extended — see `hermes-secrets.yaml`
+under `infra/secrets/sealed/` once generated).
+
+## Adding a new secret
+
+1. Define the key name in AWS:
+   ```bash
+   cd infra/secrets
+   ./set-secret.sh hermes-<name> "<value>"
+   ```
+2. Add the key to the `HERMES_SECRET_KEYS` array in `bootstrap-env.sh`.
+3. Add a matching `stringData` entry to the hermes block in
+   `infra/secrets/sync-secrets.sh`.
+4. Commit, run `./bootstrap-env.sh` on the VPS, done.
+
+## Connectivity reference
+
+From the VPS as `hermes`:
+
+- Cluster DNS: `10.43.0.10:53`
+- Home Assistant: `http://home-assistant.home-assistant.svc.cluster.local:8123`
+- Headscale: `http://headscale.headscale.svc.cluster.local:8080`
+- Any `*.home.brandwhisper.cloud` also resolves publicly via Cloudflare.
+
+## PII policy
+
+The owner of this repo wants **zero PII** committed here. Commits from hermes
+MUST use the noreply identity (`binary64 <binary64@users.noreply.github.com>`).
+Do not add real names, personal emails, DOB, or physical addresses to any file
+in this tree.
