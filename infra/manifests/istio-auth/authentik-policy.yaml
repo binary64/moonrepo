@@ -20,3 +20,4 @@ spec:
               - "start.brandwhisper.cloud"
               - "llm.brandwhisper.cloud"
               - "mqtt-ui.brandwhisper.cloud"
+              - "wealthfolio.brandwhisper.cloud"

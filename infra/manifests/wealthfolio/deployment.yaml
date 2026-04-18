@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wealthfolio
+  namespace: wealthfolio
+  labels:
+    app.kubernetes.io/name: wealthfolio
+    app.kubernetes.io/instance: wealthfolio
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: wealthfolio
+      app.kubernetes.io/instance: wealthfolio
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: wealthfolio
+        app.kubernetes.io/instance: wealthfolio
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: master
+      containers:
+        - name: wealthfolio
+          image: ghcr.io/afadil/wealthfolio:v3.2.1
+          ports:
+            - name: http
+              containerPort: 8088
+              protocol: TCP
+          env:
+            - name: WF_LISTEN_ADDR
+              value: "0.0.0.0:8088"
+            - name: WF_DB_PATH
+              value: "/data/wealthfolio.db"
+            - name: WF_CORS_ALLOW_ORIGINS
+              value: "https://wealthfolio.brandwhisper.cloud"
+            - name: WF_AUTH_TOKEN_TTL_MINUTES
+              value: "480"
+            - name: WF_REQUEST_TIMEOUT_MS
+              value: "30000"
+            - name: WF_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: wealthfolio-env
+                  key: WF_SECRET_KEY
+            - name: WF_AUTH_PASSWORD_HASH
+              valueFrom:
+                secretKeyRef:
+                  name: wealthfolio-env
+                  key: WF_AUTH_PASSWORD_HASH
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          startupProbe:
+            httpGet:
+              path: /
+              port: http
+            failureThreshold: 10
+            periodSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: wealthfolio-data
