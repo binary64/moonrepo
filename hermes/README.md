@@ -1,10 +1,19 @@
 # Hermes Agent Integration
 
-This directory holds everything needed for the **Hermes agent** (running on the
-Contabo VPS storage node `contabo-portsmouth`) to integrate with moonrepo
-infra. Hermes runs as the `hermes` user and is joined to the RKE2 cluster as a
-storage-tainted worker node, so it can reach any ClusterIP/pod directly via
-flannel — no VPN needed.
+This directory holds everything needed for the **Hermes agent** (running on
+the **jupiter** host — a Contabo VPS joined to the cluster as a
+storage-tainted RKE2 worker in zone `contabo-portsmouth`) to integrate with
+moonrepo infra. Hermes runs as the `hermes` user on jupiter; because jupiter
+is a cluster member, it can reach any ClusterIP/pod directly via flannel — no
+VPN needed.
+
+## Host topology
+
+| Name | Role | Notes |
+|------|------|-------|
+| `jupiter` | Contabo VPS, RKE2 worker (storage) | This host. Runs hermes. `hostname -f` / DNS TBD. |
+| `master` | NUC at home, RKE2 control plane | Server URL `https://84.69.17.64:9345`. |
+| `pluto`  | Contabo VPS, OpenClaw for a family member | Has an encrypted disk pending migration to jupiter. |
 
 ## What lives here
 
@@ -44,11 +53,11 @@ under `infra/secrets/sealed/` once generated).
 2. Add the key to the `HERMES_SECRET_KEYS` array in `bootstrap-env.sh`.
 3. Add a matching `stringData` entry to the hermes block in
    `infra/secrets/sync-secrets.sh`.
-4. Commit, run `./bootstrap-env.sh` on the VPS, done.
+4. Commit, run `./bootstrap-env.sh` on jupiter, done.
 
 ## Connectivity reference
 
-From the VPS as `hermes`:
+From jupiter as `hermes`:
 
 - Cluster DNS: `10.43.0.10:53`
 - Home Assistant: `http://home-assistant.home-assistant.svc.cluster.local:8123`

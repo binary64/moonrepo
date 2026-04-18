@@ -1,6 +1,6 @@
 ---
 name: home-assistant
-description: Control Home Assistant (lights, media_player, automations, scenes) via its REST API. Use when the user asks to turn on/off a device, play media, change TV/speaker state, query sensor state, or trigger an automation. Hermes runs on a VPS that is joined to the RKE2 cluster, so HA is reachable directly via cluster DNS — no VPN/tunnel needed.
+description: Control Home Assistant (lights, media_player, automations, scenes) via its REST API. Use when the user asks to turn on/off a device, play media, change TV/speaker state, query sensor state, or trigger an automation. Hermes runs on the `jupiter` host, which is a worker node in the RKE2 cluster, so HA is reachable directly via cluster DNS — no VPN/tunnel needed.
 version: 1.0.0
 category: smart-home
 ---
