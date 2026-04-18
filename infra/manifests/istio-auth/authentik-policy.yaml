@@ -18,3 +18,4 @@ spec:
               - "mgmt.brandwhisper.cloud"
               - "start.brandwhisper.cloud"
               - "llm.brandwhisper.cloud"
+              - "wealthfolio.brandwhisper.cloud"
