@@ -70,6 +70,13 @@ function normaliseUtterances(body) {
   if (!body || typeof body !== "object" || Array.isArray(body)) return [];
   if (Array.isArray(body.utterances) && body.utterances.length > 0) {
     return body.utterances
+      .filter(
+        (u) =>
+          u !== null &&
+          u !== undefined &&
+          typeof u === "object" &&
+          !Array.isArray(u),
+      )
       .map((u) => ({
         text: String(u.text || "").trim(),
         acting: u.acting || u.description || "",
@@ -151,7 +158,13 @@ async function start() {
       console.error(`[${token}] Pre-generation failed:`, err.message);
     });
 
-    const baseUrl = process.env.PUBLIC_URL || `http://192.168.1.201:${PORT}`;
+    const xFwdHost = request.headers["x-forwarded-host"];
+    const requestHost =
+      (Array.isArray(xFwdHost) ? xFwdHost[0] : xFwdHost) ||
+      request.headers.host;
+    const baseUrl =
+      process.env.PUBLIC_URL ||
+      (requestHost ? `http://${requestHost}` : `http://192.168.1.201:${PORT}`);
     return reply.send({
       token,
       url: `${baseUrl.replace(/\/+$/, "")}/play/${token}`,
