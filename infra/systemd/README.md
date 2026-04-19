@@ -52,3 +52,35 @@ VPS Node
 ```
 
 No hardcoded IPs. Everything routes through the existing k8s cluster network.
+
+## hermes-socks-proxy.service
+
+Same idea as `socks-proxy-forward.service` but for **jupiter** (the Contabo VPS
+running hermes). Uses a dedicated ServiceAccount (`hermes-portforward` in the
+`socks-proxy` namespace) rather than full cluster-admin creds.
+
+**Setup** — see `hermes/bootstrap-host.sh` for OS packages and
+`hermes/bootstrap-env.sh` for kubeconfig fetch, then:
+
+```bash
+cp infra/systemd/hermes-socks-proxy.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now hermes-socks-proxy
+curl --socks5-hostname localhost:1080 https://ifconfig.me   # → home residential IP
+```
+
+## hermes-xvfb.service
+
+Virtual framebuffer on `:99` for running **real Brave** (not headless) on
+jupiter. Headed Brave + SOCKS5 dodges most anti-bot fingerprinting that flags
+HeadlessChrome. Paired with `hermes/agent-browser.json` (sets
+`executablePath=/usr/bin/brave-browser`, `headed=true`,
+`proxy=socks5h://127.0.0.1:1080`) and `DISPLAY=:99` exported by
+`bootstrap-env.sh`.
+
+```bash
+cp infra/systemd/hermes-xvfb.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now hermes-xvfb
+DISPLAY=:99 xdpyinfo | head -3    # verify
+```
