@@ -21,7 +21,7 @@ spec:
         kubernetes.io/hostname: vmi3137202
       containers:
         - name: radio-web
-          image: ghcr.io/binary64/radio-web:efb5425
+          image: ghcr.io/binary64/radio-web:fd792d0
           ports:
             - containerPort: 3004
               protocol: TCP
