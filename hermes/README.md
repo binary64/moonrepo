@@ -21,7 +21,7 @@ VPN needed.
 |------|---------|
 | `skills/` | Hermes skills committed to IaC (source of truth). Synced into `~/.hermes/skills/` by `bootstrap-env.sh`. |
 | `bootstrap-env.sh` | Host-side bootstrap: pulls secrets from AWS Secrets Manager, writes a 0600 env file, and symlinks skills. Idempotent. |
-| `bootstrap-host.sh` | OS-level bootstrap: installs `kubectl` (for the socks-proxy port-forward), `brave-browser`, and `xvfb` + X11 runtime deps. Requires passwordless sudo for apt. Idempotent. |
+| `bootstrap-host.sh` | OS-level bootstrap (run **as root via sudo**): installs `kubectl` (for the socks-proxy port-forward), `brave-browser`, and `xvfb` + X11 runtime deps. Idempotent. |
 | `agent-browser.json` | agent-browser CLI config — routes Brave through loopback SOCKS5 so outbound traffic exits via the home residential IP instead of Contabo's datacenter range. Symlinked into `~/.hermes/`. |
 | `env.template` | Reference list of env vars hermes consumes. |
 
@@ -86,9 +86,8 @@ SOCKS5 proxy. This gives us:
 
 Pieces:
 
-- `hermes/bootstrap-host.sh` → installs `kubectl`, `brave-browser`, `xvfb`
-- `hermes/agent-browser.json` → Brave path + SOCKS5 + headed flag (symlinked
-  into `~/.hermes/` by `bootstrap-env.sh`)
+- `hermes/bootstrap-host.sh` → installs `kubectl`, `brave-browser`, `xvfb` (run as root)
+- `hermes/agent-browser.json` → Brave path + headed flag (symlinked into `~/.hermes/`). SOCKS5 goes via `ALL_PROXY` env var because agent-browser's `proxy` field only accepts HTTP proxies — see `hermes/agent-browser.md`.
 - `infra/systemd/hermes-xvfb.service` → virtual display `:99`
 - `infra/systemd/hermes-socks-proxy.service` → loopback SOCKS5 on `127.0.0.1:1080`
 - `infra/manifests/socks-proxy/rbac-portforward.yaml` → least-privilege

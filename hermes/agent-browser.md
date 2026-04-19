@@ -9,7 +9,24 @@ JSON doesn't support comments, so field rationale lives here.
 |-------|-------|-----|
 | `executablePath` | `/usr/bin/brave-browser` | Use the real Brave binary over bundled Chromium. Same engine, but real Brave has a stealth-friendly user-agent and doesn't announce `HeadlessChrome`. Installed by `bootstrap-host.sh`. |
 | `headed` | `true` | Avoid `--headless=new` fingerprint. Requires Xvfb :99 (see `infra/systemd/hermes-xvfb.service`). Headless Chromium is detectable via `navigator.webdriver`, missing WebGL extensions, and UA sniffing. |
-| `proxy` | `socks5h://127.0.0.1:1080` | Loopback SOCKS5 supplied by `kubectl port-forward → svc/socks-proxy` (see `infra/systemd/hermes-socks-proxy.service`). `socks5h://` ensures DNS resolution goes **through** the proxy, so no DNS leak reveals that the request originated from the Contabo VPS. Egress lands on master's residential IP. |
+
+## Proxy is set via env var, NOT this file
+
+agent-browser's `proxy` JSON field and `--proxy` CLI flag only accept
+**HTTP/HTTPS** proxy URLs (documented in the bundled `proxy-support.md`).
+For SOCKS5, the supported path is the `ALL_PROXY` env var:
+
+```
+ALL_PROXY=socks5://127.0.0.1:1080
+```
+
+`bootstrap-env.sh` writes this into `~/.hermes/.env` alongside
+`DISPLAY=:99`. Loopback endpoint provided by
+`infra/systemd/hermes-socks-proxy.service` (kubectl port-forward →
+`svc/socks-proxy` → master's residential IP).
+
+Note: `socks5h://` (DNS-via-proxy) is a curl-ism; Chromium/Brave always
+resolves DNS through the proxy when `ALL_PROXY=socks5://...`, so no leak.
 
 Change policy: any edit here must be paired with either a Brave upgrade or a
 change to `hermes-xvfb.service` / `hermes-socks-proxy.service`.

@@ -22,14 +22,16 @@
 
 [Unit]
 Description=kubectl port-forward → socks-proxy (residential IP egress)
-After=network-online.target
-Wants=network-online.target
+# Drop the network-online targets: systemd's *user* manager doesn't
+# synthesize network-online.target (that's a system-only unit), so they'd be
+# no-ops. Restart=always below handles transient connectivity fine.
 
 [Service]
 Type=simple
 Environment=KUBECONFIG=%h/.hermes/kubeconfig
-# kubectl is installed by hermes/bootstrap-host.sh to /usr/local/bin.
-ExecStart=/usr/local/bin/kubectl port-forward \
+# kubectl is installed by hermes/bootstrap-host.sh from the apt repo at
+# pkgs.k8s.io, which drops the binary at /usr/bin/kubectl.
+ExecStart=/usr/bin/kubectl port-forward \
   --address 127.0.0.1 \
   -n socks-proxy \
   svc/socks-proxy \

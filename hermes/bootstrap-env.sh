@@ -15,6 +15,9 @@
 #      port-forward systemd user unit
 #   4. Symlinks hermes/skills/* from this repo into ~/.hermes/skills/moonrepo/
 #   5. Symlinks hermes/agent-browser.json into ~/.hermes/agent-browser.json
+#   6. Installs the hermes-xvfb and hermes-socks-proxy user systemd units
+#      into ~/.config/systemd/user/ (operator still needs to daemon-reload
+#      and enable them — printed at the end)
 #
 # Fails loudly if any required secret is missing — the agent must never start
 # with a partially-populated env.
@@ -28,6 +31,7 @@ ENV_DIR="$(dirname "$ENV_FILE")"
 SKILLS_LINK="$HERMES_HOME/skills/moonrepo"
 KUBECONFIG_FILE="$HERMES_HOME/kubeconfig"
 BROWSER_CONFIG_LINK="$HERMES_HOME/agent-browser.json"
+SYSTEMD_USER_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
 
 PREFIX="moonrepo"
 
@@ -45,15 +49,24 @@ declare -A HERMES_FILE_SECRETS=(
 )
 
 # Non-secret defaults always written to the env file.
+#
+# Browser automation: Brave + loopback SOCKS5 + Xvfb :99. See
+# hermes/agent-browser.md, hermes/agent-browser.json, and
+# infra/systemd/hermes-{xvfb,socks-proxy}.service.
+#
+# AGENT_BROWSER_* are read directly by the agent-browser CLI.
+# ALL_PROXY is how agent-browser receives a SOCKS5 URL — its own `proxy`
+# field / --proxy flag only accept HTTP/HTTPS. See the bundled
+# proxy-support.md reference.
 declare -A HERMES_DEFAULTS=(
   [HASS_URL]="http://home-assistant.home-assistant.svc.cluster.local:8123"
-  # Browser automation: Brave + loopback SOCKS5 + Xvfb :99. See
-  # hermes/agent-browser.json and infra/systemd/hermes-{xvfb,socks-proxy}.service.
-  # AGENT_BROWSER_* are read directly by the agent-browser CLI.
   [DISPLAY]=":99"
   [AGENT_BROWSER_CONFIG]="$BROWSER_CONFIG_LINK"
   [AGENT_BROWSER_EXECUTABLE_PATH]="/usr/bin/brave-browser"
   [AGENT_BROWSER_HEADED]="1"
+  [ALL_PROXY]="socks5://127.0.0.1:1080"
+  # Don't route loopback / cluster DNS / metadata via SOCKS.
+  [NO_PROXY]="localhost,127.0.0.0/8,10.43.0.0/16,10.42.0.0/16,.svc.cluster.local"
 )
 
 command -v aws >/dev/null || { echo "ERROR: aws CLI not found" >&2; exit 1; }
@@ -63,10 +76,22 @@ command -v aws >/dev/null || { echo "ERROR: aws CLI not found" >&2; exit 1; }
 mkdir -p "$ENV_DIR"
 chmod 700 "$ENV_DIR"
 
+# Persistent cleanup: track every tmpfile we create and rm them all on EXIT.
+# A single trap installed once, instead of overwriting per-iteration (which
+# would leak earlier iterations' tmpfiles if the script exits mid-loop).
+_tmpfiles=()
+cleanup_tmpfiles() {
+  local f
+  for f in "${_tmpfiles[@]:-}"; do
+    [ -n "$f" ] && rm -f "$f"
+  done
+}
+trap cleanup_tmpfiles EXIT
+
 # Create tmpfile beside ENV_FILE so `mv` is atomic (same filesystem) and the
 # secret never touches /tmp (which may be a tmpfs shared with other services).
 tmpfile=$(mktemp "$ENV_DIR/.env.XXXXXX")
-trap 'rm -f "$tmpfile"' EXIT
+_tmpfiles+=("$tmpfile")
 chmod 600 "$tmpfile"
 
 {
@@ -105,7 +130,7 @@ echo "✓ Wrote $ENV_FILE (mode 600)"
 
 # File-type secrets: write each to its own 0600 tmpfile in the same dir, then
 # atomic-rename. Keeps multi-line YAML out of shell-quoted env, and keeps the
-# secret off /tmp.
+# secret off /tmp. Captures aws CLI stderr so failures print the real reason.
 for secret_name in "${!HERMES_FILE_SECRETS[@]}"; do
   dest="${HERMES_FILE_SECRETS[$secret_name]}"
   secret_id="${PREFIX}/${secret_name}"
@@ -114,18 +139,21 @@ for secret_name in "${!HERMES_FILE_SECRETS[@]}"; do
   chmod 700 "$dest_dir"
   echo "# Fetching $secret_id → $dest ..." >&2
   file_tmp=$(mktemp "$dest_dir/.$(basename "$dest").XXXXXX")
+  _tmpfiles+=("$file_tmp")
   chmod 600 "$file_tmp"
-  # shellcheck disable=SC2064  # expand $file_tmp at trap-install time
-  trap "rm -f \"$file_tmp\"" EXIT
+  stderr_tmp=$(mktemp "$dest_dir/.awserr.XXXXXX")
+  _tmpfiles+=("$stderr_tmp")
+  chmod 600 "$stderr_tmp"
   if ! aws secretsmanager get-secret-value \
         --secret-id "$secret_id" \
         --query SecretString \
-        --output text > "$file_tmp" 2>/dev/null; then
+        --output text > "$file_tmp" 2> "$stderr_tmp"; then
     echo "ERROR: could not fetch $secret_id" >&2
+    sed 's/^/       aws: /' "$stderr_tmp" >&2
     echo "       Set it first with: cd infra/secrets && ./set-secret.sh $secret_name \"<value>\"" >&2
     exit 1
   fi
-  if [ ! -s "$file_tmp" ] || [ "$(cat "$file_tmp")" = "None" ]; then
+  if [ ! -s "$file_tmp" ] || [ "$(head -c 8 "$file_tmp")" = "None" ]; then
     echo "ERROR: secret $secret_id is empty" >&2
     exit 1
   fi
@@ -133,7 +161,6 @@ for secret_name in "${!HERMES_FILE_SECRETS[@]}"; do
   chmod 600 "$dest"
   echo "✓ Wrote $dest (mode 600)"
 done
-trap 'rm -f "$tmpfile"' EXIT   # restore baseline trap
 
 # Symlink skills into hermes skills dir so they show up in skill discovery.
 # Safety: only replace an existing symlink — never rm -rf a real directory here.
@@ -158,6 +185,21 @@ elif [ -e "$BROWSER_CONFIG_LINK" ]; then
 fi
 ln -s "$HERMES_DIR/agent-browser.json" "$BROWSER_CONFIG_LINK"
 echo "✓ Linked $BROWSER_CONFIG_LINK -> $HERMES_DIR/agent-browser.json"
+
+# Install systemd user units so `systemctl --user enable` just works.
+# `install -m 0644` preserves permissions and is idempotent — no need to
+# compare contents first, install always writes.
+mkdir -p "$SYSTEMD_USER_DIR"
+for unit in hermes-xvfb.service hermes-socks-proxy.service; do
+  src="$REPO_ROOT/infra/systemd/$unit"
+  dst="$SYSTEMD_USER_DIR/$unit"
+  if [ ! -f "$src" ]; then
+    echo "ERROR: unit source $src missing" >&2
+    exit 1
+  fi
+  install -m 0644 "$src" "$dst"
+  echo "✓ Installed $dst"
+done
 
 echo
 echo "Done. Next steps:"
