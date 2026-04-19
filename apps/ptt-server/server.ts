@@ -353,8 +353,16 @@ async function setupFastify(): Promise<void> {
     },
     async (request, reply) => {
       const body = request.body as Record<string, unknown>;
-      const level: number = (body?.level as number) ?? -1;
-      const charging: boolean = (body?.charging as boolean) ?? false;
+      const levelRaw = body?.level;
+      const chargingRaw = body?.charging;
+      if (levelRaw !== undefined && typeof levelRaw !== "number") {
+        return reply.code(400).send({ error: "level must be a number" });
+      }
+      if (chargingRaw !== undefined && typeof chargingRaw !== "boolean") {
+        return reply.code(400).send({ error: "charging must be a boolean" });
+      }
+      const level = (levelRaw as number) ?? -1;
+      const charging = (chargingRaw as boolean) ?? false;
       if (level >= 0) updateHABattery(level, charging);
       return reply.send({ status: "ok" });
     },
@@ -373,7 +381,11 @@ async function setupFastify(): Promise<void> {
         return reply.code(400).send({ error: "No text" });
       }
       const text = rawText.trim();
-      const sessionKey: string | undefined = body?.sessionKey as
+      const sessionKeyRaw = body?.sessionKey;
+      if (sessionKeyRaw !== undefined && typeof sessionKeyRaw !== "string") {
+        return reply.code(400).send({ error: "sessionKey must be a string" });
+      }
+      const sessionKey: string | undefined = sessionKeyRaw as
         | string
         | undefined;
       return new Promise<void>((resolve) => {
@@ -568,7 +580,8 @@ wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
           }
           recordMetric({
             ts: new Date().toISOString(),
-            transcriptionMs: endToEndMs,
+            transcriptionMs:
+              typeof result === "object" ? result.transcriptionMs : endToEndMs,
             vadSpeechMs,
             endToEndMs,
             quickCommand:
@@ -703,10 +716,9 @@ wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
           `[${ts()}] 📤 ${durationMs}ms audio on close → Whisper+route`,
         );
         state.transcribing = true;
-        const wavBuffer = buildWav(pcmData);
-        transcribeAndRoute(wavBuffer).catch((e: Error) =>
-          console.error(`[${ts()}] transcribeAndRoute error: ${e.message}`),
-        );
+        state.speechChunks = [pcmData];
+        send({ event: "vad_end" });
+        finishUtteranceForState(state);
       }
       return;
     }
@@ -949,6 +961,7 @@ function executeQuickCommand(text: string): Promise<string> {
 interface TranscribeResult {
   text: string;
   quickCommand: boolean;
+  transcriptionMs: number;
 }
 
 // Pure transcription — calls Whisper but does NOT send to any session.
@@ -1047,6 +1060,7 @@ function transcribeAndSend(
     );
     const body = Buffer.concat([pre, wavBuffer, post]);
 
+    const whisperStart = Date.now();
     const apiReq = https.request(
       {
         hostname: "api.openai.com",
@@ -1065,10 +1079,13 @@ function transcribeAndSend(
         });
         apiRes.on("end", () => {
           clearTimeout(whisperTimeout);
+          const transcriptionMs = Date.now() - whisperStart;
           if (apiRes.statusCode !== 200)
             return reject(new Error(`Whisper ${apiRes.statusCode}: ${data}`));
           const text = data.trim();
-          console.log(`[${ts()}] 🗣️ Whisper: [len:${text.length}]`);
+          console.log(
+            `[${ts()}] 🗣️ Whisper: [len:${text.length}] (${transcriptionMs}ms)`,
+          );
           if (!text || text.length < 2) return resolve("");
           if (isHallucination(text)) {
             console.log(
@@ -1092,7 +1109,9 @@ function transcribeAndSend(
               `[${ts()}] 🎯 Quick command match: [len:${text.length}] → ${quickMatch.skill}.${quickMatch.action}`,
             );
             executeQuickCommand(text)
-              .then(() => resolve({ text, quickCommand: true }))
+              .then(() =>
+                resolve({ text, quickCommand: true, transcriptionMs }),
+              )
               .catch((err: Error) => {
                 console.error(
                   `[${ts()}] Quick command failed, falling back to LLM: ${err.message}`,
@@ -1102,7 +1121,7 @@ function transcribeAndSend(
                   (sendErr) =>
                     sendErr
                       ? reject(sendErr)
-                      : resolve({ text, quickCommand: false }),
+                      : resolve({ text, quickCommand: false, transcriptionMs }),
                   sessionKey,
                 );
               });
@@ -1112,7 +1131,9 @@ function transcribeAndSend(
           sendToOpenClaw(
             text,
             (err) =>
-              err ? reject(err) : resolve({ text, quickCommand: false }),
+              err
+                ? reject(err)
+                : resolve({ text, quickCommand: false, transcriptionMs }),
             sessionKey,
           );
         });
