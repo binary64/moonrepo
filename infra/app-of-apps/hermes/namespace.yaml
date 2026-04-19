@@ -4,4 +4,9 @@ metadata:
   name: hermes-system
   labels:
     app.kubernetes.io/managed-by: argocd
+  annotations:
+    # Honoured by bash run.sh / local tooling (checks annotations, not labels).
     moonrepo.dev/skip-local: "true"
+    # Deploy with applications (sync-wave 2) — namespace is a prereq for the
+    # future Deployment + SealedSecret resources that will land here.
+    argocd.argoproj.io/sync-wave: "2"

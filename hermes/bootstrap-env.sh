@@ -5,24 +5,28 @@
 #
 # Prereqs on the host:
 #   - aws CLI configured with read access to the moonrepo/* secrets
-#   - jq installed
 #   - Run as the `hermes` user
 #
 # What it does:
 #   1. Pulls listed hermes-* secrets from AWS Secrets Manager
 #   2. Writes /home/hermes/.hermes/.env (mode 0600)
 #   3. Symlinks hermes/skills/* from this repo into ~/.hermes/skills/moonrepo/
+#
+# Fails loudly if any required secret is missing — the agent must never start
+# with a partially-populated env.
 set -euo pipefail
 
 REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || (cd "$(dirname "$0")/.." && pwd))
 HERMES_DIR="$REPO_ROOT/hermes"
 HERMES_HOME="${HERMES_HOME:-$HOME/.hermes}"
 ENV_FILE="$HERMES_HOME/.env"
+ENV_DIR="$(dirname "$ENV_FILE")"
 SKILLS_LINK="$HERMES_HOME/skills/moonrepo"
 
 PREFIX="moonrepo"
 
 # Secrets to pull. Key = local env var name, value = AWS secret id (without prefix).
+# Every entry here is REQUIRED — bootstrap fails if any cannot be fetched.
 declare -A HERMES_SECRETS=(
   [HASS_TOKEN]="hermes-ha-token"
 )
@@ -33,11 +37,15 @@ declare -A HERMES_DEFAULTS=(
 )
 
 command -v aws >/dev/null || { echo "ERROR: aws CLI not found" >&2; exit 1; }
-command -v jq  >/dev/null || { echo "ERROR: jq not found" >&2; exit 1; }
 
-mkdir -p "$(dirname "$ENV_FILE")"
+# Lock down the target directory first so both the tmpfile and final env file
+# live in a 0700 dir the hermes user owns.
+mkdir -p "$ENV_DIR"
+chmod 700 "$ENV_DIR"
 
-tmpfile=$(mktemp)
+# Create tmpfile beside ENV_FILE so `mv` is atomic (same filesystem) and the
+# secret never touches /tmp (which may be a tmpfs shared with other services).
+tmpfile=$(mktemp "$ENV_DIR/.env.XXXXXX")
 trap 'rm -f "$tmpfile"' EXIT
 chmod 600 "$tmpfile"
 
@@ -54,14 +62,20 @@ chmod 600 "$tmpfile"
   for key in "${!HERMES_SECRETS[@]}"; do
     secret_id="${PREFIX}/${HERMES_SECRETS[$key]}"
     echo "# Fetching $secret_id ..." >&2
-    if value=$(aws secretsmanager get-secret-value \
+    if ! value=$(aws secretsmanager get-secret-value \
         --secret-id "$secret_id" \
         --query SecretString \
-        --output text 2>/dev/null); then
-      printf '%s=%q\n' "$key" "$value"
-    else
-      echo "WARN: could not fetch $secret_id (skipping)" >&2
+        --output text 2>&1); then
+      echo "ERROR: could not fetch $secret_id" >&2
+      echo "       $value" >&2
+      echo "       Set it first with: cd infra/secrets && ./set-secret.sh ${HERMES_SECRETS[$key]} \"<value>\"" >&2
+      exit 1
     fi
+    if [ -z "$value" ] || [ "$value" = "None" ]; then
+      echo "ERROR: secret $secret_id is empty" >&2
+      exit 1
+    fi
+    printf '%s=%q\n' "$key" "$value"
   done
 } > "$tmpfile"
 

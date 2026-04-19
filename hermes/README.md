@@ -12,7 +12,7 @@ VPN needed.
 | Name | Role | Notes |
 |------|------|-------|
 | `jupiter` | Contabo VPS, RKE2 worker (storage) | This host. Runs hermes. `hostname -f` / DNS TBD. |
-| `master` | NUC at home, RKE2 control plane | Server URL `https://84.69.17.64:9345`. |
+| `master` | NUC at home, RKE2 control plane | Server URL stored in operator runbook (private). |
 | `pluto`  | Contabo VPS, OpenClaw for a family member | Has an encrypted disk pending migration to jupiter. |
 
 ## What lives here
@@ -45,15 +45,28 @@ under `infra/secrets/sealed/` once generated).
 
 ## Adding a new secret
 
-1. Define the key name in AWS:
+1. Store the value in AWS Secrets Manager (creates if absent, updates if present):
    ```bash
    cd infra/secrets
    ./set-secret.sh hermes-<name> "<value>"
    ```
-2. Add the key to the `HERMES_SECRET_KEYS` array in `bootstrap-env.sh`.
-3. Add a matching `stringData` entry to the hermes block in
-   `infra/secrets/sync-secrets.sh`.
-4. Commit, run `./bootstrap-env.sh` on jupiter, done.
+   The secret lands at `moonrepo/hermes-<name>`. See
+   `infra/secrets/README.md` for the full secret catalogue.
+2. Register the key in the `HERMES_SECRETS` associative array in
+   `hermes/bootstrap-env.sh`:
+   ```bash
+   declare -A HERMES_SECRETS=(
+     [HASS_TOKEN]="hermes-ha-token"
+     [NEW_VAR]="hermes-<name>"   # ← add this line
+   )
+   ```
+3. (Future, once hermes is in-cluster) add a matching `stringData` entry to the
+   hermes block in `infra/secrets/sync-secrets.sh` so the SealedSecret is
+   regenerated. Not required while hermes runs host-side.
+4. Commit, push, merge, then on jupiter:
+   ```bash
+   cd ~/moonrepo && git pull && ./hermes/bootstrap-env.sh
+   ```
 
 ## Connectivity reference
 
