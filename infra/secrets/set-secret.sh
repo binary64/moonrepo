@@ -63,13 +63,22 @@ if [ -z "$SECRET_VALUE" ]; then
   exit 1
 fi
 
+# Write secret to a 0600 tmpfile and pass to AWS CLI via file:// so the value
+# never appears on the command line (ps / shell history leak).
+TMP_SECRET=$(mktemp)
+chmod 600 "$TMP_SECRET"
+trap 'shred -u "$TMP_SECRET" 2>/dev/null || rm -f "$TMP_SECRET"' EXIT
+printf '%s' "$SECRET_VALUE" > "$TMP_SECRET"
+# Scrub the in-memory var so it only lives on disk in the 0600 tmpfile.
+SECRET_VALUE=""
+
 echo "Setting secret: ${FULL_SECRET_ID}"
 
 if aws secretsmanager describe-secret --secret-id "${FULL_SECRET_ID}" &>/dev/null; then
   echo "Secret exists, updating value..."
   if ! aws secretsmanager put-secret-value \
     --secret-id "${FULL_SECRET_ID}" \
-    --secret-string "${SECRET_VALUE}" >/dev/null; then
+    --secret-string "file://${TMP_SECRET}" >/dev/null; then
     echo "Error: Failed to update secret in AWS Secrets Manager." >&2
     exit 1
   fi
@@ -77,7 +86,7 @@ else
   echo "Secret does not exist, creating..."
   if ! aws secretsmanager create-secret \
     --name "${FULL_SECRET_ID}" \
-    --secret-string "${SECRET_VALUE}" >/dev/null; then
+    --secret-string "file://${TMP_SECRET}" >/dev/null; then
     echo "Error: Failed to create secret in AWS Secrets Manager." >&2
     exit 1
   fi

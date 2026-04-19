@@ -84,9 +84,14 @@ chmod 600 "$ENV_FILE"
 echo "✓ Wrote $ENV_FILE (mode 600)"
 
 # Symlink skills into hermes skills dir so they show up in skill discovery.
+# Safety: only replace an existing symlink — never rm -rf a real directory here.
 mkdir -p "$(dirname "$SKILLS_LINK")"
-if [ -L "$SKILLS_LINK" ] || [ -e "$SKILLS_LINK" ]; then
-  rm -rf "$SKILLS_LINK"
+if [ -L "$SKILLS_LINK" ]; then
+  rm -f "$SKILLS_LINK"
+elif [ -e "$SKILLS_LINK" ]; then
+  echo "ERROR: $SKILLS_LINK exists and is not a symlink; refusing to overwrite." >&2
+  echo "       Move or remove it manually, then re-run bootstrap." >&2
+  exit 1
 fi
 ln -s "$HERMES_DIR/skills" "$SKILLS_LINK"
 echo "✓ Linked $SKILLS_LINK -> $HERMES_DIR/skills"
