@@ -38,6 +38,7 @@
     "path-to-regexp": "0.1.13",
     "effect": "3.20.0",
     "liquidjs": "10.25.3",
-    "next": "16.2.3"
+    "next": "16.2.3",
+    "protobufjs": "7.5.5"
   }
 }
