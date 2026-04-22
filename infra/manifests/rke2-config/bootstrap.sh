@@ -1,5 +1,5 @@
 #!/bin/bash
-# bootstrap-rke2-config.sh — Initial setup of GitOps-managed RKE2 config on NUC
+# bootstrap.sh — Initial setup of GitOps-managed RKE2 config on NUC
 #
 # Run this ONCE after the NUC is powered on and the cluster is accessible.
 # It:
@@ -7,7 +7,7 @@
 #   2. Sets up the WAN IP monitor to auto-update Cloudflare + ConfigMap
 #   3. Restarts RKE2 to ensure config is in effect
 #
-# Usage: ./bootstrap-rke2-config.sh
+# Usage: ./bootstrap.sh
 
 set -euo pipefail
 

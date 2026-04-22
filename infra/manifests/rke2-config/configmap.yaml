@@ -24,8 +24,11 @@ data:
     # The WAN IP monitor (CronJob) automatically updates this ConfigMap
     # when the home public IP changes.
     #
-    # LAN IP (192.168.1.201) is intentionally NOT hardcoded here —
-    # the NUC gets its LAN address from DHCP and RKE2 discovers it.
+    # The LAN IP (192.168.1.201) IS included in `tls-san` below so the
+    # API server cert is valid for in-LAN clients (kubectl from the house
+    # network). It is the NUC's DHCP reservation and intentionally stable.
+    # It is NOT used for `advertise-address` / `node-external-ip`, which
+    # are driven by the WAN IP and rewritten by the monitor on change.
     write-kubeconfig-to: /etc/rancher/rke2/rke2.yaml
     tls-san:
       - 83.105.77.69
