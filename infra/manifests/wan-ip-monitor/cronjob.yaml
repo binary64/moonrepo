@@ -21,6 +21,7 @@ spec:
           labels:
             app.kubernetes.io/name: wan-ip-monitor
         spec:
+          serviceAccountName: wan-ip-monitor
           # Must run on the NUC (master node) — only node with real WAN access
           nodeSelector:
             node-role.kubernetes.io/master: "true"
@@ -32,7 +33,7 @@ spec:
               effect: NoSchedule
               operator: Exists
           restartPolicy: OnFailure
-          automountServiceAccountToken: false
+          automountServiceAccountToken: true
           securityContext:
             runAsNonRoot: true
             runAsUser: 1000
@@ -63,6 +64,13 @@ spec:
                     configMapKeyRef:
                       name: wan-ip-monitor-config
                       key: NR_ACCOUNT_ID
+                - name: CLOUDFLARE_API_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: cloudflare-token
+                      key: apiToken
+                - name: CLOUDFLARE_ZONE_ID
+                  value: "ecb09a98b97ba002587403424405610f"
               resources:
                 requests:
                   cpu: 10m
@@ -75,6 +83,9 @@ spec:
                   mountPath: /scripts
                 - name: state
                   mountPath: /state
+                - name: kubeconfig
+                  mountPath: /kubeconfig
+                  readOnly: true
           volumes:
             - name: scripts
               configMap:
@@ -84,3 +95,7 @@ spec:
               hostPath:
                 path: /tmp/wan-ip-monitor
                 type: DirectoryOrCreate
+            - name: kubeconfig
+              hostPath:
+                path: /etc/rancher/rke2/rke2.yaml
+                type: File

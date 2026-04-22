@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rke2-config
+  namespace: default
+  annotations:
+    moonrepo.dev/skip-local: "true"
+  labels:
+    app.kubernetes.io/name: rke2-config
+    app.kubernetes.io/part-of: infrastructure
+data:
+  config.yaml: |
+    # RKE2 server configuration for the NUC (home lab master node).
+    #
+    # This ConfigMap is the single source of truth for the NUC's RKE2 config.
+    # The `apply-rke2-config.sh` script (in the same directory) syncs this
+    # to /etc/rancher/rke2/config.yaml on the NUC and restarts RKE2.
+    #
+    # WAN IP changes require updating:
+    #   - advertise-address  (what the server tells clients to connect to)
+    #   - node-external-ip   (for node-level external connectivity)
+    #   - tls-san           (for API server certificate SANs)
+    #
+    # The WAN IP monitor (CronJob) automatically updates this ConfigMap
+    # when the home public IP changes.
+    #
+    # LAN IP (192.168.1.201) is intentionally NOT hardcoded here —
+    # the NUC gets its LAN address from DHCP and RKE2 discovers it.
+    write-kubeconfig-to: /etc/rancher/rke2/rke2.yaml
+    tls-san:
+      - 83.105.77.69
+      - 192.168.1.201
+    node-external-ip: 83.105.77.69
+    advertise-address: 83.105.77.69
+    # Cloudflare proxy disabled for these DNS records — direct A records.
+    # headscale.brandwhisper.cloud → 83.105.77.69
+    # *.home.brandwhisper.cloud  → 83.105.77.69
