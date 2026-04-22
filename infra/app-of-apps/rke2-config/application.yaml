@@ -22,6 +22,7 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=false
+      - RespectIgnoreDifferences=true
   # Monitor-driven updates to data.config.yaml (runtime WAN IP) must not be
   # reverted by selfHeal. The wan-ip-monitor CronJob patches this key on IP
   # change; ArgoCD should treat that field as owned by the cluster runtime.
