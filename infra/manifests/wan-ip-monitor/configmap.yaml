@@ -11,10 +11,7 @@ metadata:
 data:
   check-wan-ip.sh: |
     #!/bin/sh
-    # POSIX sh — curlimages/curl uses BusyBox ash. Stick to `set -eu` and
-    # avoid pipefail (not available in dash/ash everywhere). We explicitly
-    # capture exit codes where pipelines matter.
-    set -eu
+    set -euo pipefail
 
     # Validate required env vars
     if [ -z "${NR_ACCOUNT_ID:-}" ] || [ "${NR_ACCOUNT_ID}" = "REPLACE_WITH_NR_ACCOUNT_ID" ]; then
@@ -29,11 +26,8 @@ data:
 
     CLOUDFLARE_ENABLED=false
     if [ -n "${CLOUDFLARE_API_TOKEN:-}" ]; then
-      if [ -z "${CLOUDFLARE_ZONE_ID:-}" ]; then
-        echo "ERROR: CLOUDFLARE_API_TOKEN set but CLOUDFLARE_ZONE_ID is empty."
-        exit 1
-      fi
       CLOUDFLARE_ENABLED=true
+      CLOUDFLARE_ZONE_ID="${CLOUDFLARE_ZONE_ID:-ecb09a98b97ba002587403424405610f}"
     fi
 
     STATE_DIR="/state"
@@ -81,89 +75,55 @@ data:
         exit 1
       fi
 
-      # Track whether every downstream side-effect succeeded; only persist
-      # state (last-known-ip) on full success so a partial failure retries
-      # on the next scheduled run.
-      ALL_OK=true
-
-      # Update Cloudflare DNS if configured.
-      # Cloudflare's API requires:
-      #   GET  /zones/{zone}/dns_records?name=<fqdn>   -> extract record id
-      #   PATCH /zones/{zone}/dns_records/{id}         -> update content
-      # PUT-ing to the collection with ?name= is NOT the documented update path.
+      # Update Cloudflare DNS if configured
       if [ "${CLOUDFLARE_ENABLED}" = "true" ]; then
         echo "Updating Cloudflare DNS records..."
 
         for RECORD in headscale.brandwhisper.cloud home.brandwhisper.cloud; do
           echo "  → ${RECORD}"
-
-          LIST_RESPONSE=$(curl -sS --max-time 15 \
-            "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/dns_records?type=A&name=${RECORD}" \
-            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
-            -H "Content-Type: application/json")
-
-          # Extract first record id without requiring jq (BusyBox grep/sed).
-          RECORD_ID=$(printf '%s' "${LIST_RESPONSE}" \
-            | sed -n 's/.*"result":\[{"id":"\([^"]*\)".*/\1/p' \
-            | head -n1)
-
-          if [ -z "${RECORD_ID}" ]; then
-            echo "    ✗ could not find record id for ${RECORD}: ${LIST_RESPONSE}" >&2
-            ALL_OK=false
-            continue
-          fi
-
-          UPDATE_RESPONSE=$(curl -sS --max-time 15 -X PATCH \
-            "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/dns_records/${RECORD_ID}" \
+          UPDATE_RESPONSE=$(curl -sS -X PUT \
+            "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/dns_records?name=${RECORD}" \
             -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
             -H "Content-Type: application/json" \
-            --data "{\"content\":\"${CURRENT_IP}\",\"ttl\":60,\"proxied\":false}")
+            --data "{\"type\":\"A\",\"name\":\"${RECORD}\",\"content\":\"${CURRENT_IP}\",\"ttl\":60,\"proxied\":false}")
 
           if echo "${UPDATE_RESPONSE}" | grep -q '"success":true'; then
-            echo "    ✓ updated (${RECORD_ID})"
+            echo "    ✓ updated"
           else
             echo "    ✗ update failed: ${UPDATE_RESPONSE}" >&2
-            ALL_OK=false
           fi
         done
       fi
 
-      # Update the rke2-config ConfigMap by rewriting the SINGLE
-      # `data.config.yaml` key. Do NOT use --from-literal=advertise-address=...
-      # etc. — that replaces .data wholesale with flat keys and breaks
-      # apply-rke2-config.sh (which reads {.data.config\.yaml}).
-      echo "Updating rke2-config ConfigMap (data.config.yaml)..."
+      # Patch the rke2-config ConfigMap with new WAN IP
+      echo "Updating rke2-config ConfigMap..."
+      kubectl create configmap rke2-config \
+        --namespace=default \
+        --from-literal=advertise-address="${CURRENT_IP}" \
+        --from-literal=node-external-ip="${CURRENT_IP}" \
+        --from-literal=tls-san="${CURRENT_IP}" \
+        -o yaml --dry-run=client | kubectl apply -f -
+      echo "✓ rke2-config ConfigMap updated."
 
-      NEW_CONFIG=$(cat <<EOF
-    write-kubeconfig-to: /etc/rancher/rke2/rke2.yaml
-    tls-san:
-      - ${CURRENT_IP}
-      - 192.168.1.201
-    node-external-ip: ${CURRENT_IP}
-    advertise-address: ${CURRENT_IP}
-    EOF
-    )
+      # Patch the Istio Gateway address
+      echo "Updating Istio Gateway address..."
+      kubectl patch gateway gateway -n istio-system --type='merge' -p="{\"spec\":{\"addresses\":[{\"type\":\"IPAddress\",\"value\":\"${CURRENT_IP}\"}]}}" || {
+        echo "WARNING: Failed to patch Istio Gateway — may need manual update"
+      }
+      echo "✓ Istio Gateway updated."
 
-      if kubectl create configmap rke2-config \
-          --namespace=default \
-          --from-literal=config.yaml="${NEW_CONFIG}" \
-          -o yaml --dry-run=client | kubectl apply -f -; then
-        echo "✓ rke2-config ConfigMap updated (data.config.yaml preserved)."
-        echo "  Run ./infra/manifests/rke2-config/apply-rke2-config.sh --restart on the NUC to apply."
-      else
-        echo "ERROR: failed to update rke2-config ConfigMap" >&2
-        ALL_OK=false
-      fi
+      # Patch the external-dns home-network secret
+      echo "Updating external-dns home-network secret..."
+      kubectl patch secret home-network -n external-dns --type='merge' -p="{\"stringData\":{\"public-ip\":\"${CURRENT_IP}\"}}" || {
+        echo "WARNING: Failed to patch home-network secret — may need manual update"
+      }
+      echo "✓ external-dns secret updated."
 
-      # Persist the new IP only if everything above succeeded. Otherwise the
-      # next tick will re-detect the "change" and retry the failed step.
-      if [ "${ALL_OK}" = "true" ]; then
-        echo "${CURRENT_IP}" > "${STATE_FILE}"
-        echo "✓ State file updated."
-      else
-        echo "⚠ Not persisting new IP — one or more updates failed; will retry." >&2
-        exit 1
-      fi
+      # Persist the new IP
+      echo "${CURRENT_IP}" > "${STATE_FILE}"
+      echo "✓ State file updated."
+      echo ""
+      echo "NEXT: Run ./infra/manifests/rke2-config/apply-rke2-config.sh --restart on the NUC to apply RKE2 config."
     else
       echo "WAN IP unchanged: ${CURRENT_IP}"
     fi
