@@ -28,8 +28,14 @@ This directory contains the GitOps-managed RKE2 configuration for the NUC
    ./apply-rke2-config.sh --restart
    ```
 
-   Or manually on the NUC:
+   If you are already on the NUC, first write the ConfigMap-backed file, then
+   restart — a bare `systemctl restart` only re-reads the existing host file
+   and can leave a stale WAN IP in place:
+
    ```bash
+   kubectl get configmap rke2-config -n default \
+       -o jsonpath='{.data.config\.yaml}' \
+     | sudo tee /etc/rancher/rke2/config.yaml > /dev/null
    sudo systemctl restart rke2-server
    ```
 

@@ -70,7 +70,10 @@ spec:
                       name: cloudflare-token
                       key: apiToken
                 - name: CLOUDFLARE_ZONE_ID
-                  value: "ecb09a98b97ba002587403424405610f"
+                  valueFrom:
+                    configMapKeyRef:
+                      name: wan-ip-monitor-config
+                      key: CLOUDFLARE_ZONE_ID
               resources:
                 requests:
                   cpu: 10m
@@ -83,9 +86,6 @@ spec:
                   mountPath: /scripts
                 - name: state
                   mountPath: /state
-                - name: kubeconfig
-                  mountPath: /kubeconfig
-                  readOnly: true
           volumes:
             - name: scripts
               configMap:
@@ -95,7 +95,3 @@ spec:
               hostPath:
                 path: /tmp/wan-ip-monitor
                 type: DirectoryOrCreate
-            - name: kubeconfig
-              hostPath:
-                path: /etc/rancher/rke2/rke2.yaml
-                type: File

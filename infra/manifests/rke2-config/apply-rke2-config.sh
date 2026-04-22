@@ -62,15 +62,16 @@ if [[ "${DRY_RUN}" == "true" ]]; then
   exit 0
 fi
 
-# Copy to NUC via SSH
+# Copy to NUC via SSH. Remote path is quoted so it's expanded once on the
+# remote shell and can't be mangled by whitespace/globbing.
 echo "Copying config to NUC..."
-echo "${CONFIG_YAML}" | ssh "${SSH_USER}@${SSH_HOST}" "sudo tee ${RKE2_CONFIG_PATH}" > /dev/null
+printf '%s\n' "${CONFIG_YAML}" | ssh "${SSH_USER}@${SSH_HOST}" "sudo tee -- '${RKE2_CONFIG_PATH}'" > /dev/null
 
 echo "Config written successfully."
 
-# Validate the config file exists and is readable
-ssh "${SSH_USER}@${SSH_HOST}" "sudo cat ${RKE2_CONFIG_PATH}" > /dev/null 2>&1
-if [[ $? -ne 0 ]]; then
+# Validate the config file exists and is readable. With set -euo pipefail an
+# explicit `$?` check would be unreachable, so branch on the command directly.
+if ! ssh "${SSH_USER}@${SSH_HOST}" "sudo cat -- '${RKE2_CONFIG_PATH}'" > /dev/null 2>&1; then
   echo "ERROR: Config file not accessible on NUC after write"
   exit 1
 fi

@@ -10,3 +10,6 @@ metadata:
     app.kubernetes.io/part-of: monitoring
 data:
   NR_ACCOUNT_ID: "6794449"
+  # Cloudflare zone for brandwhisper.cloud — shared by the in-script DNS
+  # update path and the CronJob env so it's a single source of truth.
+  CLOUDFLARE_ZONE_ID: "ecb09a98b97ba002587403424405610f"

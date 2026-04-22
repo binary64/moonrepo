@@ -3,6 +3,8 @@ kind: Application
 metadata:
   name: rke2-config
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
   finalizers:
     - resources-finalizer.argocd.io
 spec:
@@ -20,3 +22,13 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=false
+  # Monitor-driven updates to data.config.yaml (runtime WAN IP) must not be
+  # reverted by selfHeal. The wan-ip-monitor CronJob patches this key on IP
+  # change; ArgoCD should treat that field as owned by the cluster runtime.
+  ignoreDifferences:
+    - group: ""
+      kind: ConfigMap
+      name: rke2-config
+      namespace: default
+      jsonPointers:
+        - /data/config.yaml

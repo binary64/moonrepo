@@ -11,6 +11,10 @@
 
 set -euo pipefail
 
+# Resolve paths relative to this script so it works from any CWD.
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd -- "${SCRIPT_DIR}/../../.." && pwd)"
+
 echo "=== RKE2 Config GitOps Bootstrap ==="
 echo ""
 
@@ -24,34 +28,37 @@ echo "✓ Cluster reachable"
 
 # Create the rke2-config ConfigMap from the local manifest
 echo "Creating rke2-config ConfigMap..."
-kubectl apply -f infra/manifests/rke2-config/configmap.yaml
+kubectl apply -f "${REPO_ROOT}/infra/manifests/rke2-config/configmap.yaml"
 
 # Deploy the WAN IP monitor updates (Cloudflare + ConfigMap auto-update)
 echo "Updating WAN IP monitor CronJob..."
-kubectl apply -k infra/manifests/wan-ip-monitor/
+kubectl apply -k "${REPO_ROOT}/infra/manifests/wan-ip-monitor/"
 
 # Seal and deploy the Cloudflare token secret
 echo ""
-echo "NOTE: Cloudflare token secret needs to be sealed and applied:"
-echo "  cd infra/manifests/cloudflare-token"
-echo "  # Edit secret.yaml with your token from the passwords sheet"
+echo "NOTE: Cloudflare token secret needs to be sealed and applied."
+echo "      Pass the token via stdin so it never lands in shell history or a"
+echo "      tracked file. From the cloudflare-token directory:"
+echo ""
+echo "  read -rsp 'Cloudflare API token: ' CLOUDFLARE_API_TOKEN; echo"
 echo "  kubectl create secret generic cloudflare-token \\"
 echo "    --namespace=newrelic \\"
-echo "    --from-literal=apiToken='YOUR_TOKEN' \\"
+echo "    --from-literal=apiToken=\"\${CLOUDFLARE_API_TOKEN}\" \\"
 echo "    --dry-run=client -o yaml \\"
 echo "  | kubeseal --controller-namespace sealed-secrets --format yaml \\"
 echo "    > secret-sealed.yaml"
+echo "  unset CLOUDFLARE_API_TOKEN"
 echo "  kubectl apply -f secret-sealed.yaml"
 echo ""
 
 # Apply the rke2-config Application (ArgoCD will sync the ConfigMap)
 echo "Creating ArgoCD Application for rke2-config..."
-kubectl apply -f infra/app-of-apps/rke2-config/application.yaml
+kubectl apply -f "${REPO_ROOT}/infra/app-of-apps/rke2-config/application.yaml"
 
 # Run the apply script to sync config to host filesystem
 echo ""
 echo "Running apply-rke2-config.sh on NUC..."
-./infra/manifests/rke2-config/apply-rke2-config.sh --restart
+"${SCRIPT_DIR}/apply-rke2-config.sh" --restart
 
 echo ""
 echo "=== Bootstrap complete ==="
