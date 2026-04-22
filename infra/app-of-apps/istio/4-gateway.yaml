@@ -10,7 +10,7 @@ spec:
   gatewayClassName: istio
   addresses:
   - type: IPAddress
-    value: "84.69.17.64"
+    value: "83.105.77.69"
   listeners:
   - name: default
     port: 80
