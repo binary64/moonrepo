@@ -95,14 +95,52 @@ data:
         done
       fi
 
-      # Patch the rke2-config ConfigMap with new WAN IP
+      # Patch the rke2-config ConfigMap with new WAN IP.
+      #
+      # The rke2-config ConfigMap stores a single `config.yaml` blob (read by
+      # apply-rke2-config.sh via `jsonpath={.data.config\.yaml}`), so we must
+      # NOT flatten the keys. Instead, fetch the current config.yaml, replace
+      # IP-bearing lines, and re-apply.
       echo "Updating rke2-config ConfigMap..."
-      kubectl create configmap rke2-config \
+      EXISTING_CONFIG=$(kubectl get configmap rke2-config -n default \
+        -o jsonpath='{.data.config\.yaml}' 2>/dev/null || echo "")
+
+      if [ -z "${EXISTING_CONFIG}" ]; then
+        echo "WARNING: rke2-config ConfigMap not found or empty — generating from scratch"
+        NEW_CONFIG=$(printf '%s\n' \
+          "write-kubeconfig-to: /etc/rancher/rke2/rke2.yaml" \
+          "tls-san:" \
+          "  - ${CURRENT_IP}" \
+          "  - 192.168.1.201" \
+          "node-external-ip: ${CURRENT_IP}" \
+          "advertise-address: ${CURRENT_IP}")
+      else
+        # Replace any prior WAN IP token (LAST_IP if known, else the
+        # REPLACE_WITH_WAN_IP placeholder from the seed manifest) with the
+        # current WAN IP. The LAN tls-san (192.168.1.201) is preserved.
+        OLD_TOKEN="${LAST_IP:-REPLACE_WITH_WAN_IP}"
+        if [ -z "${OLD_TOKEN}" ]; then
+          OLD_TOKEN="REPLACE_WITH_WAN_IP"
+        fi
+        # Use awk to rewrite only the IP-bearing fields, leaving everything
+        # else (including the LAN tls-san entry) untouched.
+        NEW_CONFIG=$(printf '%s\n' "${EXISTING_CONFIG}" | awk -v old="${OLD_TOKEN}" -v new="${CURRENT_IP}" '
+          /^node-external-ip:/      { print "node-external-ip: " new; next }
+          /^advertise-address:/     { print "advertise-address: " new; next }
+          /^[[:space:]]*-[[:space:]]*/ {
+            line = $0
+            gsub(old, new, line)
+            print line
+            next
+          }
+          { print }
+        ')
+      fi
+
+      printf '%s\n' "${NEW_CONFIG}" | kubectl create configmap rke2-config \
         --namespace=default \
-        --from-literal=advertise-address="${CURRENT_IP}" \
-        --from-literal=node-external-ip="${CURRENT_IP}" \
-        --from-literal=tls-san="${CURRENT_IP}" \
-        -o yaml --dry-run=client | kubectl apply -f -
+        --from-file=config.yaml=/dev/stdin \
+        --dry-run=client -o yaml | kubectl apply -f -
       echo "✓ rke2-config ConfigMap updated."
 
       # Patch the Istio Gateway address

@@ -41,11 +41,40 @@ spec:
             fsGroup: 1000
             seccompProfile:
               type: RuntimeDefault
-          containers:
-            - name: wan-ip-monitor
-              image: curlimages/curl:8.18.0
+          initContainers:
+            # hostPath dirs created via DirectoryOrCreate are owned root:root 0755.
+            # The main container runs as UID 1000 with readOnlyRootFilesystem, so it
+            # cannot write to /state. fsGroup does NOT apply to hostPath volumes.
+            # This init container fixes ownership/permissions on the hostPath.
+            - name: init-perms
+              image: bitnami/kubectl:1.31.4
               command:
                 - /bin/sh
+                - -c
+                - chown 1000:1000 /state && chmod 0775 /state
+              securityContext:
+                runAsNonRoot: false
+                runAsUser: 0
+                runAsGroup: 0
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop:
+                    - ALL
+                  add:
+                    - CHOWN
+                    - FOWNER
+              volumeMounts:
+                - name: state
+                  mountPath: /state
+          containers:
+            - name: wan-ip-monitor
+              # Image must include both `curl` (for IP/DNS API calls) and
+              # `kubectl` (for patching rke2-config + Istio Gateway + secrets).
+              # bitnami/kubectl ships both. Pinned tag — never use `latest`.
+              image: bitnami/kubectl:1.31.4
+              command:
+                - /bin/bash
                 - /scripts/check-wan-ip.sh
               securityContext:
                 allowPrivilegeEscalation: false
