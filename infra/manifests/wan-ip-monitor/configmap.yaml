@@ -26,8 +26,11 @@ data:
 
     CLOUDFLARE_ENABLED=false
     if [ -n "${CLOUDFLARE_API_TOKEN:-}" ]; then
+      if [ -z "${CLOUDFLARE_ZONE_ID:-}" ]; then
+        echo "ERROR: CLOUDFLARE_ZONE_ID is required when CLOUDFLARE_API_TOKEN is set." >&2
+        exit 1
+      fi
       CLOUDFLARE_ENABLED=true
-      CLOUDFLARE_ZONE_ID="${CLOUDFLARE_ZONE_ID:-ecb09a98b97ba002587403424405610f}"
     fi
 
     STATE_DIR="/state"
@@ -75,14 +78,43 @@ data:
         exit 1
       fi
 
+      # Track success across all external updates; only persist last-known-ip
+      # if every step succeeds, so transient failures get retried next tick.
+      ALL_OK=true
+
       # Update Cloudflare DNS if configured
       if [ "${CLOUDFLARE_ENABLED}" = "true" ]; then
         echo "Updating Cloudflare DNS records..."
 
         for RECORD in headscale.brandwhisper.cloud home.brandwhisper.cloud; do
           echo "  → ${RECORD}"
-          UPDATE_RESPONSE=$(curl -sS -X PUT \
-            "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/dns_records?name=${RECORD}" \
+
+          # Step 1: look up the record id (PUT/PATCH require it in the path).
+          LIST_RESPONSE=$(curl -sS -G \
+            "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/dns_records" \
+            --data-urlencode "type=A" \
+            --data-urlencode "name=${RECORD}" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H "Content-Type: application/json")
+
+          if ! echo "${LIST_RESPONSE}" | grep -q '"success":true'; then
+            echo "    ✗ list failed: ${LIST_RESPONSE}" >&2
+            ALL_OK=false
+            continue
+          fi
+
+          RECORD_ID=$(echo "${LIST_RESPONSE}" \
+            | sed -n 's/.*"result":\[{"id":"\([^"]*\)".*/\1/p')
+
+          if [ -z "${RECORD_ID}" ]; then
+            echo "    ✗ no record id returned for ${RECORD}: ${LIST_RESPONSE}" >&2
+            ALL_OK=false
+            continue
+          fi
+
+          # Step 2: PATCH the specific record by id.
+          UPDATE_RESPONSE=$(curl -sS -X PATCH \
+            "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/dns_records/${RECORD_ID}" \
             -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
             -H "Content-Type: application/json" \
             --data "{\"type\":\"A\",\"name\":\"${RECORD}\",\"content\":\"${CURRENT_IP}\",\"ttl\":60,\"proxied\":false}")
@@ -91,6 +123,7 @@ data:
             echo "    ✓ updated"
           else
             echo "    ✗ update failed: ${UPDATE_RESPONSE}" >&2
+            ALL_OK=false
           fi
         done
       fi
@@ -145,21 +178,38 @@ data:
 
       # Patch the Istio Gateway address
       echo "Updating Istio Gateway address..."
-      kubectl patch gateway gateway -n istio-system --type='merge' -p="{\"spec\":{\"addresses\":[{\"type\":\"IPAddress\",\"value\":\"${CURRENT_IP}\"}]}}" || {
-        echo "WARNING: Failed to patch Istio Gateway — may need manual update"
-      }
-      echo "✓ Istio Gateway updated."
+      if kubectl patch gateway gateway -n istio-system --type='merge' -p="{\"spec\":{\"addresses\":[{\"type\":\"IPAddress\",\"value\":\"${CURRENT_IP}\"}]}}"; then
+        echo "✓ Istio Gateway updated."
+      else
+        echo "WARNING: Failed to patch Istio Gateway — may need manual update" >&2
+        ALL_OK=false
+      fi
 
-      # Patch the external-dns home-network secret
+      # Patch the external-dns home-network secret AND roll the deployment so
+      # the new public-ip is picked up immediately (env-from-Secret values are
+      # not refreshed in running pods until restart).
       echo "Updating external-dns home-network secret..."
-      kubectl patch secret home-network -n external-dns --type='merge' -p="{\"stringData\":{\"public-ip\":\"${CURRENT_IP}\"}}" || {
-        echo "WARNING: Failed to patch home-network secret — may need manual update"
-      }
-      echo "✓ external-dns secret updated."
+      if kubectl patch secret home-network -n external-dns --type='merge' -p="{\"stringData\":{\"public-ip\":\"${CURRENT_IP}\"}}"; then
+        echo "✓ external-dns secret updated."
+        if kubectl rollout restart deployment external-dns -n external-dns 2>/dev/null; then
+          echo "✓ external-dns rollout restarted."
+        else
+          echo "WARNING: Failed to restart external-dns deployment — may keep using stale IP until pod recycle" >&2
+          ALL_OK=false
+        fi
+      else
+        echo "WARNING: Failed to patch home-network secret — may need manual update" >&2
+        ALL_OK=false
+      fi
 
-      # Persist the new IP
-      echo "${CURRENT_IP}" > "${STATE_FILE}"
-      echo "✓ State file updated."
+      # Persist the new IP only if every external update succeeded — otherwise
+      # the next tick will retry instead of latching a partially-applied state.
+      if [ "${ALL_OK}" = "true" ]; then
+        echo "${CURRENT_IP}" > "${STATE_FILE}"
+        echo "✓ State file updated."
+      else
+        echo "✗ One or more updates failed — NOT persisting last-known-ip; will retry next tick." >&2
+      fi
       echo ""
       echo "NEXT: Run ./infra/manifests/rke2-config/apply-rke2-config.sh --restart on the NUC to apply RKE2 config."
     else

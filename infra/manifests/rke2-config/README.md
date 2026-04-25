@@ -35,8 +35,11 @@ public IP changes.
    ./apply-rke2-config.sh --restart
    ```
 
-   Or manually on the NUC:
+   Or manually on the NUC — first sync the ConfigMap-managed file to disk, then restart:
    ```bash
+   kubectl get configmap rke2-config -n default \
+     -o jsonpath='{.data.config\.yaml}' \
+     | sudo tee /etc/rancher/rke2/config.yaml > /dev/null
    sudo systemctl restart rke2-server
    ```
 
