@@ -1,0 +1,30 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: open-webui-pg
+  namespace: open-webui
+  labels:
+    app.kubernetes.io/name: open-webui-postgres
+    app.kubernetes.io/instance: open-webui
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  instances: 1
+
+  # Pin to Jupiter (vmi3137202) — co-locate with Open WebUI for low latency
+  affinity:
+    nodeSelector:
+      kubernetes.io/hostname: vmi3137202
+
+  postgresql:
+    pg_hba:
+      - host all all all scram-sha-256
+
+  bootstrap:
+    initdb:
+      database: openwebui
+      owner: openwebui
+
+  storage:
+    size: 2Gi
+    storageClass: local-path

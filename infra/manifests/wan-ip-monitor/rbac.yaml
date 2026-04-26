@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: wan-ip-monitor
+  namespace: newrelic
+  annotations:
+    moonrepo.dev/skip-local: "true"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: wan-ip-monitor
+  namespace: default
+  annotations:
+    moonrepo.dev/skip-local: "true"
+rules:
+  # Allow reading/writing the rke2-config ConfigMap
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["rke2-config"]
+    verbs: ["get", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: wan-ip-monitor
+  namespace: default
+  annotations:
+    moonrepo.dev/skip-local: "true"
+subjects:
+  - kind: ServiceAccount
+    name: wan-ip-monitor
+    namespace: newrelic
+roleRef:
+  kind: Role
+  name: wan-ip-monitor
+  apiGroup: rbac.authorization.k8s.io

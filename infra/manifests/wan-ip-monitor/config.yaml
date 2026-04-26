@@ -1,6 +1,3 @@
-# New Relic account ID (not sensitive — appears in NR URLs/dashboards).
-# Set NR_ACCOUNT_ID to your New Relic account number before applying,
-# or update the value below after obtaining it from your NR account settings.
 apiVersion: v1
 kind: ConfigMap
 metadata:

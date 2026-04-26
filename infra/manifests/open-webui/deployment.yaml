@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: open-webui
+  namespace: open-webui
+  labels:
+    app: open-webui
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: open-webui
+  template:
+    metadata:
+      labels:
+        app: open-webui
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: vmi3137202
+      containers:
+        - name: open-webui
+          image: ghcr.io/open-webui/open-webui:v0.5.15
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: data
+              mountPath: /app/backend/data
+              readOnly: false
+          envFrom:
+            - secretRef:
+                name: open-webui-env
+          env:
+            - name: OPENAI_API_BASE
+              value: "http://litellm.litellm.svc.cluster.local:4000"
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: litellm-masterkey
+                  key: masterkey
+            - name: WHISPER_API_BASE
+              value: "http://192.168.1.201:5000/v1"
+            - name: WHISPER_MODEL
+              value: "whisper-1"
+            - name: ENABLE_SIGNUP
+              value: "false"
+            - name: DATA_DIR
+              value: "/app/backend/data"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: open-webui-pg-app
+                  key: uri
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 2Gi
+          startupProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 0
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 0
+            periodSeconds: 10
+            failureThreshold: 3
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: open-webui-data

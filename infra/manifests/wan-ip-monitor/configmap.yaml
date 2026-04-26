@@ -11,18 +11,23 @@ metadata:
 data:
   check-wan-ip.sh: |
     #!/bin/sh
-    set -e
+    set -euo pipefail
 
-    # Validate required env vars before doing anything
-    if [ -z "${NR_ACCOUNT_ID}" ] || [ "${NR_ACCOUNT_ID}" = "REPLACE_WITH_NR_ACCOUNT_ID" ]; then
+    # Validate required env vars
+    if [ -z "${NR_ACCOUNT_ID:-}" ] || [ "${NR_ACCOUNT_ID}" = "REPLACE_WITH_NR_ACCOUNT_ID" ]; then
       echo "ERROR: NR_ACCOUNT_ID is not set or is still the placeholder value."
-      echo "       Set it in infra/manifests/wan-ip-monitor/config.yaml before deploying."
       exit 1
     fi
 
-    if [ -z "${NR_LICENSE_KEY}" ]; then
-      echo "ERROR: NR_LICENSE_KEY is not set. Ensure the newrelic-secret Secret exists."
+    if [ -z "${NR_LICENSE_KEY:-}" ]; then
+      echo "ERROR: NR_LICENSE_KEY is not set."
       exit 1
+    fi
+
+    CLOUDFLARE_ENABLED=false
+    if [ -n "${CLOUDFLARE_API_TOKEN:-}" ]; then
+      CLOUDFLARE_ENABLED=true
+      CLOUDFLARE_ZONE_ID="${CLOUDFLARE_ZONE_ID:-ecb09a98b97ba002587403424405610f}"
     fi
 
     STATE_DIR="/state"
@@ -41,19 +46,17 @@ data:
 
     echo "Current WAN IP: ${CURRENT_IP}"
 
-    # Read last known IP (empty if first run)
+    # Read last known IP
+    LAST_IP=""
     if [ -f "${STATE_FILE}" ]; then
       LAST_IP=$(cat "${STATE_FILE}")
-    else
-      LAST_IP=""
     fi
 
-    # Only send event if IP has changed (or first run)
+    # Only act if IP has changed
     if [ "${CURRENT_IP}" != "${LAST_IP}" ]; then
       echo "WAN IP changed: '${LAST_IP}' -> '${CURRENT_IP}'"
 
       TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
       PAYLOAD="[{\"eventType\":\"WanIpChange\",\"newIp\":\"${CURRENT_IP}\",\"oldIp\":\"${LAST_IP}\",\"timestamp\":\"${TIMESTAMP}\",\"node\":\"nuc\"}]"
 
       HTTP_STATUS=$(curl -sS --max-time 15 \
@@ -66,12 +69,49 @@ data:
         "${NR_ENDPOINT}")
 
       if [ "${HTTP_STATUS}" = "200" ]; then
-        echo "Event sent to New Relic (HTTP ${HTTP_STATUS})"
-        echo "${CURRENT_IP}" > "${STATE_FILE}"
+        echo "✓ Event sent to New Relic (HTTP ${HTTP_STATUS})"
       else
         echo "ERROR: New Relic API returned HTTP ${HTTP_STATUS}"
         exit 1
       fi
+
+      # Update Cloudflare DNS if configured
+      if [ "${CLOUDFLARE_ENABLED}" = "true" ]; then
+        echo "Updating Cloudflare DNS records..."
+
+        for RECORD in headscale.brandwhisper.cloud home.brandwhisper.cloud; do
+          echo "  → ${RECORD}"
+          UPDATE_RESPONSE=$(curl -sS -X PUT \
+            "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/dns_records?name=${RECORD}" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data "{\"type\":\"A\",\"name\":\"${RECORD}\",\"content\":\"${CURRENT_IP}\",\"ttl\":60,\"proxied\":false}")
+
+          if echo "${UPDATE_RESPONSE}" | grep -q '"success":true'; then
+            echo "    ✓ updated"
+          else
+            echo "    ✗ update failed: ${UPDATE_RESPONSE}" >&2
+          fi
+        done
+      fi
+
+      # Update the rke2-config ConfigMap with the new WAN IP
+      echo "Updating rke2-config ConfigMap..."
+      kubectl create configmap rke2-config \
+        --namespace=default \
+        --from-literal=advertise-address="${CURRENT_IP}" \
+        --from-literal=node-external-ip="${CURRENT_IP}" \
+        --from-literal=tls-san="${CURRENT_IP}" \
+        -o yaml --dry-run=client | kubectl apply -f -
+
+      echo "✓ rke2-config ConfigMap updated."
+      echo "  Run ./infra/manifests/rke2-config/apply-rke2-config.sh --restart on the NUC to apply."
+
+      # Persist the new IP
+      echo "${CURRENT_IP}" > "${STATE_FILE}"
+      echo "✓ State file updated."
     else
       echo "WAN IP unchanged: ${CURRENT_IP}"
     fi
+
+    echo "Done."
