@@ -61,6 +61,16 @@ while true; do
                     fi
                 fi
 
+                # Check listener count — skip commentary if nobody's listening
+                LISTENERS=$(curl -s --max-time 2 http://icecast.radio-dj.svc.cluster.local:8100/status-json.xsl 2>/dev/null \
+                    | python3 -c "import json,sys; print(json.load(sys.stdin)['icestats'].get('source',{}).get('listeners',0))" 2>/dev/null || echo "0")
+                if [ "${LISTENERS:-0}" -eq 0 ]; then
+                    echo "[dj-watcher] 0 listeners — skipping DJ commentary" >&2
+                    exit 0
+                fi
+                echo "[dj-watcher] ${LISTENERS} listener(s) — proceeding with commentary" >&2
+
+
                 # Generate DJ line via LLM (OpenAI API, gpt-4o-mini)
                 OPENAI_API_KEY="${OPENAI_API_KEY:-}"
                 if [ -z "$OPENAI_API_KEY" ]; then
