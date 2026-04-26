@@ -5,7 +5,7 @@ metadata:
   namespace: open-webui
 spec:
   hostnames:
-    - "open-webui.home.brandwhisper.cloud"
+    - "open-webui.brandwhisper.cloud"
   parentRefs:
     - group: gateway.networking.k8s.io
       kind: Gateway
