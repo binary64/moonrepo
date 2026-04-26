@@ -34,6 +34,11 @@ spec:
           env:
             - name: OPENAI_API_BASE
               value: "http://litellm.litellm.svc.cluster.local:4000"
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: litellm-masterkey
+                  key: masterkey
             - name: WHISPER_API_BASE
               value: "http://192.168.1.201:5000/v1"
             - name: WHISPER_MODEL
