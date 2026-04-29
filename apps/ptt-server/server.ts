@@ -179,7 +179,7 @@ const BYTES_PER_SAMPLE = 2;
 const FRAME_SAMPLES = 512; // Silero VAD v6.2 only accepts 512-sample frames at 16kHz.
 const FRAME_BYTES = FRAME_SAMPLES * BYTES_PER_SAMPLE;
 const FRAME_MS = (FRAME_SAMPLES / SAMPLE_RATE) * 1000;
-const SPEECH_THRESHOLD = 0.85;
+const SPEECH_THRESHOLD = 0.50; // Silero default for 32ms frames (512 samples @ 16kHz)
 const SILENCE_AFTER_SPEECH_MS = 1600;
 const MIN_SPEECH_MS = 400;
 const MIN_SPEECH_FRAMES = Math.ceil(MIN_SPEECH_MS / FRAME_MS); // Derived from MIN_SPEECH_MS to keep speech-start and completion thresholds in sync.
@@ -495,7 +495,7 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: "/ws" });
 
 wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
-  const url = new URL(req.url!, `http://${req.headers.host}`);
+  const url = new URL(req.url ?? "/", `http://${req.headers.host}`);
   const initialSessionKey = url.searchParams.get("session") || MAIN_SESSION;
 
   const sessionStates = new Map<number, SessionState>();
@@ -509,9 +509,10 @@ wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
     index: number;
     state: SessionState;
   } {
-    if (sessionKeyToIndex.has(sessionKey)) {
-      const index = sessionKeyToIndex.get(sessionKey)!;
-      return { index, state: sessionStates.get(index)! };
+    const existingIndex = sessionKeyToIndex.get(sessionKey);
+    if (existingIndex !== undefined) {
+      const existingState = sessionStates.get(existingIndex);
+      if (existingState) return { index: existingIndex, state: existingState };
     }
     const index = nextIndex++;
     const state = createSessionState(sessionKey);
@@ -585,7 +586,7 @@ wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
 
   function handleSessionSwitch(newSessionKey: string): void {
     const oldIndex = targetIndex;
-    const { index, state } = getOrCreateSession(newSessionKey);
+    const { index } = getOrCreateSession(newSessionKey);
     console.log(
       `[${ts()}] 🔄 Session switch: index ${oldIndex} → ${index} (${newSessionKey})`,
     );
@@ -630,8 +631,8 @@ wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
           session?: string;
         };
         if (msg.type === "battery") {
-          if ((msg.level ?? -1) >= 0)
-            updateHABattery(msg.level!, msg.charging ?? false);
+          if (msg.level != null && msg.level >= 0)
+            updateHABattery(msg.level, msg.charging ?? false);
         } else if (msg.type === "switch_session" && msg.session) {
           handleSessionSwitch(msg.session);
         }

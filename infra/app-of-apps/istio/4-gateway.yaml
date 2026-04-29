@@ -25,7 +25,7 @@ spec:
   - name: https
     port: 443
     protocol: HTTPS
-    hostname: "*.brandwhisper.cloud"
+    hostname: '*.brandwhisper.cloud'
     tls:
       mode: Terminate
       certificateRefs:
@@ -36,7 +36,7 @@ spec:
   - name: https-home
     port: 443
     protocol: HTTPS
-    hostname: "home.brandwhisper.cloud"
+    hostname: home.brandwhisper.cloud
     tls:
       mode: Terminate
       certificateRefs:
@@ -47,7 +47,7 @@ spec:
   - name: headscale-grpc
     port: 50443
     protocol: TLS
-    hostname: "headscale.brandwhisper.cloud"
+    hostname: headscale.brandwhisper.cloud
     tls:
       mode: Passthrough
     allowedRoutes:
