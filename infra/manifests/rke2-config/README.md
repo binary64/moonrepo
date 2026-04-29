@@ -37,6 +37,7 @@ public IP changes.
    ```
 
    Or manually on the NUC — first sync the ConfigMap-managed file to disk, then restart:
+
    ```bash
    kubectl get configmap rke2-config -n default \
      -o jsonpath='{.data.config\.yaml}' \

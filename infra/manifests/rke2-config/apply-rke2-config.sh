@@ -153,11 +153,11 @@ if [[ "${PROXY_EXISTS}" == "false" ]]; then
 
   echo ""
   echo "kube-proxy deployment complete."
-  echo "Verifying iptables rules..."
+  echo "Verifying iptables rules (best-effort; assumes script runs on the NUC)..."
   if iptables -t nat -L KUBE-SERVICES -n 2>/dev/null | grep -q KUBE-SERVICES; then
     echo "✅ KUBE-SERVICES chain exists"
-    if iptables -t nat -L KUBE-SERVICES -n 2>/dev/null | grep -q '83.105.77.69.*443'; then
-      echo "✅ Port 443 → gateway-istio rule present"
+    if iptables -t nat -L KUBE-SERVICES -n 2>/dev/null | grep -q 'dpt:443'; then
+      echo "✅ Port 443 rule present"
     else
       echo "⚠️  Port 443 rule not found — kube-proxy may still be syncing"
     fi
@@ -165,6 +165,7 @@ if [[ "${PROXY_EXISTS}" == "false" ]]; then
     echo "⚠️  KUBE-SERVICES chain not found — kube-proxy may not have populated rules yet"
     echo "   Wait 30s and re-run: iptables -t nat -L KUBE-SERVICES -n"
   fi
+fi
 
 echo ""
 echo "Done."
