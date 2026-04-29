@@ -9,13 +9,18 @@ set -euo pipefail
 #   1. Fetches the rke2-config ConfigMap from the cluster
 #   2. Writes the config.yaml to /etc/rancher/rke2/ on the NUC
 #   3. Optionally restarts the RKE2 service to pick up changes
+#   4. Deploys kube-proxy DaemonSet if not present
 #
 # Requirements:
-#   - kubectl configured and authenticated
+#   - kubectl configured and authenticated (uses KUBECONFIG or default)
 #   - SSH access to the NUC at 192.168.1.201 (or via SOCKS5 proxy)
 #   - RKE2 installed on the NUC
 #
 # The WAN IP monitor calls this automatically when the home public IP changes.
+
+# Determine kubeconfig: prefer KUBECONFIG env, fall back to RKE2 default
+KUBECONFIG="${KUBECONFIG:-/etc/rancher/rke2/rke2.yaml}"
+export KUBECONFIG
 
 SSH_HOST="${SSH_HOST:-192.168.1.201}"
 SSH_USER="${SSH_USER:-arthur}"
