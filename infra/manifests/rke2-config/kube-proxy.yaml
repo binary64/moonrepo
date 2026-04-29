@@ -64,16 +64,17 @@ spec:
         k8s-app: kube-proxy
     spec:
       serviceAccountName: kube-proxy
+      hostNetwork: true
       containers:
       - name: kube-proxy
         image: rancher/mirrored-k8s-proxy:v1.33.6
         command:
         - /usr/local/bin/kube-proxy
-        - --config=/var/lib/kube-proxy/config.conf
+        - --config=/var/lib/kube-proxy/config.yaml
         - --healthz-bind-address=0.0.0.0:10256
         - --metrics-bind-address=0.0.0.0:10249
         securityContext:
-          privileged: false
+          privileged: true
           capabilities:
             add: ["NET_ADMIN"]
         volumeMounts:

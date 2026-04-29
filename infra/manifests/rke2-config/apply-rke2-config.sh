@@ -115,7 +115,7 @@ echo "Checking if kube-proxy is already deployed..."
 # Check if kube-proxy resources exist
 PROXY_EXISTS=false
 if kubectl get namespace kube-system &>/dev/null; then
-  if kubectl get configmap kube-proxy -n kube-system &>/dev/null; then
+  if kubectl get daemonset kube-proxy -n kube-system &>/dev/null; then
     PROXY_EXISTS=true
     echo "kube-proxy already deployed — skipping"
   fi
@@ -153,18 +153,19 @@ if [[ "${PROXY_EXISTS}" == "false" ]]; then
 
   echo ""
   echo "kube-proxy deployment complete."
-  echo "Verifying iptables rules..."
-  if iptables -t nat -L KUBE-SERVICES -n 2>/dev/null | grep -q KUBE-SERVICES; then
+  echo "Verifying iptables rules on ${SSH_HOST}..."
+  if ssh "${SSH_USER}@${SSH_HOST}" "sudo iptables -t nat -L KUBE-SERVICES -n 2>/dev/null | grep -q KUBE-SERVICES"; then
     echo "✅ KUBE-SERVICES chain exists"
-    if iptables -t nat -L KUBE-SERVICES -n 2>/dev/null | grep -q '83.105.77.69.*443'; then
+    if ssh "${SSH_USER}@${SSH_HOST}" "sudo iptables -t nat -L KUBE-SERVICES -n 2>/dev/null | grep -qE ':443([^0-9]|$)'"; then
       echo "✅ Port 443 → gateway-istio rule present"
     else
       echo "⚠️  Port 443 rule not found — kube-proxy may still be syncing"
     fi
   else
     echo "⚠️  KUBE-SERVICES chain not found — kube-proxy may not have populated rules yet"
-    echo "   Wait 30s and re-run: iptables -t nat -L KUBE-SERVICES -n"
+    echo "   Wait 30s and re-run: ssh ${SSH_USER}@${SSH_HOST} sudo iptables -t nat -L KUBE-SERVICES -n"
   fi
+fi
 
 echo ""
 echo "Done."

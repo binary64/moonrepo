@@ -13,7 +13,6 @@ public IP changes.
 |------|---------|
 | `configmap.yaml` | ConfigMap holding the RKE2 `config.yaml` contents |
 | `apply-rke2-config.sh` | Script to sync ConfigMap → NUC host filesystem, restart RKE2, and deploy kube-proxy |
-| `bootstrap.sh` | One-time setup (ArgoCD Application + initial apply) |
 | `kube-proxy.yaml` | **kube-proxy DaemonSet manifest** — RKE2 with `canal` CNI does not auto-deploy kube-proxy; this manifest provides the missing NodePort iptables rules |
 | `README.md` | This file |
 
