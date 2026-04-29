@@ -12,8 +12,9 @@ public IP changes.
 | File | Purpose |
 |------|---------|
 | `configmap.yaml` | ConfigMap holding the RKE2 `config.yaml` contents |
-| `apply-rke2-config.sh` | Script to sync ConfigMap → NUC host filesystem & restart RKE2 |
+| `apply-rke2-config.sh` | Script to sync ConfigMap → NUC host filesystem, restart RKE2, and deploy kube-proxy |
 | `bootstrap.sh` | One-time setup (ArgoCD Application + initial apply) |
+| `kube-proxy.yaml` | **kube-proxy DaemonSet manifest** — RKE2 with `canal` CNI does not auto-deploy kube-proxy; this manifest provides the missing NodePort iptables rules |
 | `README.md` | This file |
 
 ## How It Works
@@ -101,3 +102,12 @@ kubectl get nodes
   to work (SSH to 192.168.1.201).
 - Router port forwards (9345 TCP, 6443 TCP) must point to the NUC's current LAN IP.
 - If the NUC's LAN IP also changes (DHCP), update SSH target or use a static DHCP lease.
+- **kube-proxy is required** — RKE2 with `canal` CNI does not auto-deploy kube-proxy.
+  The `kube-proxy.yaml` manifest in this directory provides the DaemonSet. It uses
+  `iptables` mode (not nftables) because the RKE2 v1.33.6 bundled kube-proxy binary
+  lacks nftables support. The NUC host must have `iptables` set to **legacy** mode:
+  `sudo update-alternatives --set iptables /usr/sbin/iptables-legacy`. This is
+  applied manually once; the `apply-rke2-config.sh` script verifies deployment.
+- **NodePort exposure** — kube-proxy populates the `KUBE-SERVICES` iptables chain,
+  which maps NodePort 443 → the `gateway-istio` service (Istio ingress). Without
+  kube-proxy, external traffic reaches the node but has no listener → CloudFlare 521.

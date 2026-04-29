@@ -26,5 +26,3 @@ data:
       - 192.168.1.201
     node-external-ip: REPLACE_WITH_WAN_IP
     advertise-address: REPLACE_WITH_WAN_IP
-    kube-proxy-arg:
-      - "proxy-mode=nftables" 
