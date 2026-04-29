@@ -154,16 +154,27 @@ if [[ "${PROXY_EXISTS}" == "false" ]]; then
   echo ""
   echo "kube-proxy deployment complete."
   echo "Verifying iptables rules on ${SSH_HOST}..."
-  if ssh "${SSH_USER}@${SSH_HOST}" "sudo iptables -t nat -L KUBE-SERVICES -n 2>/dev/null | grep -q KUBE-SERVICES"; then
+  # Run iptables once and capture both stdout+stderr and the exit code so we
+  # can distinguish three cases:
+  #   - SSH itself failed (exit 255: connection/auth/network) → don't pretend
+  #     the chain is missing
+  #   - iptables ran but the chain is absent (non-zero, non-255)
+  #   - iptables ran and the chain is present (exit 0)
+  IPTABLES_OUTPUT=$(ssh "${SSH_USER}@${SSH_HOST}" "sudo iptables -t nat -L KUBE-SERVICES -n" 2>&1) && SSH_RC=0 || SSH_RC=$?
+  if [[ "${SSH_RC}" -eq 255 ]]; then
+    echo "⚠️  SSH to ${SSH_HOST} failed (exit 255) — could not verify iptables rules"
+    echo "    ${IPTABLES_OUTPUT}"
+  elif [[ "${SSH_RC}" -ne 0 ]]; then
+    echo "⚠️  KUBE-SERVICES chain not found (iptables exit=${SSH_RC}) — kube-proxy may not have populated rules yet"
+    echo "    ${IPTABLES_OUTPUT}"
+    echo "   Wait 30s and re-run: ssh ${SSH_USER}@${SSH_HOST} sudo iptables -t nat -L KUBE-SERVICES -n"
+  else
     echo "✅ KUBE-SERVICES chain exists"
-    if ssh "${SSH_USER}@${SSH_HOST}" "sudo iptables -t nat -L KUBE-SERVICES -n 2>/dev/null | grep -qE ':443([^0-9]|$)'"; then
+    if printf '%s\n' "${IPTABLES_OUTPUT}" | grep -qE ':443([^0-9]|$)'; then
       echo "✅ Port 443 → gateway-istio rule present"
     else
       echo "⚠️  Port 443 rule not found — kube-proxy may still be syncing"
     fi
-  else
-    echo "⚠️  KUBE-SERVICES chain not found — kube-proxy may not have populated rules yet"
-    echo "   Wait 30s and re-run: ssh ${SSH_USER}@${SSH_HOST} sudo iptables -t nat -L KUBE-SERVICES -n"
   fi
 fi
 
