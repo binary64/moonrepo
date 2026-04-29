@@ -18,6 +18,7 @@ metadata:
   name: gateway-nodeport-pin
   namespace: istio-system
   annotations:
+    moonrepo.dev/skip-local: "true"
     argocd.argoproj.io/hook: PostSync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 ---
@@ -27,6 +28,7 @@ metadata:
   name: gateway-nodeport-pin
   namespace: istio-system
   annotations:
+    moonrepo.dev/skip-local: "true"
     argocd.argoproj.io/hook: PostSync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 rules:
@@ -40,6 +42,7 @@ metadata:
   name: gateway-nodeport-pin
   namespace: istio-system
   annotations:
+    moonrepo.dev/skip-local: "true"
     argocd.argoproj.io/hook: PostSync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 roleRef:
@@ -57,17 +60,27 @@ metadata:
   name: gateway-nodeport-pin
   namespace: istio-system
   annotations:
+    moonrepo.dev/skip-local: "true"
     argocd.argoproj.io/hook: PostSync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
   ttlSecondsAfterFinished: 300
+  backoffLimit: 3
   template:
     spec:
       serviceAccountName: gateway-nodeport-pin
       restartPolicy: OnFailure
       containers:
         - name: pin
-          image: bitnami/kubectl:latest
+          image: bitnami/kubectl:1.35.3
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
           resources:
             requests:
               cpu: 10m
@@ -81,13 +94,20 @@ spec:
             - |
               set -eu
               # Wait up to 60s for the Service to exist (in case Istio is still reconciling)
+              SERVICE_FOUND=false
               for i in $(seq 1 30); do
                 if kubectl get svc -n istio-system gateway-istio >/dev/null 2>&1; then
+                  SERVICE_FOUND=true
                   break
                 fi
                 echo "Waiting for gateway-istio service... ($i/30)"
                 sleep 2
               done
+
+              if [ "$SERVICE_FOUND" = "false" ]; then
+                echo "ERROR: gateway-istio service not found after 60s — aborting" >&2
+                exit 1
+              fi
 
               # Strategic merge patch: only updates the named ports, leaves others untouched.
               kubectl patch svc -n istio-system gateway-istio --type=strategic --patch '
