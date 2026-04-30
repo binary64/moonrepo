@@ -6,8 +6,15 @@ metadata:
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
     networking.istio.io/service-type: LoadBalancer
+    # Skip in local CI integration — spec.addresses[0].value is a REPLACE_WITH_WAN_IP
+    # placeholder that is patched at runtime by the wan-ip-monitor. kubectl apply
+    # rejects the placeholder (must be valid ipv4), so we skip this file locally.
+    moonrepo.dev/skip-local: "true"
 spec:
   gatewayClassName: istio
+  addresses:
+  - type: IPAddress
+    value: "REPLACE_WITH_WAN_IP"
   listeners:
   - name: default
     port: 80

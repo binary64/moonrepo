@@ -35,9 +35,20 @@ automatic DNS updates when the home public IP changes.
    git push
    ```
 
-4. ArgoCD will sync the secret automatically. Verify:
+4. ArgoCD will sync the secret automatically. Verify it exists and has the
+   `apiToken` key without decoding/printing the token value:
    ```bash
-   kubectl get secret cloudflare-token -n newrelic -o jsonpath='{.data.apiToken}' | base64 -d
+   kubectl get secret cloudflare-token -n newrelic \
+     -o jsonpath='{.data.apiToken}' | base64 -d | wc -c
+   # Expect a non-zero byte count (length of the token). Do NOT print the
+   # decoded value — it lands in shell history and terminal scrollback.
+   ```
+
+   Or, simply confirm the key is present:
+   ```bash
+   kubectl get secret cloudflare-token -n newrelic \
+     -o jsonpath='{.data.apiToken}' | head -c 1 | grep -q . \
+     && echo "apiToken present" || echo "apiToken MISSING"
    ```
 
 ## Rotation

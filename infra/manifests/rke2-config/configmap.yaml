@@ -16,22 +16,13 @@ data:
     # The `apply-rke2-config.sh` script (in the same directory) syncs this
     # to /etc/rancher/rke2/config.yaml on the NUC and restarts RKE2.
     #
-    # WAN IP changes require updating:
-    #   - advertise-address  (what the server tells clients to connect to)
-    #   - node-external-ip   (for node-level external connectivity)
-    #   - tls-san           (for API server certificate SANs)
+    # WAN IP changes are handled automatically by the wan-ip-monitor CronJob:
+    # it patches this ConfigMap with the current public IP.
     #
-    # The WAN IP monitor (CronJob) automatically updates this ConfigMap
-    # when the home public IP changes.
-    #
-    # LAN IP (192.168.1.201) is intentionally NOT hardcoded here —
-    # the NUC gets its LAN address from DHCP and RKE2 discovers it.
+    # DO NOT EDIT MANUALLY — let the WAN IP monitor manage these values.
     write-kubeconfig-to: /etc/rancher/rke2/rke2.yaml
     tls-san:
-      - 83.105.77.69
+      - REPLACE_WITH_WAN_IP
       - 192.168.1.201
-    node-external-ip: 83.105.77.69
-    advertise-address: 83.105.77.69
-    # Cloudflare proxy disabled for these DNS records — direct A records.
-    # headscale.brandwhisper.cloud → 83.105.77.69
-    # *.home.brandwhisper.cloud  → 83.105.77.69
+    node-external-ip: REPLACE_WITH_WAN_IP
+    advertise-address: REPLACE_WITH_WAN_IP

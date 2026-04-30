@@ -1,7 +1,12 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-namespace: newrelic
+# NOTE: intentionally no top-level `namespace:` override — this bundle spans
+# two namespaces:
+#   - `newrelic` for the ServiceAccount, ConfigMap(s), CronJob
+#   - `default` for the Role/RoleBinding that grant access to the
+#     `rke2-config` ConfigMap (which lives in `default`)
+# Each manifest declares its own namespace explicitly.
 
 resources:
   - config.yaml
