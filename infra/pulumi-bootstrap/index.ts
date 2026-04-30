@@ -7,15 +7,17 @@ const prefix = "moonrepo";
 const callerIdentity = aws.getCallerIdentity({});
 const accountId = callerIdentity.then((id) => id.accountId);
 
-// KMS key for S3 bucket encryption
-const kmsKey = new aws.kms.Key(`${prefix}-pulumi-state-key`, {
-  description: "KMS key for Pulumi state bucket encryption",
+// KMS key used as Pulumi's secrets provider (awskms://) for encrypting
+// `secure:` config values in Pulumi.<stack>.yaml files across all stacks.
+// S3 bucket and Secrets Manager use AWS-managed encryption (free, no CMK).
+const kmsKey = new aws.kms.Key(`${prefix}-pulumi-config-key`, {
+  description: "KMS key for Pulumi stack config encryption (secrets provider)",
   deletionWindowInDays: 30,
   enableKeyRotation: true,
 });
 
-const kmsKeyAlias = new aws.kms.Alias(`${prefix}-pulumi-state-key-alias`, {
-  name: `alias/${prefix}-pulumi-state-key`,
+const kmsKeyAlias = new aws.kms.Alias(`${prefix}-pulumi-config-key-alias`, {
+  name: `alias/${prefix}-pulumi-config-key`,
   targetKeyId: kmsKey.keyId,
 });
 
@@ -48,7 +50,9 @@ const _stateBucketVersioning = new aws.s3.BucketVersioningV2(
   },
 );
 
-// Server-side encryption with KMS
+// Server-side encryption: AWS-managed SSE-S3 (AES256, free, no CMK).
+// The secret material in Pulumi state is already encrypted client-side by
+// the awskms:// secrets provider, so SSE-S3 is sufficient as defence-in-depth.
 const _stateBucketEncryption =
   new aws.s3.BucketServerSideEncryptionConfigurationV2(
     `${prefix}-pulumi-state-encryption`,
@@ -57,10 +61,8 @@ const _stateBucketEncryption =
       rules: [
         {
           applyServerSideEncryptionByDefault: {
-            sseAlgorithm: "aws:kms",
-            kmsMasterKeyId: kmsKey.arn,
+            sseAlgorithm: "AES256",
           },
-          bucketKeyEnabled: true,
         },
       ],
     },
@@ -111,7 +113,7 @@ const pulumiPolicy = new aws.iam.Policy("pulumi-deployer-policy", {
             Resource: [bucketArn, `${bucketArn}/*`],
           },
           {
-            Sid: "PulumiStateKMSAccess",
+            Sid: "PulumiConfigKMSAccess",
             Effect: "Allow",
             Action: [
               "kms:Encrypt",
@@ -140,15 +142,16 @@ const pulumiAccessKey = new aws.iam.AccessKey("pulumi-deployer-access-key", {
   user: pulumiUser.name,
 });
 
-// Secrets Manager for storing sensitive values
-// These will be encrypted with the KMS key and synced to K8s via SealedSecrets
+// Secrets Manager for storing sensitive values.
+// Encrypted with the AWS-managed default key (`aws/secretsmanager`, free),
+// NOT the customer-managed CMK above — that CMK is reserved exclusively for
+// the pulumi awskms:// secrets provider. One self-managed KMS, one purpose.
 
 const cloudflareApiTokenSecret = new aws.secretsmanager.Secret(
   "cloudflare-api-token-pulumi",
   {
     name: `${prefix}/cloudflare-api-token-pulumi`,
     description: "Cloudflare API token for Pulumi to create restricted tokens",
-    kmsKeyId: kmsKey.id,
     recoveryWindowInDays: 30,
   },
 );
@@ -160,7 +163,6 @@ const awsCredentialsSecret = new aws.secretsmanager.Secret(
     name: `${prefix}/pulumi-aws-credentials`,
     description:
       "AWS credentials for Pulumi operator to access S3 state backend",
-    kmsKeyId: kmsKey.id,
     recoveryWindowInDays: 30,
   },
 );
@@ -180,13 +182,15 @@ const _awsCredentialsSecretVersion = new aws.secretsmanager.SecretVersion(
 // Note: Cloudflare token must be set manually using set-secret.sh script
 // aws secretsmanager put-secret-value --secret-id moonrepo/cloudflare-api-token-pulumi --secret-string "xxx"
 
-// IAM policy for secrets access (can be used by CI/CD or operators)
+// IAM policy for secrets access (can be used by CI/CD or operators).
+// No kms:Decrypt needed — Secrets Manager uses the AWS-managed key and grants
+// implicit decrypt permission to callers with secretsmanager:GetSecretValue.
 const secretsAccessPolicy = new aws.iam.Policy("secrets-access-policy", {
   name: "moonrepo-secrets-access-policy",
   description: "Policy for accessing moonrepo secrets in Secrets Manager",
   policy: pulumi
-    .all([cloudflareApiTokenSecret.arn, awsCredentialsSecret.arn, kmsKey.arn])
-    .apply(([cloudflareSecretArn, awsCredsSecretArn, kmsArn]) =>
+    .all([cloudflareApiTokenSecret.arn, awsCredentialsSecret.arn])
+    .apply(([cloudflareSecretArn, awsCredsSecretArn]) =>
       JSON.stringify({
         Version: "2012-10-17",
         Statement: [
@@ -198,12 +202,6 @@ const secretsAccessPolicy = new aws.iam.Policy("secrets-access-policy", {
               "secretsmanager:DescribeSecret",
             ],
             Resource: [cloudflareSecretArn, awsCredsSecretArn],
-          },
-          {
-            Sid: "DecryptSecrets",
-            Effect: "Allow",
-            Action: ["kms:Decrypt", "kms:DescribeKey"],
-            Resource: [kmsArn],
           },
         ],
       }),

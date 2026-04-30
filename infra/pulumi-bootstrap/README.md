@@ -14,14 +14,16 @@ This stack eliminates the dependency on Pulumi Cloud by:
 
 ### Storage & Encryption
 
-- **KMS Key** (`moonrepo-pulumi-state-key`)
-  - Used for encrypting both S3 state and Secrets Manager secrets
+- **KMS Key** (`moonrepo-pulumi-config-key`)
+  - Used as Pulumi's `awskms://` secrets provider for `secure:` config values
+    in every `Pulumi.<stack>.yaml` (replaces the default passphrase provider).
   - Automatic key rotation enabled
   - 30-day deletion window for safety
+  - **Not** used for S3 or Secrets Manager — those use AWS-managed keys (free).
 
 - **S3 Bucket** (`moonrepo-pulumi-state-{account-id}`)
   - Stores Pulumi state files (replaces Pulumi Cloud)
-  - Encrypted with KMS key
+  - Encrypted with SSE-S3 (AES256, AWS-managed, free)
   - Versioning enabled for state history
   - Public access blocked
   - Lifecycle policy: Delete old versions after 90 days
@@ -35,11 +37,10 @@ This stack eliminates the dependency on Pulumi Cloud by:
 
 - **IAM Policy** (`pulumi-deployer-policy`)
   - S3 bucket access (read/write state files)
-  - KMS key access (encrypt/decrypt state)
+  - KMS key access (encrypt/decrypt `secure:` config via awskms:// provider)
 
 - **IAM Policy** (`moonrepo-secrets-access-policy`)
   - Secrets Manager access (read secrets for sealing)
-  - KMS key access (decrypt secrets)
 
 ### AWS Secrets Manager
 
@@ -378,7 +379,7 @@ aws iam list-attached-user-policies --user-name pulumi-deployer
 
 Check KMS key policy allows the IAM user:
 ```bash
-aws kms describe-key --key-id alias/moonrepo-pulumi-state-key
+aws kms describe-key --key-id alias/moonrepo-pulumi-config-key
 ```
 
 ## Related Documentation
