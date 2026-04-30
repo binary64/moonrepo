@@ -1,0 +1,60 @@
+# RBAC for host-side kubectl port-forward from jupiter → socks-proxy service.
+#
+# Jupiter is a cluster worker but flannel does not route to the socks-proxy pod
+# directly because the pod runs on master with hostNetwork=true (pod IP is the
+# master's eth0, which jupiter cannot reach from its flannel overlay). Instead
+# the hermes agent runs `kubectl port-forward` locally, which speaks to the
+# apiserver and tunnels through the kubelet on master. This ServiceAccount
+# grants only the minimum permissions that port-forward needs.
+#
+# Consumed by: infra/systemd/hermes-socks-proxy.service (user unit on jupiter).
+# Kubeconfig for this SA is stored in AWS Secrets Manager as
+# `moonrepo/hermes-kubeconfig` and written to ~/.hermes/kubeconfig (0600) by
+# hermes/bootstrap-env.sh.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: hermes-portforward
+  namespace: socks-proxy
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: hermes-portforward
+  namespace: socks-proxy
+rules:
+  # port-forward to a Service resolves to an endpoint pod at runtime, so we
+  # need get/list on both services and pods, plus create on the portforward
+  # subresource. No other verbs.
+  - apiGroups: [""]
+    resources: ["services", "pods"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["pods/portforward"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: hermes-portforward
+  namespace: socks-proxy
+subjects:
+  - kind: ServiceAccount
+    name: hermes-portforward
+    namespace: socks-proxy
+roleRef:
+  kind: Role
+  name: hermes-portforward
+  apiGroup: rbac.authorization.k8s.io
+---
+# Long-lived token. k8s >=1.24 no longer auto-creates these; we request one
+# explicitly by setting the annotation on a Secret of the correct type.
+# The token this produces is the one we embed in ~/.hermes/kubeconfig.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: hermes-portforward-token
+  namespace: socks-proxy
+  annotations:
+    kubernetes.io/service-account.name: hermes-portforward
+type: kubernetes.io/service-account-token
