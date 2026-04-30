@@ -18,12 +18,8 @@ import fs from "node:fs";
 import http from "node:http";
 import https from "node:https";
 import path from "node:path";
-import express, {
-  type NextFunction,
-  type Request,
-  type Response,
-} from "express";
-import rateLimit from "express-rate-limit";
+import fastifyRateLimit from "@fastify/rate-limit";
+import Fastify from "fastify";
 import * as ort from "onnxruntime-node";
 import { WebSocket, WebSocketServer } from "ws";
 
@@ -36,15 +32,15 @@ const GATEWAY_TOKEN = process.env.OPENCLAW_GATEWAY_TOKEN || "";
 const OPENAI_KEY = process.env.OPENAI_API_KEY || "";
 
 // Fail-fast: validate required env vars before starting
-if (!OPENAI_KEY) {
+if (!GATEWAY_TOKEN) {
   console.error(
-    "FATAL: OPENAI_API_KEY is not set. Cannot transcribe audio — exiting.",
+    "FATAL: OPENCLAW_GATEWAY_TOKEN is not set. Cannot send to gateway — exiting.",
   );
   process.exit(1);
 }
-if (!GATEWAY_TOKEN) {
+if (!OPENAI_KEY) {
   console.error(
-    "FATAL: OPENCLAW_GATEWAY_TOKEN is not set. Cannot send gateway messages — exiting.",
+    "FATAL: OPENAI_API_KEY is not set. Cannot transcribe audio — exiting.",
   );
   process.exit(1);
 }
@@ -64,20 +60,23 @@ interface QuickCommandRegistry {
 }
 
 let quickCommands: Record<string, QuickCommand> = {};
-try {
-  const reg = JSON.parse(
-    fs.readFileSync(QUICK_COMMANDS_PATH, "utf-8"),
-  ) as QuickCommandRegistry;
-  quickCommands = reg.commands || {};
-  console.log(`Loaded ${Object.keys(quickCommands).length} quick commands`);
-} catch (err) {
-  const e = err as NodeJS.ErrnoException;
-  if (e.code === "ENOENT") {
-    console.warn("⚠️ Quick commands registry not found — skipping");
-  } else {
-    console.error(
-      `Failed to load quick commands from ${QUICK_COMMANDS_PATH}: ${e.message}`,
-    );
+
+async function loadQuickCommands(): Promise<void> {
+  try {
+    const reg = JSON.parse(
+      await fs.promises.readFile(QUICK_COMMANDS_PATH, "utf-8"),
+    ) as QuickCommandRegistry;
+    quickCommands = reg.commands || {};
+    console.log(`Loaded ${Object.keys(quickCommands).length} quick commands`);
+  } catch (err) {
+    const e = err as NodeJS.ErrnoException;
+    if (e.code === "ENOENT") {
+      console.warn("⚠️ Quick commands registry not found — skipping");
+    } else {
+      console.error(
+        `Failed to load quick commands from ${QUICK_COMMANDS_PATH}: ${e.message}`,
+      );
+    }
   }
 }
 
@@ -143,19 +142,24 @@ function recordMetric(entry: LatencyEntry): void {
     .filter(Boolean)
     .sort((a, b) => a - b);
   const vadArr = latencies.map((l) => l.vadSpeechMs).filter(Boolean);
+  const p95Index = (values: number[]): number =>
+    Math.max(
+      0,
+      Math.min(values.length - 1, Math.ceil(values.length * 0.95) - 1),
+    );
 
   if (transcriptionArr.length > 0) {
     metrics.avgTranscriptionMs = Math.round(
       transcriptionArr.reduce((a, b) => a + b, 0) / transcriptionArr.length,
     );
     metrics.p95TranscriptionMs =
-      transcriptionArr[Math.floor(transcriptionArr.length * 0.95)] || 0;
+      transcriptionArr[p95Index(transcriptionArr)] || 0;
   }
   if (e2eArr.length > 0) {
     metrics.avgEndToEndMs = Math.round(
       e2eArr.reduce((a, b) => a + b, 0) / e2eArr.length,
     );
-    metrics.p95EndToEndMs = e2eArr[Math.floor(e2eArr.length * 0.95)] || 0;
+    metrics.p95EndToEndMs = e2eArr[p95Index(e2eArr)] || 0;
   }
   if (vadArr.length > 0) {
     metrics.avgVadSpeechMs = Math.round(
@@ -228,13 +232,19 @@ async function runVADFrame(
     1,
     float32Frame.length,
   ]);
-  const result = await ortSession?.run({
+  if (!ortSession) {
+    throw new Error("VAD ortSession is not initialised");
+  }
+  const result = await ortSession.run({
     input,
     sr: vadState.sr,
     state: vadState.state,
   });
-  if (!result)
-    throw new Error("VAD inference failed: ortSession returned undefined");
+  if (!result.stateN || !result.output) {
+    throw new Error(
+      "VAD model returned unexpected output — missing stateN or output",
+    );
+  }
   vadState.state = result.stateN as ort.Tensor;
   return (result.output.data as Float32Array)[0];
 }
@@ -287,49 +297,132 @@ function resetSessionState(state: SessionState): void {
   state.transcribing = false;
 }
 
-// ── Express (health, battery, text) ──
-
-const app = express();
-app.use(express.json());
-
-const sessionsLimiter = rateLimit({
-  windowMs: 60000,
-  max: 30,
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-const textLimiter = rateLimit({
-  windowMs: 60000,
-  max: 60,
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-const batteryLimiter = rateLimit({
-  windowMs: 60000,
-  max: 60,
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+// ── Fastify (health, battery, text) ──
 
 const PTT_API_TOKEN = process.env.PTT_API_TOKEN || "";
 
-function verifyApiToken(req: Request, res: Response, next: NextFunction): void {
-  if (!PTT_API_TOKEN) {
-    if (process.env.PTT_AUTH_DEV_BYPASS === "1") {
-      next();
-      return;
+const app = Fastify({ logger: false });
+
+async function setupFastify(): Promise<void> {
+  await app.register(fastifyRateLimit, {
+    global: true,
+    max: 60,
+    timeWindow: 60000,
+  });
+
+  // Auth preHandler
+  const verifyApiToken = async (
+    request: import("fastify").FastifyRequest,
+    reply: import("fastify").FastifyReply,
+  ): Promise<void> => {
+    if (!PTT_API_TOKEN) {
+      if (process.env.PTT_AUTH_DEV_BYPASS === "1") return;
+      return reply
+        .code(401)
+        .send({ error: "Unauthorized: PTT_API_TOKEN not configured" });
     }
-    res
-      .status(401)
-      .json({ error: "Unauthorized: PTT_API_TOKEN not configured" });
-    return;
-  }
-  const auth = req.headers.authorization || "";
-  if (auth === `Bearer ${PTT_API_TOKEN}`) {
-    next();
-    return;
-  }
-  res.status(401).json({ error: "Unauthorized" });
+    const auth = (request.headers.authorization as string) || "";
+    if (auth !== `Bearer ${PTT_API_TOKEN}`) {
+      return reply.code(401).send({ error: "Unauthorized" });
+    }
+  };
+
+  app.get("/health", async () => {
+    return { status: "ok", service: "ptt-server", version: 10 };
+  });
+
+  app.get("/metrics", async () => {
+    const { recentLatencies, ...summary } = metrics;
+    return {
+      ...summary,
+      recentCount: recentLatencies.length,
+      last5: recentLatencies.slice(-5).map((l) => ({
+        ts: l.ts,
+        transcriptionMs: l.transcriptionMs,
+        endToEndMs: l.endToEndMs,
+        quickCommand: Boolean(l.quickCommand),
+      })),
+    };
+  });
+
+  app.post(
+    "/battery",
+    {
+      config: { rateLimit: { max: 60, timeWindow: 60000 } },
+      preHandler: verifyApiToken,
+    },
+    async (request, reply) => {
+      const body = request.body as Record<string, unknown>;
+      const levelRaw = body?.level;
+      const chargingRaw = body?.charging;
+      if (levelRaw !== undefined && typeof levelRaw !== "number") {
+        return reply.code(400).send({ error: "level must be a number" });
+      }
+      if (chargingRaw !== undefined && typeof chargingRaw !== "boolean") {
+        return reply.code(400).send({ error: "charging must be a boolean" });
+      }
+      const level = (levelRaw as number) ?? -1;
+      const charging = (chargingRaw as boolean) ?? false;
+      if (level >= 0) updateHABattery(level, charging);
+      return reply.send({ status: "ok" });
+    },
+  );
+
+  app.post(
+    "/text",
+    {
+      config: { rateLimit: { max: 60, timeWindow: 60000 } },
+      preHandler: verifyApiToken,
+    },
+    async (request, reply) => {
+      const body = request.body as Record<string, unknown>;
+      const rawText = body?.text;
+      if (typeof rawText !== "string" || !rawText.trim()) {
+        return reply.code(400).send({ error: "No text" });
+      }
+      const text = rawText.trim();
+      const sessionKeyRaw = body?.sessionKey;
+      if (sessionKeyRaw !== undefined && typeof sessionKeyRaw !== "string") {
+        return reply.code(400).send({ error: "sessionKey must be a string" });
+      }
+      const sessionKey: string | undefined = sessionKeyRaw as
+        | string
+        | undefined;
+      return new Promise<void>((resolve) => {
+        sendToOpenClaw(
+          text,
+          (err) => {
+            if (err) {
+              console.error(`[${ts()}] /text send failed: ${err.message}`);
+              reply.code(502).send({ error: "Gateway send failed" });
+            } else {
+              reply.send({ status: "ok" });
+            }
+            resolve();
+          },
+          sessionKey,
+        );
+      });
+    },
+  );
+
+  const SESSIONS_FILE = path.join(__dirname, "sessions.json");
+  app.get(
+    "/sessions",
+    {
+      config: { rateLimit: { max: 30, timeWindow: 60000 } },
+    },
+    async (_request, reply) => {
+      try {
+        const sessions = JSON.parse(
+          await fs.promises.readFile(SESSIONS_FILE, "utf-8"),
+        );
+        return reply.send({ sessions });
+      } catch {
+        return reply.code(500).send({ error: "Failed to read sessions.json" });
+      }
+    },
+  );
 }
 
 let lastBatteryUpdate = 0;
@@ -394,9 +487,9 @@ function updateHABattery(level: number, charging: boolean): void {
       },
     },
     (res) => {
-      let _body = "";
+      let body = "";
       res.on("data", (c: string) => {
-        _body += c;
+        body += c;
       });
       res.on("end", () => {
         if (res.statusCode === 200 || res.statusCode === 201) {
@@ -406,92 +499,21 @@ function updateHABattery(level: number, charging: boolean): void {
           );
         } else {
           console.error(
-            `[${ts()}] ❌ HA battery update failed: ${res.statusCode} ${_body}`,
+            `[${ts()}] HA battery update failed: HTTP ${res.statusCode} — ${body.slice(0, 200)}`,
           );
         }
       });
     },
   );
   req.on("error", (err: Error) => {
-    console.error(`[${ts()}] ❌ HA battery request error: ${err.message}`);
+    console.error(`[${ts()}] HA battery request error: ${err.message}`);
   });
   req.end(data);
 }
 
-app.get("/health", (_req: Request, res: Response) => {
-  res.json({ status: "ok", service: "ptt-server", version: 10 });
-});
-
-app.get("/metrics", (_req: Request, res: Response) => {
-  const { recentLatencies, ...summary } = metrics;
-  const summaryOut = {
-    ...summary,
-    recentCount: recentLatencies.length,
-    last5: recentLatencies.slice(-5).map((l) => ({
-      ts: l.ts,
-      transcriptionMs: l.transcriptionMs,
-      endToEndMs: l.endToEndMs,
-      quickCommand: !!l.quickCommand,
-    })),
-  };
-  res.json(summaryOut);
-});
-
-app.post(
-  "/battery",
-  verifyApiToken,
-  batteryLimiter,
-  (req: Request, res: Response) => {
-    const level: number = req.body?.level ?? -1;
-    const charging: boolean = req.body?.charging ?? false;
-    if (level >= 0) updateHABattery(level, charging);
-    res.json({ status: "ok" });
-  },
-);
-
-app.post(
-  "/text",
-  verifyApiToken,
-  textLimiter,
-  (req: Request, res: Response) => {
-    const rawText = req.body?.text;
-    const sessionKey =
-      typeof req.body?.sessionKey === "string"
-        ? req.body.sessionKey
-        : undefined;
-    if (typeof rawText !== "string" || rawText.trim().length === 0) {
-      res.status(400).json({ error: "No text" });
-      return;
-    }
-    const text = rawText.trim();
-    sendToOpenClaw(
-      text,
-      (err) => {
-        if (err) {
-          console.error(`[${ts()}] /text send failed: ${err.message}`);
-          res.status(502).json({ error: "Gateway send failed" });
-          return;
-        }
-        res.json({ status: "ok" });
-      },
-      sessionKey,
-    );
-  },
-);
-
-const SESSIONS_FILE = path.join(__dirname, "sessions.json");
-app.get("/sessions", sessionsLimiter, (_req: Request, res: Response) => {
-  try {
-    const sessions = JSON.parse(fs.readFileSync(SESSIONS_FILE, "utf-8"));
-    res.json({ sessions });
-  } catch {
-    res.status(500).json({ error: "Failed to read sessions.json" });
-  }
-});
-
 // ── HTTP server + WebSocket ──
 
-const server = http.createServer(app);
+const server = app.server;
 const wss = new WebSocketServer({ server, path: "/ws" });
 
 wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
@@ -559,11 +581,12 @@ wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
           }
           recordMetric({
             ts: new Date().toISOString(),
-            transcriptionMs: endToEndMs,
+            transcriptionMs:
+              typeof result === "object" ? result.transcriptionMs : endToEndMs,
             vadSpeechMs,
             endToEndMs,
             quickCommand:
-              typeof result === "object" ? !!result.quickCommand : false,
+              typeof result === "object" ? Boolean(result.quickCommand) : false,
           });
         }
       })
@@ -630,9 +653,9 @@ wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
           charging?: boolean;
           session?: string;
         };
-        if (msg.type === "battery") {
-          if (msg.level != null && msg.level >= 0)
-            updateHABattery(msg.level, msg.charging ?? false);
+        const level = msg.level;
+        if (msg.type === "battery" && typeof level === "number" && level >= 0) {
+          updateHABattery(level, msg.charging ?? false);
         } else if (msg.type === "switch_session" && msg.session) {
           handleSessionSwitch(msg.session);
         }
@@ -694,10 +717,9 @@ wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
           `[${ts()}] 📤 ${durationMs}ms audio on close → Whisper+route`,
         );
         state.transcribing = true;
-        const wavBuffer = buildWav(pcmData);
-        transcribeAndRoute(wavBuffer).catch((e: Error) =>
-          console.error(`[${ts()}] transcribeAndRoute error: ${e.message}`),
-        );
+        state.speechChunks = [pcmData];
+        send({ event: "vad_end" });
+        finishUtteranceForState(state);
       }
       return;
     }
@@ -750,6 +772,7 @@ wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
                 state.speechMs = FRAME_MS * state.consecutiveSpeechFrames;
                 state.silenceMs = 0;
                 for (const f of state.preSpeechRing) state.speechChunks.push(f);
+                state.speechChunks.push(Buffer.from(frame));
                 console.log(
                   `[${ts()}] 🟢 Speech (prob: ${prob.toFixed(2)}, ${state.consecutiveSpeechFrames} frames) [index ${index}]`,
                 );
@@ -939,12 +962,12 @@ function executeQuickCommand(text: string): Promise<string> {
 interface TranscribeResult {
   text: string;
   quickCommand: boolean;
+  transcriptionMs: number;
 }
 
-function transcribeAndSend(
-  wavBuffer: Buffer,
-  sessionKey: string,
-): Promise<TranscribeResult | string> {
+// Pure transcription — calls Whisper but does NOT send to any session.
+// Returns trimmed text, empty string for silence/hallucinations, or rejects on error.
+function transcribeOnly(wavBuffer: Buffer): Promise<string> {
   return new Promise((resolve, reject) => {
     const boundary = `----WatchPTT${Date.now()}`;
     const prompt =
@@ -1000,6 +1023,86 @@ function transcribeAndSend(
               );
             return resolve("");
           }
+          resolve(text);
+        });
+      },
+    );
+
+    const whisperTimeout = setTimeout(() => {
+      apiReq.destroy(new Error("Whisper API timeout after 30s"));
+    }, 30000);
+
+    apiReq.on("error", (err: Error) => {
+      clearTimeout(whisperTimeout);
+      reject(err);
+    });
+    apiReq.end(body);
+  });
+}
+
+function transcribeAndSend(
+  wavBuffer: Buffer,
+  sessionKey: string,
+): Promise<TranscribeResult | string> {
+  return new Promise((resolve, reject) => {
+    const boundary = `----WatchPTT${Date.now()}`;
+    const prompt =
+      "Arthur, radio on, lights off, TV on, skip track, what's the weather [BRITISH]";
+
+    const pre = Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="audio.wav"\r\nContent-Type: audio/wav\r\n\r\n`,
+    );
+    const post = Buffer.from(
+      `\r\n--${boundary}\r\nContent-Disposition: form-data; name="model"\r\n\r\nwhisper-1\r\n` +
+        `--${boundary}\r\nContent-Disposition: form-data; name="language"\r\n\r\nen\r\n` +
+        `--${boundary}\r\nContent-Disposition: form-data; name="response_format"\r\n\r\ntext\r\n` +
+        `--${boundary}\r\nContent-Disposition: form-data; name="prompt"\r\n\r\n${prompt}\r\n` +
+        `--${boundary}--\r\n`,
+    );
+    const body = Buffer.concat([pre, wavBuffer, post]);
+
+    const whisperStart = Date.now();
+    const apiReq = https.request(
+      {
+        hostname: "api.openai.com",
+        path: "/v1/audio/transcriptions",
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${OPENAI_KEY}`,
+          "Content-Type": `multipart/form-data; boundary=${boundary}`,
+          "Content-Length": body.length,
+        },
+      },
+      (apiRes) => {
+        let data = "";
+        apiRes.on("data", (c: string) => {
+          data += c;
+        });
+        apiRes.on("end", () => {
+          clearTimeout(whisperTimeout);
+          const transcriptionMs = Date.now() - whisperStart;
+          if (apiRes.statusCode !== 200)
+            return reject(new Error(`Whisper ${apiRes.statusCode}: ${data}`));
+          const text = data.trim();
+          console.log(
+            `[${ts()}] 🗣️ Whisper: [len:${text.length}] (${transcriptionMs}ms)`,
+          );
+          if (!text || text.length < 2) return resolve("");
+          if (isHallucination(text)) {
+            console.log(
+              `[${ts()}] 🚫 Filtered hallucination: [len:${text.length}]`,
+            );
+            metrics.totalHallucinations++;
+            const snapshot = JSON.stringify(metrics, null, 2);
+            metricsWrite = metricsWrite
+              .then(() => fs.promises.writeFile(METRICS_FILE, snapshot))
+              .catch((err: Error) =>
+                console.error(
+                  `[${ts()}] Failed to persist hallucination count: ${err.message}`,
+                ),
+              );
+            return resolve("");
+          }
 
           const quickMatch = matchQuickCommand(text);
           if (quickMatch) {
@@ -1007,7 +1110,9 @@ function transcribeAndSend(
               `[${ts()}] 🎯 Quick command match: [len:${text.length}] → ${quickMatch.skill}.${quickMatch.action}`,
             );
             executeQuickCommand(text)
-              .then(() => resolve({ text, quickCommand: true }))
+              .then(() =>
+                resolve({ text, quickCommand: true, transcriptionMs }),
+              )
               .catch((err: Error) => {
                 console.error(
                   `[${ts()}] Quick command failed, falling back to LLM: ${err.message}`,
@@ -1017,7 +1122,7 @@ function transcribeAndSend(
                   (sendErr) =>
                     sendErr
                       ? reject(sendErr)
-                      : resolve({ text, quickCommand: false }),
+                      : resolve({ text, quickCommand: false, transcriptionMs }),
                   sessionKey,
                 );
               });
@@ -1027,7 +1132,9 @@ function transcribeAndSend(
           sendToOpenClaw(
             text,
             (err) =>
-              err ? reject(err) : resolve({ text, quickCommand: false }),
+              err
+                ? reject(err)
+                : resolve({ text, quickCommand: false, transcriptionMs }),
             sessionKey,
           );
         });
@@ -1228,63 +1335,9 @@ async function pickSessionViaLLM(text: string): Promise<string> {
   });
 }
 
-// Transcribe-only: calls Whisper and returns raw text without sending anywhere
-function transcribeOnly(wavBuffer: Buffer): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const boundary = `----WatchPTT${Date.now()}`;
-    const prompt =
-      "Arthur, radio on, lights off, TV on, skip track, what's the weather [BRITISH]";
-
-    const pre = Buffer.from(
-      `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="audio.wav"\r\nContent-Type: audio/wav\r\n\r\n`,
-    );
-    const post = Buffer.from(
-      `\r\n--${boundary}\r\nContent-Disposition: form-data; name="model"\r\n\r\nwhisper-1\r\n` +
-        `--${boundary}\r\nContent-Disposition: form-data; name="language"\r\n\r\nen\r\n` +
-        `--${boundary}\r\nContent-Disposition: form-data; name="response_format"\r\n\r\ntext\r\n` +
-        `--${boundary}\r\nContent-Disposition: form-data; name="prompt"\r\n\r\n${prompt}\r\n` +
-        `--${boundary}--\r\n`,
-    );
-    const body = Buffer.concat([pre, wavBuffer, post]);
-
-    const apiReq = https.request(
-      {
-        hostname: "api.openai.com",
-        path: "/v1/audio/transcriptions",
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${OPENAI_KEY}`,
-          "Content-Type": `multipart/form-data; boundary=${boundary}`,
-          "Content-Length": body.length,
-        },
-      },
-      (apiRes) => {
-        let data = "";
-        apiRes.on("data", (c: string) => {
-          data += c;
-        });
-        apiRes.on("end", () => {
-          clearTimeout(whisperTimeout);
-          if (apiRes.statusCode !== 200)
-            return reject(new Error(`Whisper ${apiRes.statusCode}: ${data}`));
-          resolve(data.trim());
-        });
-      },
-    );
-
-    const whisperTimeout = setTimeout(() => {
-      apiReq.destroy(new Error("Whisper API timeout after 30s"));
-    }, 30000);
-
-    apiReq.on("error", (err: Error) => {
-      clearTimeout(whisperTimeout);
-      reject(err);
-    });
-    apiReq.end(body);
-  });
-}
-
-// Transcribe raw PCM buffer and route via LLM, echo to Telegram immediately
+// Transcribe raw PCM buffer and route via LLM, echo to Telegram immediately.
+// Uses transcribeOnly (pure) to avoid the double-dispatch that would occur if
+// transcribeAndSend were called here before also sending via routedSession below.
 async function transcribeAndRoute(wavBuffer: Buffer): Promise<void> {
   let text: string;
   try {
@@ -1304,8 +1357,7 @@ async function transcribeAndRoute(wavBuffer: Buffer): Promise<void> {
   console.log(`[${ts()}] 🗣️ "${text}"`);
 
   // 1. Echo to James's DM immediately (he sees it on Telegram)
-  const echoSession = "agent:main:telegram:direct:james";
-  sendViaGateway(`⌚ ${text}`, echoSession, (err) => {
+  sendViaGateway(`⌚ ${text}`, "agent:main:telegram:direct:james", (err) => {
     if (err) console.error(`[${ts()}] Echo failed: ${err.message}`);
     else console.log(`[${ts()}] 📱 Echoed to James DM`);
   });
@@ -1313,15 +1365,11 @@ async function transcribeAndRoute(wavBuffer: Buffer): Promise<void> {
   // 2. LLM picks best session
   const routedSession = await pickSessionViaLLM(text);
 
-  // 3. Post ⌚ turn to routed session — skip if same as echo to avoid double-post
-  if (routedSession !== echoSession) {
-    sendViaGateway(`⌚ ${text}`, routedSession, (err) => {
-      if (err) console.error(`[${ts()}] Turn failed: ${err.message}`);
-      else console.log(`[${ts()}] ✅ Turn sent to ${routedSession}`);
-    });
-  } else {
-    console.log(`[${ts()}] ✅ Routed to James DM (already echoed)`);
-  }
+  // 3. Post ⌚ turn to routed session — triggers agent reply
+  sendViaGateway(`⌚ ${text}`, routedSession, (err) => {
+    if (err) console.error(`[${ts()}] Turn failed: ${err.message}`);
+    else console.log(`[${ts()}] ✅ Turn sent to ${routedSession}`);
+  });
 }
 
 function ts(): string {
@@ -1331,7 +1379,10 @@ function ts(): string {
 // ── Start ──
 
 initVAD()
-  .then(() => {
+  .then(async () => {
+    await loadQuickCommands();
+    await setupFastify();
+    await app.ready();
     server.listen(PORT, "0.0.0.0", () => {
       console.log(`Watch PTT v10 — Containerised Voice Receiver`);
       console.log(`  WS: ws://0.0.0.0:${PORT}/ws`);
