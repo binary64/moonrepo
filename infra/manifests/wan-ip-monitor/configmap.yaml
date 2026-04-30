@@ -66,13 +66,12 @@ data:
         --data "${PAYLOAD}" \
         --write-out "%{http_code}" \
         --output /dev/null \
-        "${NR_ENDPOINT}")
+        "${NR_ENDPOINT}") || true
 
       if [ "${HTTP_STATUS}" = "200" ]; then
         echo "✓ Event sent to New Relic (HTTP ${HTTP_STATUS})"
       else
-        echo "ERROR: New Relic API returned HTTP ${HTTP_STATUS}"
-        exit 1
+        echo "WARNING: New Relic API returned HTTP ${HTTP_STATUS} — continuing anyway"
       fi
 
       # Update Cloudflare DNS if configured
