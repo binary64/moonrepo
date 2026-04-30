@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POWERLINKS — Find Parts for Your Bike</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --black:#0a0a0a;
+  --white:#f5f5f5;
+  --raw-white:#ffffff;
+  --yellow:#FFE000;
+  --yellow-dark:#D4BC00;
+  --grey:#1a1a1a;
+  --grey-mid:#2a2a2a;
+  --grey-light:#3a3a3a;
+  --text-dim:#888;
+}
+html{font-size:16px}
+body{font-family:'Space Mono',monospace;color:var(--white);background:var(--black);line-height:1.5;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:'Barlow Condensed',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.02em;line-height:1.05}
+
+/* TOP BAR */
+.topbar{background:var(--yellow);color:var(--black);padding:.5rem 2rem;display:flex;justify-content:space-between;align-items:center;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase}
+.topbar a{color:var(--black);text-decoration:none;font-weight:700}
+
+/* NAV */
+.nav{background:var(--grey);border-bottom:1px solid var(--grey-light);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100}
+.nav-brand{font-family:'Barlow Condensed',sans-serif;font-size:1.6rem;font-weight:800;color:var(--white);text-decoration:none;text-transform:uppercase;letter-spacing:.05em}
+.nav-brand span{color:var(--yellow)}
+.nav-links{display:flex;gap:0;list-style:none;height:100%}
+.nav-links li{height:100%}
+.nav-links a{color:var(--text-dim);text-decoration:none;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;height:100%;display:flex;align-items:center;padding:0 1.25rem;border-left:1px solid var(--grey-light);transition:all .2s}
+.nav-links a:hover,.nav-links a.active{color:var(--yellow);background:rgba(255,224,0,.05)}
+.nav-toggle{display:none;background:none;border:none;color:var(--yellow);font-size:1.5rem;cursor:pointer;font-family:'Space Mono',monospace}
+
+/* HERO — SEARCH FIRST */
+.hero{background:url('https://images.unsplash.com/photo-1603010757093-034b42884771?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1920&q=80') center/cover no-repeat;background-color:var(--black);padding:4rem 2rem 3rem;border-bottom:3px solid var(--yellow);position:relative}
+.hero::before{content:'';position:absolute;inset:0;background:rgba(10,10,10,0.88);pointer-events:none}
+.hero-inner{max-width:900px;margin:0 auto;text-align:center;position:relative;z-index:2}
+.hero h1{font-size:clamp(2.5rem,8vw,5.5rem);color:var(--white);margin-bottom:.5rem}
+.hero h1 span{color:var(--yellow)}
+.hero-sub{font-size:.8rem;color:var(--text-dim);letter-spacing:.15em;text-transform:uppercase;margin-bottom:2.5rem}
+.search-form{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:0;max-width:800px;margin:0 auto;border:2px solid var(--yellow)}
+.search-form select,.search-form button{font-family:'Space Mono',monospace;font-size:.85rem;padding:1rem 1.25rem;border:none;outline:none;background:var(--grey);color:var(--white);border-right:1px solid var(--grey-light);appearance:none;-webkit-appearance:none;cursor:pointer}
+.search-form select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23FFE000' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 1rem center;padding-right:2.5rem}
+.search-form select option{background:var(--grey);color:var(--white)}
+.search-form button{background:var(--yellow);color:var(--black);font-weight:700;text-transform:uppercase;letter-spacing:.1em;border-right:none;padding:1rem 2rem;transition:background .2s}
+.search-form button:hover{background:var(--yellow-dark)}
+.hero-phone{margin-top:2rem;font-size:.75rem;color:var(--text-dim)}
+.hero-phone a{color:var(--yellow);text-decoration:none;font-weight:700;font-size:1.1rem}
+
+/* CATEGORIES */
+.categories{padding:3rem 2rem;background:var(--grey);position:relative;overflow:hidden}
+.categories::after{content:'';position:absolute;bottom:0;right:0;width:40%;height:100%;
+  background:url('https://images.unsplash.com/photo-1767480351161-c9eca1214368?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=800&q=80') center/cover no-repeat;
+  opacity:0.07;pointer-events:none}
+.categories-inner{max-width:1200px;margin:0 auto}
+.categories h2{font-size:1.8rem;margin-bottom:2rem;padding-bottom:1rem;border-bottom:2px solid var(--grey-light)}
+.categories h2 span{color:var(--yellow)}
+.cat-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--grey-light)}
+.cat-card{background:var(--grey-mid);padding:2rem 1.25rem;text-align:center;cursor:pointer;transition:all .15s}
+.cat-card:hover{background:var(--black);border-bottom:3px solid var(--yellow)}
+.cat-card .icon{font-size:2rem;margin-bottom:.75rem;display:block;filter:grayscale(0.3)}
+.cat-card h3{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--white);margin-bottom:.25rem}
+.cat-card .count{font-size:.65rem;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase}
+
+/* SERVICES */
+.services{padding:3rem 2rem;background:var(--black);border-top:1px solid var(--grey-light);position:relative;overflow:hidden}
+.services::before{content:'';position:absolute;top:0;left:0;width:40%;height:100%;
+  background:url('https://images.unsplash.com/photo-1551887373-a62f86b4fca1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080&q=80') center/cover no-repeat;
+  opacity:0.06;pointer-events:none}
+.services-inner{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:0}
+.services-left{padding-right:3rem;border-right:1px solid var(--grey-light)}
+.services-right{padding-left:3rem}
+.services h2{font-size:1.8rem;margin-bottom:1.5rem}
+.services h2 span{color:var(--yellow)}
+.service-list{list-style:none}
+.service-list li{padding:1rem 0;border-bottom:1px solid var(--grey-light);display:flex;justify-content:space-between;align-items:center;font-size:.85rem}
+.service-list li .name{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.service-list li .tag{font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--black);background:var(--yellow);padding:.2rem .6rem;font-weight:700}
+.service-list li .desc{color:var(--text-dim);font-size:.75rem;margin-top:.25rem}
+
+/* BRANDS */
+.brands{padding:2rem;background:var(--grey);border-top:1px solid var(--grey-light);border-bottom:1px solid var(--grey-light)}
+.brands-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:2rem}
+.brands-label{font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);white-space:nowrap}
+.brands-list{display:flex;gap:2.5rem;align-items:center;flex-wrap:wrap}
+.brands-list span{font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--white);opacity:.4;transition:opacity .2s}
+.brands-list span:hover{opacity:1;color:var(--yellow)}
+
+/* INFO BAR */
+.info-bar{background:var(--black);padding:3rem 2rem;border-top:1px solid var(--grey-light)}
+.info-grid{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--grey-light)}
+.info-cell{background:var(--black);padding:2rem;text-align:center}
+.info-cell h4{font-size:.65rem;letter-spacing:.15em;color:var(--yellow);margin-bottom:.75rem}
+.info-cell .value{font-family:'Barlow Condensed',sans-serif;font-size:2rem;font-weight:800;color:var(--white)}
+.info-cell .detail{font-size:.7rem;color:var(--text-dim);margin-top:.5rem;line-height:1.5}
+.info-cell a{color:var(--yellow);text-decoration:none}
+
+/* BIG PHONE */
+.big-phone{background:var(--yellow);padding:3rem 2rem;text-align:center}
+.big-phone-inner{max-width:800px;margin:0 auto}
+.big-phone h2{font-family:'Barlow Condensed',sans-serif;font-size:clamp(2rem,6vw,4rem);color:var(--black);font-weight:800;text-transform:uppercase}
+.big-phone a{color:var(--black);text-decoration:none}
+.big-phone p{font-family:'Space Mono',monospace;font-size:.75rem;color:rgba(10,10,10,.6);margin-top:.5rem;letter-spacing:.1em;text-transform:uppercase}
+
+/* FOOTER */
+footer{background:var(--grey);padding:2rem;border-top:1px solid var(--grey-light)}
+.footer-inner{max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;align-items:center}
+footer p{font-size:.65rem;color:var(--text-dim);letter-spacing:.05em}
+footer a{color:var(--yellow);text-decoration:none}
+
+/* MOBILE */
+@media(max-width:900px){
+  .cat-grid{grid-template-columns:repeat(3,1fr)}
+  .services-inner{grid-template-columns:1fr}
+  .services-left{border-right:none;padding-right:0;padding-bottom:2rem;border-bottom:1px solid var(--grey-light);margin-bottom:2rem}
+  .services-right{padding-left:0}
+  .info-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:600px){
+  .topbar{flex-direction:column;gap:.25rem;text-align:center;padding:.75rem 1rem}
+  .nav-links{display:none}
+  .nav-toggle{display:block}
+  .nav.open .nav-links{display:flex;flex-direction:column;position:absolute;top:60px;left:0;right:0;background:var(--grey);border-bottom:2px solid var(--yellow)}
+  .nav.open .nav-links a{border-left:none;border-bottom:1px solid var(--grey-light);justify-content:center;padding:1rem}
+  .search-form{grid-template-columns:1fr;border:none;gap:2px}
+  .search-form select,.search-form button{border-right:none;border:2px solid var(--yellow)}
+  .cat-grid{grid-template-columns:repeat(2,1fr)}
+  .brands-inner{flex-direction:column;text-align:center}
+  .brands-list{justify-content:center}
+  .info-grid{grid-template-columns:1fr}
+  .footer-inner{flex-direction:column;gap:1rem;text-align:center}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span>Hightown Industrial Estate, Ringwood, Hampshire</span>
+  <a href="tel:01425472100">CALL: 01425 472100</a>
+</div>
+
+<nav class="nav" id="nav">
+  <a href="#" class="nav-brand">POWER<span>LINKS</span></a>
+  <button class="nav-toggle" onclick="this.parentElement.classList.toggle('open')">///</button>
+  <ul class="nav-links">
+    <li><a href="#search" class="active">PARTS</a></li>
+    <li><a href="#categories">CATEGORIES</a></li>
+    <li><a href="#services">SERVICES</a></li>
+    <li><a href="#info">HOURS</a></li>
+    <li><a href="tel:01425472100">CALL NOW</a></li>
+  </ul>
+</nav>
+
+<section class="hero" id="search">
+  <div class="hero-inner">
+    <h1>FIND <span>PARTS</span> FOR YOUR BIKE</h1>
+    <p class="hero-sub">You know what you need. We've got it.</p>
+    <form class="search-form" onsubmit="event.preventDefault();alert('Search is a design concept — call 01425 472100')">
+      <select aria-label="Make">
+        <option value="">MAKE</option>
+        <option>Honda</option>
+        <option>Yamaha</option>
+        <option>Suzuki</option>
+        <option>Kawasaki</option>
+        <option>Triumph</option>
+      </select>
+      <select aria-label="Model">
+        <option value="">MODEL</option>
+        <option>CB500F</option>
+        <option>MT-07</option>
+        <option>SV650</option>
+        <option>Z650</option>
+        <option>Street Triple</option>
+      </select>
+      <select aria-label="Year">
+        <option value="">YEAR</option>
+        <option>2026</option>
+        <option>2025</option>
+        <option>2024</option>
+        <option>2023</option>
+        <option>2022</option>
+        <option>2021</option>
+        <option>2020</option>
+        <option>2019</option>
+        <option>2018</option>
+        <option>2017</option>
+        <option>2016</option>
+        <option>2015</option>
+        <option>Pre-2015</option>
+      </select>
+      <button type="submit">SEARCH →</button>
+    </form>
+    <p class="hero-phone">Can't find it online? <a href="tel:01425472100">01425 472100</a> — we'll source it.</p>
+  </div>
+</section>
+
+<section class="categories" id="categories">
+  <div class="categories-inner">
+    <h2>BROWSE <span>PARTS</span></h2>
+    <div class="cat-grid">
+      <div class="cat-card">
+        <span class="icon">🔗</span>
+        <h3>Chains</h3>
+        <p class="count">All sizes</p>
+      </div>
+      <div class="cat-card">
+        <span class="icon">⚙️</span>
+        <h3>Sprockets</h3>
+        <p class="count">Front & rear</p>
+      </div>
+      <div class="cat-card">
+        <span class="icon">🛞</span>
+        <h3>Tyres</h3>
+        <p class="count">+ Inner tubes</p>
+      </div>
+      <div class="cat-card">
+        <span class="icon">🔋</span>
+        <h3>Batteries</h3>
+        <p class="count">In stock</p>
+      </div>
+      <div class="cat-card">
+        <span class="icon">🔧</span>
+        <h3>Parts</h3>
+        <p class="count">All makes</p>
+      </div>
+      <div class="cat-card">
+        <span class="icon">📦</span>
+        <h3>Chain Kits</h3>
+        <p class="count">Complete kits</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="brands">
+  <div class="brands-inner">
+    <span class="brands-label">We service</span>
+    <div class="brands-list">
+      <span>Honda</span>
+      <span>Yamaha</span>
+      <span>Suzuki</span>
+      <span>Kawasaki</span>
+      <span>Triumph</span>
+    </div>
+  </div>
+</section>
+
+<section class="services" id="services">
+  <div class="services-inner">
+    <div class="services-left">
+      <h2>WORKSHOP <span>SERVICES</span></h2>
+      <ul class="service-list">
+        <li>
+          <div><span class="name">Full Service</span><div class="desc">Complete inspection, fluids, filters, adjustments</div></div>
+        </li>
+        <li>
+          <div><span class="name">MOT Testing</span><div class="desc">Motorcycle MOT — book ahead or ride in</div></div>
+          <span class="tag">Book now</span>
+        </li>
+        <li>
+          <div><span class="name">Chain & Sprocket</span><div class="desc">Supply and fit complete chain kits</div></div>
+        </li>
+        <li>
+          <div><span class="name">Tyre Fitting</span><div class="desc">Fitted while you wait, most sizes in stock</div></div>
+        </li>
+        <li>
+          <div><span class="name">Battery Replacement</span><div class="desc">Free battery testing, replacement in minutes</div></div>
+        </li>
+        <li>
+          <div><span class="name">General Repair</span><div class="desc">Diagnostics, electrical, brakes, suspension</div></div>
+        </li>
+      </ul>
+    </div>
+    <div class="services-right">
+      <h2>PARTS <span>SOURCING</span></h2>
+      <ul class="service-list">
+        <li>
+          <div><span class="name">In-Stock Parts</span><div class="desc">Chains, sprockets, tyres, tubes, batteries, filters, brake pads</div></div>
+        </li>
+        <li>
+          <div><span class="name">Special Orders</span><div class="desc">Part not in stock? We'll source it fast at a competitive price</div></div>
+          <span class="tag">Quick</span>
+        </li>
+        <li>
+          <div><span class="name">Free Advice</span><div class="desc">Unsure of the right part? We'll advise based on your bike and riding</div></div>
+          <span class="tag">Free</span>
+        </li>
+        <li>
+          <div><span class="name">Trade Enquiries</span><div class="desc">Running a fleet or a shop? Get in touch for trade pricing</div></div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="info-bar" id="info">
+  <div class="info-grid">
+    <div class="info-cell">
+      <h4>Phone</h4>
+      <div class="value"><a href="tel:01425472100">01425<br>472100</a></div>
+    </div>
+    <div class="info-cell">
+      <h4>Location</h4>
+      <div class="value" style="font-size:1rem">RINGWOOD</div>
+      <div class="detail">Hightown Industrial Estate<br>Hampshire</div>
+    </div>
+    <div class="info-cell">
+      <h4>Mon–Fri</h4>
+      <div class="value">8:30–5:30</div>
+    </div>
+    <div class="info-cell">
+      <h4>Saturday</h4>
+      <div class="value">9:00–1:00</div>
+      <div class="detail">Sunday: Closed</div>
+    </div>
+  </div>
+</section>
+
+<section class="big-phone">
+  <div class="big-phone-inner">
+    <h2><a href="tel:01425472100">01425 472100</a></h2>
+    <p>Call Powerlinks — Ringwood's motorcycle parts specialist</p>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <p>&copy; 2026 POWERLINKS — Motorcycle Parts & Servicing</p>
+    <p>Hightown Industrial Estate, Ringwood, Hampshire &middot; <a href="tel:01425472100">01425 472100</a></p>
+  </div>
+  <div style="text-align:center;padding:.75rem 2rem 0;border-top:1px solid var(--grey-light);margin-top:1.5rem">
+    <p style="font-size:.6rem;color:var(--text-dim);letter-spacing:.08em">PHOTOS VIA <a href="https://unsplash.com" target="_blank" rel="noopener" style="color:var(--yellow)">UNSPLASH</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
