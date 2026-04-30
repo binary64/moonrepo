@@ -80,6 +80,7 @@ jobs:
     name: Integration
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    if: github.event_name == 'push'
     needs: [lint, type-check, build, proto-plugins]
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
@@ -95,6 +96,8 @@ jobs:
         run: cd infra && proto install
       - run: echo "$HOME/.moon/bin" >> $GITHUB_PATH
       - name: Moon CI
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: moon ci
       - name: Run infrastructure script
         run: bash run.sh
