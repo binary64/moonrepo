@@ -78,13 +78,28 @@ data:
       if [ "${CLOUDFLARE_ENABLED}" = "true" ]; then
         echo "Updating Cloudflare DNS records..."
 
-        for RECORD in headscale.brandwhisper.cloud home.brandwhisper.cloud; do
+        for RECORD in \
+          argocd.brandwhisper.cloud \
+          authentik.brandwhisper.cloud \
+          "*.brandwhisper.cloud" \
+          frigate.brandwhisper.cloud \
+          github-webhook.brandwhisper.cloud \
+          hasura.brandwhisper.cloud \
+          headscale-ui.brandwhisper.cloud \
+          hrms.brandwhisper.cloud \
+          jellyfin.brandwhisper.cloud \
+          llm.brandwhisper.cloud \
+          mgmt.brandwhisper.cloud \
+          open-webui.brandwhisper.cloud \
+          radio.brandwhisper.cloud \
+          rancher.brandwhisper.cloud \
+          start.brandwhisper.cloud; do
           echo "  → ${RECORD}"
           UPDATE_RESPONSE=$(curl -sS -X PUT \
             "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/dns_records?name=${RECORD}" \
             -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
             -H "Content-Type: application/json" \
-            --data "{\"type\":\"A\",\"name\":\"${RECORD}\",\"content\":\"${CURRENT_IP}\",\"ttl\":60,\"proxied\":false}")
+            --data "{\"type\":\"A\",\"name\":\"${RECORD}\",\"content\":\"${CURRENT_IP}\",\"ttl\":60,\"proxied\":true}")
 
           if echo "${UPDATE_RESPONSE}" | grep -q '"success":true'; then
             echo "    ✓ updated"
@@ -94,17 +109,6 @@ data:
         done
       fi
 
-      # Update the rke2-config ConfigMap with the new WAN IP
-      echo "Updating rke2-config ConfigMap..."
-      kubectl create configmap rke2-config \
-        --namespace=default \
-        --from-literal=advertise-address="${CURRENT_IP}" \
-        --from-literal=node-external-ip="${CURRENT_IP}" \
-        --from-literal=tls-san="${CURRENT_IP}" \
-        -o yaml --dry-run=client | kubectl apply -f -
-
-      echo "✓ rke2-config ConfigMap updated."
-      echo "  Run ./infra/manifests/rke2-config/apply-rke2-config.sh --restart on the NUC to apply."
 
       # Persist the new IP
       echo "${CURRENT_IP}" > "${STATE_FILE}"
