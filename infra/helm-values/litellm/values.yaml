@@ -1,55 +1,24 @@
-## LiteLLM Helm chart values for binary64/moonrepo
-## Chart: https://berriai.github.io/litellm  (litellm-helm 0.2.3)
-## Docs:  https://docs.litellm.ai/docs/proxy/configs
-
 replicaCount: 1
-
 image:
-  # Non-database variant — we use CNPG for postgres and run migrations ourselves
   repository: litellm/litellm
-  tag: "v1.82.3-stable.patch.2"
+  tag: v1.82.3-stable.patch.2
   pullPolicy: IfNotPresent
-
-# Pin to Jupiter (vmi3137202) — CNPG postgres cluster is also on Jupiter.
-# Keeps Prisma Rust/tokio engine co-located to avoid Calico+VXLAN TX checksum
-# offload bug that breaks cross-node Rust async TCP.
 nodeSelector:
   kubernetes.io/hostname: vmi3137202
-
-# ── Secrets & env ──────────────────────────────────────────────────────────
-# Inject litellm-env secret keys as env vars (LITELLM_MASTER_KEY, OAUTH_TOKEN,
-# ANTHROPIC_API_KEY, ANTHROPIC_OAUTH_TOKEN, GEMINI_API_KEY, ZAI_API_KEY, etc.)
 environmentSecrets:
-  - litellm-env
-
+- litellm-env
 extraEnvVars:
-  # DATABASE_URL from CNPG-generated secret
-  - name: DATABASE_URL
-    valueFrom:
-      secretKeyRef:
-        name: litellm-pg-app
-        key: uri
-  # hooks.py lives at /etc/litellm/hooks.py (mounted via extraVolumes below)
-  - name: PYTHONPATH
-    value: "/etc/litellm"
-
-# ── Postgres ───────────────────────────────────────────────────────────────
-# Don't deploy the chart's bundled postgres — we use a CloudNativePG Cluster
-# (litellm-pg) defined in infra/manifests/litellm/postgres-cluster.yaml.
-# Both deployStandalone and useExisting are false so the chart does NOT inject
-# DATABASE_URL itself — we inject it via extraEnvVars from the CNPG secret.
+- name: DATABASE_URL
+  valueFrom:
+    secretKeyRef:
+      name: litellm-pg-app
+      key: uri
+- name: PYTHONPATH
+  value: /etc/litellm
 db:
   deployStandalone: false
   useExisting: false
-
-# ── Migration job ──────────────────────────────────────────────────────────
-# Run prisma migrate deploy as an ArgoCD pre-sync hook Job.
-# Co-located on Jupiter so the Rust prisma engine can reach CNPG postgres.
 migrationJob:
-  # Disabled: CNPG cluster (litellm-pg) must be Running before migrations work.
-  # ArgoCD pre-sync hooks run before resources are applied, creating a deadlock
-  # when CNPG hasn't provisioned postgres yet. Once litellm-pg is healthy,
-  # re-enable this and the Job will run on next sync.
   enabled: false
   retries: 3
   backoffLimit: 4
@@ -59,10 +28,6 @@ migrationJob:
       enabled: false
     helm:
       enabled: false
-
-# ── Config ─────────────────────────────────────────────────────────────────
-# The chart renders proxy_config as a ConfigMap (key: config.yaml) and mounts
-# it at the default config path.  proxyConfigMap.create: true (default).
 proxy_config:
   general_settings:
     master_key: os.environ/LITELLM_MASTER_KEY
@@ -72,170 +37,252 @@ proxy_config:
     forward_client_headers_to_llm_api: false
     store_model_in_db: true
     store_prompts_in_spend_logs: true
-
   litellm_settings:
     drop_params: true
     request_timeout: 300
     success_callback: []
     max_tokens: 36384
     callbacks: hooks.proxy_handler_instance
-
   model_list:
-    # ── Anthropic ──────────────────────────────────────────────────────
-    - model_name: claude-opus-4-6
-      litellm_params:
-        model: anthropic/claude-opus-4-6
-
-    - model_name: claude-sonnet-4-6
-      litellm_params:
-        model: anthropic/claude-sonnet-4-6
-
-    - model_name: claude-haiku-4-5
-      litellm_params:
-        model: anthropic/claude-haiku-4-5
-
-    - model_name: claude-opus-4-7
-      litellm_params:
-        model: anthropic/claude-opus-4-7
-        thinking:
-          type: adaptive
-          output_config:
-            effort: high
-        model_info:
-          mode: chat
-          supports_reasoning: true
-
-    # ── Google Gemini 3 ────────────────────────────────────────────────────
-    - model_name: gemini-3-flash-preview
-      litellm_params:
-        model: gemini/gemini-3-flash-preview
-        api_key: os.environ/GEMINI_API_KEY
+  - model_name: claude-opus-4-6
+    litellm_params:
+      model: anthropic/claude-opus-4-6
+  - model_name: claude-sonnet-4-6
+    litellm_params:
+      model: anthropic/claude-sonnet-4-6
+  - model_name: claude-haiku-4-5
+    litellm_params:
+      model: anthropic/claude-haiku-4-5
+  - model_name: claude-opus-4-7
+    litellm_params:
+      model: anthropic/claude-opus-4-7
+      thinking:
+        type: adaptive
+        output_config:
+          effort: high
       model_info:
-        input_cost_per_token: 0.0000005
-        output_cost_per_token: 0.000003
-
-    # ── Google Gemini 3.1 ──────────────────────────────────────────────────
-    - model_name: gemini-3.1-pro-preview
-      litellm_params:
-        model: gemini/gemini-3.1-pro-preview
-        api_key: os.environ/GEMINI_API_KEY
-      model_info:
-        input_cost_per_token: 0.000002
-        output_cost_per_token: 0.000012
-
-    - model_name: gemini-3.1-flash-lite-preview
-      litellm_params:
-        model: gemini/gemini-3.1-flash-lite-preview
-        api_key: os.environ/GEMINI_API_KEY
-      model_info:
-        input_cost_per_token: 0.00000025
-        output_cost_per_token: 0.0000015
-
-    - model_name: gemini-3.1-flash-image-preview
-      litellm_params:
-        model: gemini/gemini-3.1-flash-image-preview
-        api_key: os.environ/GEMINI_API_KEY
-      model_info:
-        input_cost_per_token: 0.0000005
-        output_cost_per_token: 0.000003
-
-    # ── ZAI / GLM (Coding Plan Max — shadow pricing) ───────────────────────
-    - model_name: glm-5
-      litellm_params:
-        model: zai/glm-5
-        api_key: os.environ/ZAI_API_KEY
-        api_base: https://api.z.ai/api/coding/paas/v4
-      model_info:
-        input_cost_per_token: 0.00000001
-        output_cost_per_token: 0.00000001
-
-    - model_name: glm-4.7
-      litellm_params:
-        model: zai/glm-4.7
-        api_key: os.environ/ZAI_API_KEY
-        api_base: https://api.z.ai/api/coding/paas/v4
-      model_info:
-        input_cost_per_token: 0.00000001
-        output_cost_per_token: 0.00000001
-
-# ── Hooks volume ───────────────────────────────────────────────────────────
-# Mount hooks.py (Anthropic OAuth callback) from the litellm-hooks ConfigMap
-# at /etc/litellm/hooks.py so PYTHONPATH can import it.
+        mode: chat
+        supports_reasoning: true
+  - model_name: gemini-3-flash-preview
+    litellm_params:
+      model: gemini/gemini-3-flash-preview
+      api_key: os.environ/GEMINI_API_KEY
+    model_info:
+      input_cost_per_token: 5.0e-07
+      output_cost_per_token: 3.0e-06
+  - model_name: gemini-3.1-pro-preview
+    litellm_params:
+      model: gemini/gemini-3.1-pro-preview
+      api_key: os.environ/GEMINI_API_KEY
+    model_info:
+      input_cost_per_token: 2.0e-06
+      output_cost_per_token: 1.2e-05
+  - model_name: gemini-3.1-flash-lite-preview
+    litellm_params:
+      model: gemini/gemini-3.1-flash-lite-preview
+      api_key: os.environ/GEMINI_API_KEY
+    model_info:
+      input_cost_per_token: 2.5e-07
+      output_cost_per_token: 1.5e-06
+  - model_name: gemini-3.1-flash-image-preview
+    litellm_params:
+      model: gemini/gemini-3.1-flash-image-preview
+      api_key: os.environ/GEMINI_API_KEY
+    model_info:
+      input_cost_per_token: 5.0e-07
+      output_cost_per_token: 3.0e-06
+  - model_name: glm-5
+    litellm_params:
+      model: zai/glm-5
+      api_key: os.environ/ZAI_API_KEY
+      api_base: https://api.z.ai/api/coding/paas/v4
+    model_info:
+      input_cost_per_token: 1.0e-08
+      output_cost_per_token: 1.0e-08
+  - model_name: glm-4.7
+    litellm_params:
+      model: zai/glm-4.7
+      api_key: os.environ/ZAI_API_KEY
+      api_base: https://api.z.ai/api/coding/paas/v4
+    model_info:
+      input_cost_per_token: 1.0e-08
+      output_cost_per_token: 1.0e-08
+  - model_name: gemma-2-9b
+    litellm_params:
+      model: openrouter/google/gemma-2-9b-it
+  - model_name: gemma-2-27b
+    litellm_params:
+      model: openrouter/google/gemma-2-27b-it
+  - model_name: gemma-2-2b
+    litellm_params:
+      model: openrouter/google/gemma-2-2b-it
+  - model_name: gemini-2.0-flash-lite
+    litellm_params:
+      model: openrouter/google/gemini-2.0-flash-lite-001
+  - model_name: gemini-2.0-flash-thinking
+    litellm_params:
+      model: openrouter/google/gemini-2.0-flash-thinking-exp-1219
+  - model_name: gemini-2.5-flash
+    litellm_params:
+      model: openrouter/google/gemini-2.5-flash-preview-05-20
+  - model_name: gemini-2.5-pro
+    litellm_params:
+      model: openrouter/google/gemini-2.5-pro-preview-05-06
+  - model_name: llama-2-70b
+    litellm_params:
+      model: openrouter/meta-llama/llama-2-70b-chat-hf
+  - model_name: llama-3-70b
+    litellm_params:
+      model: openrouter/meta-llama/llama-3-70b-instruct
+  - model_name: llama-3-8b
+    litellm_params:
+      model: openrouter/meta-llama/llama-3-8b-instruct
+  - model_name: llama-3.1-405b
+    litellm_params:
+      model: openrouter/meta-llama/llama-3.1-405b-instruct
+  - model_name: llama-3.1-70b
+    litellm_params:
+      model: openrouter/meta-llama/llama-3.1-70b-instruct
+  - model_name: llama-3.1-8b
+    litellm_params:
+      model: openrouter/meta-llama/llama-3.1-8b-instruct
+  - model_name: llama-3.2-1b
+    litellm_params:
+      model: openrouter/meta-llama/llama-3.2-1b-instruct
+  - model_name: llama-3.2-3b
+    litellm_params:
+      model: openrouter/meta-llama/llama-3.2-3b-instruct
+  - model_name: llama-3.2-90b-vision
+    litellm_params:
+      model: openrouter/meta-llama/llama-3.2-90b-vision-instruct
+  - model_name: llama-3.3-70b
+    litellm_params:
+      model: openrouter/meta-llama/llama-3.3-70b-instruct
+  - model_name: llama-guard-3-8b
+    litellm_params:
+      model: openrouter/meta-llama/llama-guard-3-8b
+  - model_name: llama-vision-90b
+    litellm_params:
+      model: openrouter/meta-llama/llama-vision-90b
+  - model_name: mistral-7b
+    litellm_params:
+      model: openrouter/mistralai/mistral-7b-instruct-v0.3
+  - model_name: mistral-large
+    litellm_params:
+      model: openrouter/mistralai/mistral-large
+  - model_name: mistral-nemo
+    litellm_params:
+      model: openrouter/mistralai/mistral-nemo
+  - model_name: mistral-small-24b
+    litellm_params:
+      model: openrouter/mistralai/mistral-small-24b-instruct-2501
+  - model_name: mixtral-8x7b
+    litellm_params:
+      model: openrouter/mistralai/mixtral-8x7b-instruct-v0.1
+  - model_name: nemotron-70b
+    litellm_params:
+      model: openrouter/nvidia/llama-3.1-nemotron-70b-instruct
+  - model_name: nemotron-nano-8b
+    litellm_params:
+      model: openrouter/nvidia/llama-3.1-nemotron-nano-8b-v1
+  - model_name: nemotron-ultra-253b
+    litellm_params:
+      model: openrouter/nvidia/llama-3.1-nemotron-ultra-253b-v1
+  - model_name: nemotron-70b-instruct
+    litellm_params:
+      model: openrouter/nvidia/llama-3.3-nemotron-70b-instruct
+  - model_name: nemotron-super-49b
+    litellm_params:
+      model: openrouter/nvidia/llama-3.3-nemotron-super-49b-v1
+  - model_name: gpt-4o-mini-or
+    litellm_params:
+      model: openrouter/openai/gpt-4o-mini
+  - model_name: gpt-4o-or
+    litellm_params:
+      model: openrouter/openai/gpt-4o
+  - model_name: o1-or
+    litellm_params:
+      model: openrouter/openai/o1
+  - model_name: o3-mini-or
+    litellm_params:
+      model: openrouter/openai/o3-mini
+  - model_name: sonar-reasoning-pro
+    litellm_params:
+      model: openrouter/perplexity/sonar-reasoning-pro
+  - model_name: sonar
+    litellm_params:
+      model: openrouter/perplexity/sonar
+  - model_name: gpt-4.1
+    litellm_params:
+      model: openai/gpt-4.1
+  - model_name: gpt-4.1-mini
+    litellm_params:
+      model: openai/gpt-4.1-mini
+  - model_name: o4-mini
+    litellm_params:
+      model: openai/o4-mini
+  - model_name: o3
+    litellm_params:
+      model: openai/o3
 volumes:
-  - name: hooks
-    configMap:
-      name: litellm-hooks
-
+- name: hooks
+  configMap:
+    name: litellm-hooks
 volumeMounts:
-  - name: hooks
-    mountPath: /etc/litellm/hooks.py
-    subPath: hooks.py
-    readOnly: true
-
-# ── Service ────────────────────────────────────────────────────────────────
+- name: hooks
+  mountPath: /etc/litellm/hooks.py
+  subPath: hooks.py
+  readOnly: true
 service:
   type: NodePort
   port: 4000
   nodePort: 31100
-
-# ── Resources ─────────────────────────────────────────────────────────────
 resources:
   requests:
     cpu: 200m
     memory: 512Mi
   limits:
     memory: 2Gi
-
-# ── Probes ────────────────────────────────────────────────────────────────
 startupProbe:
   path: /health/readiness
   initialDelaySeconds: 10
   periodSeconds: 10
   failureThreshold: 30
-
 livenessProbe:
   path: /health/liveliness
   initialDelaySeconds: 0
   periodSeconds: 10
   failureThreshold: 3
-
 readinessProbe:
   path: /health/readiness
   initialDelaySeconds: 0
   periodSeconds: 10
   failureThreshold: 3
-
-# ── Ingress ───────────────────────────────────────────────────────────────
-# Disabled — we use an Istio HTTPRoute instead (see extraResources below)
 ingress:
   enabled: false
-
-# ── Extra resources ───────────────────────────────────────────────────────
-# Istio HTTPRoute only — litellm-hooks ConfigMap lives in infra/manifests/litellm/
-# so it's always present before the pre-sync migration Job runs.
 extraResources:
-  - apiVersion: gateway.networking.k8s.io/v1
-    kind: HTTPRoute
-    metadata:
-      name: litellm
-      namespace: litellm
-    spec:
-      parentRefs:
-        - group: gateway.networking.k8s.io
-          kind: Gateway
-          name: gateway
-          namespace: istio-system
-          sectionName: https
-      hostnames:
-        - "llm.brandwhisper.cloud"
-      rules:
-        - matches:
-            - path:
-                type: PathPrefix
-                value: /
-          backendRefs:
-            - group: ""
-              kind: Service
-              name: litellm
-              port: 4000
-              weight: 1
+- apiVersion: gateway.networking.k8s.io/v1
+  kind: HTTPRoute
+  metadata:
+    name: litellm
+    namespace: litellm
+  spec:
+    parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gateway
+      namespace: istio-system
+      sectionName: https
+    hostnames:
+    - llm.brandwhisper.cloud
+    rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /
+      backendRefs:
+      - group: ''
+        kind: Service
+        name: litellm
+        port: 4000
+        weight: 1
