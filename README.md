@@ -311,6 +311,20 @@ curl http://home.localhost:8080  # Home Assistant (add to /etc/hosts)
 - Automatic renewal via cert-manager
 - Wildcard support for easy service addition
 
+## Authentik OAuth2 SSO
+
+Authentik provides OAuth2 single sign-on (SSO) for all services, enabling centralized authentication and user management across the homelab. The following services are configured to use Authentik as their OAuth2 provider:
+
+- Frigate (NVR)
+- Start Page (dashboard)
+- Jellyfin (media server)
+- Open WebUI (LLM interface)
+- LiteLLM (LLM gateway)
+- Home Assistant (home automation)
+- Zigbee2MQTT (Zigbee gateway)
+
+OAuth2 client credentials (client IDs and secrets) for each service are stored as Kubernetes SealedSecrets. The sealed secret manifests are committed to git in `infra/manifests/` and `infra/app-of-apps/`, ensuring secure, GitOps-friendly credential management. SealedSecrets are encrypted using the cluster's SealedSecrets controller key and can be safely committed to version control.
+
 ## 📋 Development Guidelines
 
 ### Adding New Services
