@@ -14,3 +14,7 @@ apps/pawpicks-stock-checker/products.json
 # Local config
 .envrc.local
 kubeconfig.yaml
+
+# OAuth2 credentials (plaintext, for local use only)
+**/.oauth2-credentials.json
+**/.credentials.json

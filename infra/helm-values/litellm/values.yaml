@@ -1,265 +1,17 @@
-replicaCount: 1
-image:
-  repository: litellm/litellm
-  tag: v1.82.3-stable.patch.2
-  pullPolicy: IfNotPresent
-nodeSelector:
-  kubernetes.io/hostname: vmi3137202
+db:
+  deployStandalone: false
+  useExisting: false
 environmentSecrets:
 - litellm-env
+- litellm-auth-env
 extraEnvVars:
 - name: DATABASE_URL
   valueFrom:
     secretKeyRef:
-      name: litellm-pg-app
       key: uri
+      name: litellm-pg-app
 - name: PYTHONPATH
   value: /etc/litellm
-db:
-  deployStandalone: false
-  useExisting: false
-migrationJob:
-  enabled: false
-  retries: 3
-  backoffLimit: 4
-  ttlSecondsAfterFinished: 120
-  hooks:
-    argocd:
-      enabled: false
-    helm:
-      enabled: false
-proxy_config:
-  general_settings:
-    master_key: os.environ/LITELLM_MASTER_KEY
-    max_parallel_requests: 4
-    global_max_parallel_requests: 6
-    allow_requests_on_unmatched_routes: false
-    forward_client_headers_to_llm_api: false
-    store_model_in_db: true
-    store_prompts_in_spend_logs: true
-  litellm_settings:
-    drop_params: true
-    request_timeout: 300
-    success_callback: []
-    max_tokens: 36384
-    callbacks: hooks.proxy_handler_instance
-  model_list:
-  - model_name: claude-opus-4-6
-    litellm_params:
-      model: anthropic/claude-opus-4-6
-  - model_name: claude-sonnet-4-6
-    litellm_params:
-      model: anthropic/claude-sonnet-4-6
-  - model_name: claude-haiku-4-5
-    litellm_params:
-      model: anthropic/claude-haiku-4-5
-  - model_name: claude-opus-4-7
-    litellm_params:
-      model: anthropic/claude-opus-4-7
-      thinking:
-        type: adaptive
-        output_config:
-          effort: high
-      model_info:
-        mode: chat
-        supports_reasoning: true
-  - model_name: gemini-3-flash-preview
-    litellm_params:
-      model: gemini/gemini-3-flash-preview
-      api_key: os.environ/GEMINI_API_KEY
-    model_info:
-      input_cost_per_token: 5.0e-07
-      output_cost_per_token: 3.0e-06
-  - model_name: gemini-3.1-pro-preview
-    litellm_params:
-      model: gemini/gemini-3.1-pro-preview
-      api_key: os.environ/GEMINI_API_KEY
-    model_info:
-      input_cost_per_token: 2.0e-06
-      output_cost_per_token: 1.2e-05
-  - model_name: gemini-3.1-flash-lite-preview
-    litellm_params:
-      model: gemini/gemini-3.1-flash-lite-preview
-      api_key: os.environ/GEMINI_API_KEY
-    model_info:
-      input_cost_per_token: 2.5e-07
-      output_cost_per_token: 1.5e-06
-  - model_name: gemini-3.1-flash-image-preview
-    litellm_params:
-      model: gemini/gemini-3.1-flash-image-preview
-      api_key: os.environ/GEMINI_API_KEY
-    model_info:
-      input_cost_per_token: 5.0e-07
-      output_cost_per_token: 3.0e-06
-  - model_name: glm-5
-    litellm_params:
-      model: zai/glm-5
-      api_key: os.environ/ZAI_API_KEY
-      api_base: https://api.z.ai/api/coding/paas/v4
-    model_info:
-      input_cost_per_token: 1.0e-08
-      output_cost_per_token: 1.0e-08
-  - model_name: glm-4.7
-    litellm_params:
-      model: zai/glm-4.7
-      api_key: os.environ/ZAI_API_KEY
-      api_base: https://api.z.ai/api/coding/paas/v4
-    model_info:
-      input_cost_per_token: 1.0e-08
-      output_cost_per_token: 1.0e-08
-  - model_name: gemma-2-9b
-    litellm_params:
-      model: openrouter/google/gemma-2-9b-it
-  - model_name: gemma-2-27b
-    litellm_params:
-      model: openrouter/google/gemma-2-27b-it
-  - model_name: gemma-2-2b
-    litellm_params:
-      model: openrouter/google/gemma-2-2b-it
-  - model_name: gemini-2.0-flash-lite
-    litellm_params:
-      model: openrouter/google/gemini-2.0-flash-lite-001
-  - model_name: gemini-2.0-flash-thinking
-    litellm_params:
-      model: openrouter/google/gemini-2.0-flash-thinking-exp-1219
-  - model_name: gemini-2.5-flash
-    litellm_params:
-      model: openrouter/google/gemini-2.5-flash-preview-05-20
-  - model_name: gemini-2.5-pro
-    litellm_params:
-      model: openrouter/google/gemini-2.5-pro-preview-05-06
-  - model_name: llama-2-70b
-    litellm_params:
-      model: openrouter/meta-llama/llama-2-70b-chat-hf
-  - model_name: llama-3-70b
-    litellm_params:
-      model: openrouter/meta-llama/llama-3-70b-instruct
-  - model_name: llama-3-8b
-    litellm_params:
-      model: openrouter/meta-llama/llama-3-8b-instruct
-  - model_name: llama-3.1-405b
-    litellm_params:
-      model: openrouter/meta-llama/llama-3.1-405b-instruct
-  - model_name: llama-3.1-70b
-    litellm_params:
-      model: openrouter/meta-llama/llama-3.1-70b-instruct
-  - model_name: llama-3.1-8b
-    litellm_params:
-      model: openrouter/meta-llama/llama-3.1-8b-instruct
-  - model_name: llama-3.2-1b
-    litellm_params:
-      model: openrouter/meta-llama/llama-3.2-1b-instruct
-  - model_name: llama-3.2-3b
-    litellm_params:
-      model: openrouter/meta-llama/llama-3.2-3b-instruct
-  - model_name: llama-3.2-90b-vision
-    litellm_params:
-      model: openrouter/meta-llama/llama-3.2-90b-vision-instruct
-  - model_name: llama-3.3-70b
-    litellm_params:
-      model: openrouter/meta-llama/llama-3.3-70b-instruct
-  - model_name: llama-guard-3-8b
-    litellm_params:
-      model: openrouter/meta-llama/llama-guard-3-8b
-  - model_name: llama-vision-90b
-    litellm_params:
-      model: openrouter/meta-llama/llama-vision-90b
-  - model_name: mistral-7b
-    litellm_params:
-      model: openrouter/mistralai/mistral-7b-instruct-v0.3
-  - model_name: mistral-large
-    litellm_params:
-      model: openrouter/mistralai/mistral-large
-  - model_name: mistral-nemo
-    litellm_params:
-      model: openrouter/mistralai/mistral-nemo
-  - model_name: mistral-small-24b
-    litellm_params:
-      model: openrouter/mistralai/mistral-small-24b-instruct-2501
-  - model_name: mixtral-8x7b
-    litellm_params:
-      model: openrouter/mistralai/mixtral-8x7b-instruct-v0.1
-  - model_name: nemotron-70b
-    litellm_params:
-      model: openrouter/nvidia/llama-3.1-nemotron-70b-instruct
-  - model_name: nemotron-nano-8b
-    litellm_params:
-      model: openrouter/nvidia/llama-3.1-nemotron-nano-8b-v1
-  - model_name: nemotron-ultra-253b
-    litellm_params:
-      model: openrouter/nvidia/llama-3.1-nemotron-ultra-253b-v1
-  - model_name: nemotron-70b-instruct
-    litellm_params:
-      model: openrouter/nvidia/llama-3.3-nemotron-70b-instruct
-  - model_name: nemotron-super-49b
-    litellm_params:
-      model: openrouter/nvidia/llama-3.3-nemotron-super-49b-v1
-  - model_name: gpt-4o-mini-or
-    litellm_params:
-      model: openrouter/openai/gpt-4o-mini
-  - model_name: gpt-4o-or
-    litellm_params:
-      model: openrouter/openai/gpt-4o
-  - model_name: o1-or
-    litellm_params:
-      model: openrouter/openai/o1
-  - model_name: o3-mini-or
-    litellm_params:
-      model: openrouter/openai/o3-mini
-  - model_name: sonar-reasoning-pro
-    litellm_params:
-      model: openrouter/perplexity/sonar-reasoning-pro
-  - model_name: sonar
-    litellm_params:
-      model: openrouter/perplexity/sonar
-  - model_name: gpt-4.1
-    litellm_params:
-      model: openai/gpt-4.1
-  - model_name: gpt-4.1-mini
-    litellm_params:
-      model: openai/gpt-4.1-mini
-  - model_name: o4-mini
-    litellm_params:
-      model: openai/o4-mini
-  - model_name: o3
-    litellm_params:
-      model: openai/o3
-volumes:
-- name: hooks
-  configMap:
-    name: litellm-hooks
-volumeMounts:
-- name: hooks
-  mountPath: /etc/litellm/hooks.py
-  subPath: hooks.py
-  readOnly: true
-service:
-  type: NodePort
-  port: 4000
-  nodePort: 31100
-resources:
-  requests:
-    cpu: 200m
-    memory: 512Mi
-  limits:
-    memory: 2Gi
-startupProbe:
-  path: /health/readiness
-  initialDelaySeconds: 10
-  periodSeconds: 10
-  failureThreshold: 30
-livenessProbe:
-  path: /health/liveliness
-  initialDelaySeconds: 0
-  periodSeconds: 10
-  failureThreshold: 3
-readinessProbe:
-  path: /health/readiness
-  initialDelaySeconds: 0
-  periodSeconds: 10
-  failureThreshold: 3
-ingress:
-  enabled: false
 extraResources:
 - apiVersion: gateway.networking.k8s.io/v1
   kind: HTTPRoute
@@ -267,22 +19,271 @@ extraResources:
     name: litellm
     namespace: litellm
   spec:
+    hostnames:
+    - llm.brandwhisper.cloud
     parentRefs:
     - group: gateway.networking.k8s.io
       kind: Gateway
       name: gateway
       namespace: istio-system
       sectionName: https
-    hostnames:
-    - llm.brandwhisper.cloud
     rules:
-    - matches:
-      - path:
-          type: PathPrefix
-          value: /
-      backendRefs:
+    - backendRefs:
       - group: ''
         kind: Service
         name: litellm
         port: 4000
         weight: 1
+      matches:
+      - path:
+          type: PathPrefix
+          value: /
+image:
+  pullPolicy: IfNotPresent
+  repository: litellm/litellm
+  tag: v1.82.3-stable.patch.2
+ingress:
+  enabled: false
+livenessProbe:
+  failureThreshold: 3
+  initialDelaySeconds: 0
+  path: /health/liveliness
+  periodSeconds: 10
+migrationJob:
+  backoffLimit: 4
+  enabled: false
+  hooks:
+    argocd:
+      enabled: false
+    helm:
+      enabled: false
+  retries: 3
+  ttlSecondsAfterFinished: 120
+nodeSelector:
+  kubernetes.io/hostname: vmi3137202
+proxy_config:
+  general_settings:
+    allow_requests_on_unmatched_routes: false
+    forward_client_headers_to_llm_api: false
+    global_max_parallel_requests: 6
+    master_key: os.environ/LITELLM_MASTER_KEY
+    max_parallel_requests: 4
+    store_model_in_db: true
+    store_prompts_in_spend_logs: true
+  litellm_settings:
+    callbacks: hooks.proxy_handler_instance
+    drop_params: true
+    max_tokens: 36384
+    request_timeout: 300
+    success_callback: []
+  model_list:
+  - litellm_params:
+      model: anthropic/claude-opus-4-6
+    model_name: claude-opus-4-6
+  - litellm_params:
+      model: anthropic/claude-sonnet-4-6
+    model_name: claude-sonnet-4-6
+  - litellm_params:
+      model: anthropic/claude-haiku-4-5
+    model_name: claude-haiku-4-5
+  - litellm_params:
+      model: anthropic/claude-opus-4-7
+      model_info:
+        mode: chat
+        supports_reasoning: true
+      thinking:
+        output_config:
+          effort: high
+        type: adaptive
+    model_name: claude-opus-4-7
+  - litellm_params:
+      api_key: os.environ/GEMINI_API_KEY
+      model: gemini/gemini-3-flash-preview
+    model_info:
+      input_cost_per_token: 5.0e-07
+      output_cost_per_token: 3.0e-06
+    model_name: gemini-3-flash-preview
+  - litellm_params:
+      api_key: os.environ/GEMINI_API_KEY
+      model: gemini/gemini-3.1-pro-preview
+    model_info:
+      input_cost_per_token: 2.0e-06
+      output_cost_per_token: 1.2e-05
+    model_name: gemini-3.1-pro-preview
+  - litellm_params:
+      api_key: os.environ/GEMINI_API_KEY
+      model: gemini/gemini-3.1-flash-lite-preview
+    model_info:
+      input_cost_per_token: 2.5e-07
+      output_cost_per_token: 1.5e-06
+    model_name: gemini-3.1-flash-lite-preview
+  - litellm_params:
+      api_key: os.environ/GEMINI_API_KEY
+      model: gemini/gemini-3.1-flash-image-preview
+    model_info:
+      input_cost_per_token: 5.0e-07
+      output_cost_per_token: 3.0e-06
+    model_name: gemini-3.1-flash-image-preview
+  - litellm_params:
+      api_base: https://api.z.ai/api/coding/paas/v4
+      api_key: os.environ/ZAI_API_KEY
+      model: zai/glm-5
+    model_info:
+      input_cost_per_token: 1.0e-08
+      output_cost_per_token: 1.0e-08
+    model_name: glm-5
+  - litellm_params:
+      api_base: https://api.z.ai/api/coding/paas/v4
+      api_key: os.environ/ZAI_API_KEY
+      model: zai/glm-4.7
+    model_info:
+      input_cost_per_token: 1.0e-08
+      output_cost_per_token: 1.0e-08
+    model_name: glm-4.7
+  - litellm_params:
+      model: openrouter/google/gemma-2-9b-it
+    model_name: gemma-2-9b
+  - litellm_params:
+      model: openrouter/google/gemma-2-27b-it
+    model_name: gemma-2-27b
+  - litellm_params:
+      model: openrouter/google/gemma-2-2b-it
+    model_name: gemma-2-2b
+  - litellm_params:
+      model: openrouter/google/gemini-2.0-flash-lite-001
+    model_name: gemini-2.0-flash-lite
+  - litellm_params:
+      model: openrouter/google/gemini-2.0-flash-thinking-exp-1219
+    model_name: gemini-2.0-flash-thinking
+  - litellm_params:
+      model: openrouter/google/gemini-2.5-flash-preview-05-20
+    model_name: gemini-2.5-flash
+  - litellm_params:
+      model: openrouter/google/gemini-2.5-pro-preview-05-06
+    model_name: gemini-2.5-pro
+  - litellm_params:
+      model: openrouter/meta-llama/llama-2-70b-chat-hf
+    model_name: llama-2-70b
+  - litellm_params:
+      model: openrouter/meta-llama/llama-3-70b-instruct
+    model_name: llama-3-70b
+  - litellm_params:
+      model: openrouter/meta-llama/llama-3-8b-instruct
+    model_name: llama-3-8b
+  - litellm_params:
+      model: openrouter/meta-llama/llama-3.1-405b-instruct
+    model_name: llama-3.1-405b
+  - litellm_params:
+      model: openrouter/meta-llama/llama-3.1-70b-instruct
+    model_name: llama-3.1-70b
+  - litellm_params:
+      model: openrouter/meta-llama/llama-3.1-8b-instruct
+    model_name: llama-3.1-8b
+  - litellm_params:
+      model: openrouter/meta-llama/llama-3.2-1b-instruct
+    model_name: llama-3.2-1b
+  - litellm_params:
+      model: openrouter/meta-llama/llama-3.2-3b-instruct
+    model_name: llama-3.2-3b
+  - litellm_params:
+      model: openrouter/meta-llama/llama-3.2-90b-vision-instruct
+    model_name: llama-3.2-90b-vision
+  - litellm_params:
+      model: openrouter/meta-llama/llama-3.3-70b-instruct
+    model_name: llama-3.3-70b
+  - litellm_params:
+      model: openrouter/meta-llama/llama-guard-3-8b
+    model_name: llama-guard-3-8b
+  - litellm_params:
+      model: openrouter/meta-llama/llama-vision-90b
+    model_name: llama-vision-90b
+  - litellm_params:
+      model: openrouter/mistralai/mistral-7b-instruct-v0.3
+    model_name: mistral-7b
+  - litellm_params:
+      model: openrouter/mistralai/mistral-large
+    model_name: mistral-large
+  - litellm_params:
+      model: openrouter/mistralai/mistral-nemo
+    model_name: mistral-nemo
+  - litellm_params:
+      model: openrouter/mistralai/mistral-small-24b-instruct-2501
+    model_name: mistral-small-24b
+  - litellm_params:
+      model: openrouter/mistralai/mixtral-8x7b-instruct-v0.1
+    model_name: mixtral-8x7b
+  - litellm_params:
+      model: openrouter/nvidia/llama-3.1-nemotron-70b-instruct
+    model_name: nemotron-70b
+  - litellm_params:
+      model: openrouter/nvidia/llama-3.1-nemotron-nano-8b-v1
+    model_name: nemotron-nano-8b
+  - litellm_params:
+      model: openrouter/nvidia/llama-3.1-nemotron-ultra-253b-v1
+    model_name: nemotron-ultra-253b
+  - litellm_params:
+      model: openrouter/nvidia/llama-3.3-nemotron-70b-instruct
+    model_name: nemotron-70b-instruct
+  - litellm_params:
+      model: openrouter/nvidia/llama-3.3-nemotron-super-49b-v1
+    model_name: nemotron-super-49b
+  - litellm_params:
+      model: openrouter/openai/gpt-4o-mini
+    model_name: gpt-4o-mini-or
+  - litellm_params:
+      model: openrouter/openai/gpt-4o
+    model_name: gpt-4o-or
+  - litellm_params:
+      model: openrouter/openai/o1
+    model_name: o1-or
+  - litellm_params:
+      model: openrouter/openai/o3-mini
+    model_name: o3-mini-or
+  - litellm_params:
+      model: openrouter/perplexity/sonar-reasoning-pro
+    model_name: sonar-reasoning-pro
+  - litellm_params:
+      model: openrouter/perplexity/sonar
+    model_name: sonar
+  - litellm_params:
+      model: openai/gpt-4.1
+    model_name: gpt-4.1
+  - litellm_params:
+      model: openai/gpt-4.1-mini
+    model_name: gpt-4.1-mini
+  - litellm_params:
+      model: openai/o4-mini
+    model_name: o4-mini
+  - litellm_params:
+      model: openai/o3
+    model_name: o3
+readinessProbe:
+  failureThreshold: 3
+  initialDelaySeconds: 0
+  path: /health/readiness
+  periodSeconds: 10
+replicaCount: 1
+resources:
+  limits:
+    memory: 2Gi
+  requests:
+    cpu: 200m
+    memory: 512Mi
+service:
+  nodePort: 31100
+  port: 4000
+  type: NodePort
+startupProbe:
+  failureThreshold: 30
+  initialDelaySeconds: 10
+  path: /health/readiness
+  periodSeconds: 10
+volumeMounts:
+- mountPath: /etc/litellm/hooks.py
+  name: hooks
+  readOnly: true
+  subPath: hooks.py
+volumes:
+- configMap:
+    name: litellm-hooks
+  name: hooks

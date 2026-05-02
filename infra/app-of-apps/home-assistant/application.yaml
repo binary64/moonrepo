@@ -4,147 +4,64 @@ metadata:
   name: home-assistant
   namespace: argocd
   finalizers:
-    - resources-finalizer.argocd.argoproj.io
+  - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-  source:
-    repoURL: https://pajikos.github.io/home-assistant-helm-chart/
-    chart: home-assistant
-    targetRevision: 0.3.51
-    helm:
-      values: |
-        # Disable AppArmor so HA can access DBus for Bluetooth (BLE discovery).
-        # Without this, AppArmor blocks DBus method calls with AccessDenied.
-        podAnnotations:
-          container.apparmor.security.beta.kubernetes.io/home-assistant: unconfined
-
-        # Bluetooth container requirements (per HA docs):
-        # - NET_ADMIN + NET_RAW for full BLE management (adapter recovery, connection params)
-        # - /run/dbus mounted read-only for BlueZ access via D-Bus
-        # https://www.home-assistant.io/integrations/bluetooth/#additional-details-for-container
-        securityContext:
-          capabilities:
-            add:
-              - NET_ADMIN
-              - NET_RAW
-
-        additionalVolumes:
-          - name: dbus
-            hostPath:
-              path: /run/dbus
-        additionalMounts:
-          - name: dbus
-            mountPath: /run/dbus
-            readOnly: true
-
-        configuration:
-          enabled: true
-          configuration.yaml: |
-            mqtt:
-              broker: mosquitto.home-assistant.svc.cluster.local
-              port: 1883
-              username: mqtt
-              password: mqtt
-              discovery: true
-              discovery_prefix: homeassistant
-              birth_message:
-                topic: 'hass/status'
-                payload: 'online'
-              will_message:
-                topic: 'hass/status'
-                payload: 'offline'
-          forceInit: false
-          trusted_proxies:
-            - 10.42.0.0/16
-            - 10.43.0.0/16
-            - 127.0.0.0/8
-            - 192.168.1.0/24  # Replace with your LAN CIDR
-
-        # Install HACS + Bermuda BLE Trilateration into custom_components.
-        # Only downloads on first run — PVC persists across restarts.
-        # Prerequisite: BlueZ must be installed on the host (sudo apt install bluez).
-        initContainers:
-          - name: init-custom-components
-            image: alpine:3.21
-            command:
-              - sh
-              - -c
-              - |
-                set -e
-                apk add --no-cache wget unzip jq > /dev/null 2>&1
-                # HACS
-                if [ ! -d /config/custom_components/hacs ]; then
-                  echo "Installing HACS..."
-                  wget -qO /tmp/hacs.zip https://github.com/hacs/integration/releases/latest/download/hacs.zip
-                  mkdir -p /config/custom_components/hacs
-                  unzip -o /tmp/hacs.zip -d /config/custom_components/hacs
-                  rm /tmp/hacs.zip
-                fi
-                # Bermuda BLE Trilateration
-                if [ ! -d /config/custom_components/bermuda ]; then
-                  echo "Installing Bermuda..."
-                  BERMUDA_VER=$(wget -qO- https://api.github.com/repos/agittins/bermuda/releases/latest | jq -r .tag_name)
-                  wget -qO /tmp/bermuda.zip "https://github.com/agittins/bermuda/releases/download/${BERMUDA_VER}/bermuda.zip"
-                  mkdir -p /config/custom_components/bermuda
-                  unzip -o /tmp/bermuda.zip -d /config/custom_components/bermuda
-                  rm /tmp/bermuda.zip
-                fi
-                echo "Custom components ready."
-            volumeMounts:
-              - mountPath: /config
-                name: home-assistant
-    
-        service:
-          type: ClusterIP
-          port: 8123
-
-        probes:
-          liveness:
-            enabled: true
-            initialDelaySeconds: 60
-          readiness:
-            enabled: true
-            initialDelaySeconds: 60
-          startup:
-            enabled: true
-            failureThreshold: 30
-            periodSeconds: 10
-
-        ingress:
-          enabled: false
-          external: true
-          className: istio
-          annotations:
-            kubernetes.io/ingress.class: istio
-          hosts:
-            - host: home.brandwhisper.cloud
-              paths:
-                - path: /
-                  pathType: Prefix
-
-        persistence:
-          enabled: true
-          accessMode: ReadWriteOnce
-          size: 10Gi
-          # storageClass defaults to cluster default (local-path)
-
-        addons:
-          codeserver:
-            enabled: false
-
   destination:
     server: https://kubernetes.default.svc
     namespace: home-assistant
-
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
-      - CreateNamespace=true
+    - CreateNamespace=true
     retry:
       limit: 5
       backoff:
         duration: 5s
         factor: 2
         maxDuration: 3m
+  sources:
+  - repoURL: https://pajikos.github.io/home-assistant-helm-chart/
+    chart: home-assistant
+    targetRevision: 0.3.51
+    helm:
+      values: "additionalMounts:\n- mountPath: /run/dbus\n  name: dbus\n  readOnly:\
+        \ true\nadditionalVolumes:\n- hostPath:\n    path: /run/dbus\n  name: dbus\n\
+        addons:\n  codeserver:\n    enabled: false\nconfiguration:\n  configuration.yaml:\
+        \ \"mqtt:\\n  broker: mosquitto.home-assistant.svc.cluster.local\\n  port:\
+        \ 1883\\n  username: mqtt\\n  password: mqtt\\n  discovery: true\\n  discovery_prefix:\
+        \ homeassistant\\n  birth_message:\\n    topic: 'hass/status'\\n    payload:\
+        \ 'online'\\n  will_message:\\n    topic: 'hass/status'\\n    payload: 'offline'\\\
+        n\\nhomeassistant:\\n  auth_provider:\\n    - type: oidc\\n      id: authentik\\\
+        n      issuer: !env_var AUTHENTIK_ISSUER\\n      client_id: !env_var AUTHENTIK_CLIENT_ID\\\
+        n      client_secret: !env_var AUTHENTIK_CLIENT_SECRET\\n      name: Authentik\\\
+        n\"\n  enabled: true\n  forceInit: false\n  trusted_proxies:\n  - 10.42.0.0/16\n\
+        \  - 10.43.0.0/16\n  - 127.0.0.0/8\n  - 192.168.1.0/24\nenvFrom:\n- secretRef:\n\
+        \    name: home-env\ningress:\n  annotations:\n    kubernetes.io/ingress.class:\
+        \ istio\n  className: istio\n  enabled: false\n  external: true\n  hosts:\n\
+        \  - host: home.brandwhisper.cloud\n    paths:\n    - path: /\n      pathType:\
+        \ Prefix\ninitContainers:\n- command:\n  - sh\n  - -c\n  - \"set -e\\napk\
+        \ add --no-cache wget unzip jq > /dev/null 2>&1\\n# HACS\\nif [ ! -d /config/custom_components/hacs\
+        \ ]; then\\n  echo \\\"Installing HACS...\\\"\\n  wget -qO /tmp/hacs.zip https://github.com/hacs/integration/releases/latest/download/hacs.zip\\\
+        n  mkdir -p /config/custom_components/hacs\\n  unzip -o /tmp/hacs.zip -d /config/custom_components/hacs\\\
+        n  rm /tmp/hacs.zip\\nfi\\n# Bermuda BLE Trilateration\\nif [ ! -d /config/custom_components/bermuda\
+        \ ]; then\\n  echo \\\"Installing Bermuda...\\\"\\n  BERMUDA_VER=$(wget -qO-\
+        \ https://api.github.com/repos/agittins/bermuda/releases/latest | jq -r .tag_name)\\\
+        n  wget -qO /tmp/bermuda.zip \\\"https://github.com/agittins/bermuda/releases/download/${BERMUDA_VER}/bermuda.zip\\\
+        \"\\n  mkdir -p /config/custom_components/bermuda\\n  unzip -o /tmp/bermuda.zip\
+        \ -d /config/custom_components/bermuda\\n  rm /tmp/bermuda.zip\\nfi\\necho\
+        \ \\\"Custom components ready.\\\"\\n\"\n  image: alpine:3.21\n  name: init-custom-components\n\
+        \  volumeMounts:\n  - mountPath: /config\n    name: home-assistant\npersistence:\n\
+        \  accessMode: ReadWriteOnce\n  enabled: true\n  size: 10Gi\npodAnnotations:\n\
+        \  container.apparmor.security.beta.kubernetes.io/home-assistant: unconfined\n\
+        probes:\n  liveness:\n    enabled: true\n    initialDelaySeconds: 60\n  readiness:\n\
+        \    enabled: true\n    initialDelaySeconds: 60\n  startup:\n    enabled:\
+        \ true\n    failureThreshold: 30\n    periodSeconds: 10\nsecurityContext:\n\
+        \  capabilities:\n    add:\n    - NET_ADMIN\n    - NET_RAW\nservice:\n  port:\
+        \ 8123\n  type: ClusterIP\n"
+  - repoURL: https://github.com/binary64/moonrepo.git
+    targetRevision: master
+    path: infra/app-of-apps/home-assistant/home-secret
+    directory: {}

@@ -1,13 +1,13 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: frigate
-  namespace: frigate
   annotations:
-    moonrepo.dev/skip-local: "true"
-    reloader.stakater.com/auto: "true"
+    moonrepo.dev/skip-local: 'true'
+    reloader.stakater.com/auto: 'true'
   labels:
     app: frigate
+  name: frigate
+  namespace: frigate
 spec:
   replicas: 1
   selector:
@@ -20,124 +20,124 @@ spec:
       labels:
         app: frigate
     spec:
-      # Run on master (NUC) — LAN access required for camera streams
-      nodeSelector:
-        node-role.kubernetes.io/control-plane: "true"
-      tolerations:
-        - key: node-role.kubernetes.io/master
-          effect: NoSchedule
-        - key: node-role.kubernetes.io/control-plane
-          effect: NoSchedule
-      dnsPolicy: ClusterFirst
       automountServiceAccountToken: false
+      containers:
+      - envFrom:
+        - secretRef:
+            name: frigate-env
+        image: ghcr.io/blakeblackshear/frigate:0.14.1@sha256:656301bd28c08f15a778f1fe37b8332e0ae8189c6311e0fcc58b1e7a8f8ab310
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          httpGet:
+            path: /api/version
+            port: 5000
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        name: frigate
+        ports:
+        - containerPort: 5000
+          name: web
+          protocol: TCP
+        - containerPort: 8554
+          name: rtsp
+          protocol: TCP
+        - containerPort: 8555
+          name: webrtc-tcp
+          protocol: TCP
+        - containerPort: 8555
+          name: webrtc-udp
+          protocol: UDP
+        - containerPort: 1984
+          name: go2rtc-api
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /api/version
+            port: 5000
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: 2000m
+            memory: 2Gi
+          requests:
+            cpu: 250m
+            memory: 512Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            add:
+            - CHOWN
+            - SETUID
+            - SETGID
+            - FOWNER
+            drop:
+            - ALL
+          runAsNonRoot: false
+        volumeMounts:
+        - mountPath: /config/config.yml
+          name: config
+          subPath: config.yml
+        - mountPath: /data
+          name: data
+        - mountPath: /media/frigate
+          name: media
+        - mountPath: /tmp/cache
+          name: cache
+        - mountPath: /dev/shm
+          name: shm
+      dnsPolicy: ClusterFirst
+      initContainers:
+      - command:
+        - sh
+        - -c
+        - 'mkdir -p /dev/shm/logs/frigate /dev/shm/logs/go2rtc /dev/shm/logs/nginx
+          /dev/shm/logs/certsync
+
+          chmod 755 /dev/shm/logs /dev/shm/logs/frigate /dev/shm/logs/go2rtc /dev/shm/logs/nginx
+          /dev/shm/logs/certsync
+
+          '
+        image: busybox:1.36@sha256:73aaf090f3d85aa34ee199857f03fa3a95c8ede2ffd4cc2cdb5b94e566b11662
+        imagePullPolicy: IfNotPresent
+        name: init-shm-logs
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: false
+          runAsUser: 0
+        volumeMounts:
+        - mountPath: /dev/shm
+          name: shm
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: 'true'
       securityContext:
         seccompProfile:
           type: RuntimeDefault
-      initContainers:
-        - name: init-shm-logs
-          # Pre-create /dev/shm/logs subdirs with correct permissions so s6-overlay's
-          # log-prepare service does not need CAP_FOWNER to chmod them at startup.
-          # Runs as root; only needs the shared emptyDir volume.
-          image: busybox:1.36@sha256:73aaf090f3d85aa34ee199857f03fa3a95c8ede2ffd4cc2cdb5b94e566b11662
-          imagePullPolicy: IfNotPresent
-          command:
-            - sh
-            - -c
-            - |
-              mkdir -p /dev/shm/logs/frigate /dev/shm/logs/go2rtc /dev/shm/logs/nginx /dev/shm/logs/certsync
-              chmod 755 /dev/shm/logs /dev/shm/logs/frigate /dev/shm/logs/go2rtc /dev/shm/logs/nginx /dev/shm/logs/certsync
-          securityContext:
-            runAsUser: 0
-            runAsNonRoot: false
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-          volumeMounts:
-            - name: shm
-              mountPath: /dev/shm
-      containers:
-        - name: frigate
-          image: ghcr.io/blakeblackshear/frigate:0.14.1@sha256:656301bd28c08f15a778f1fe37b8332e0ae8189c6311e0fcc58b1e7a8f8ab310
-          imagePullPolicy: IfNotPresent
-          ports:
-            - containerPort: 5000
-              protocol: TCP
-              name: web
-            - containerPort: 8554
-              protocol: TCP
-              name: rtsp
-            - containerPort: 8555
-              protocol: TCP
-              name: webrtc-tcp
-            - containerPort: 8555
-              protocol: UDP
-              name: webrtc-udp
-            - containerPort: 1984
-              protocol: TCP
-              name: go2rtc-api
-          securityContext:
-            runAsNonRoot: false  # Frigate requires root for ffmpeg and /dev/shm access
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-              add:
-                - CHOWN      # s6-overlay needs to chown /dev/shm/logs/* on init
-                - SETUID     # s6-overlay drops to service user after init
-                - SETGID     # s6-overlay drops to service group after init
-                - FOWNER     # s6-overlay log-prepare chmods /dev/shm/logs/* subdirs
-          volumeMounts:
-            - name: config
-              mountPath: /config/config.yml
-              subPath: config.yml
-            - name: data
-              mountPath: /data
-            - name: media
-              mountPath: /media/frigate
-            - name: cache
-              mountPath: /tmp/cache
-            - name: shm
-              mountPath: /dev/shm
-          resources:
-            requests:
-              cpu: 250m
-              memory: 512Mi
-            limits:
-              cpu: 2000m
-              memory: 2Gi
-          livenessProbe:
-            httpGet:
-              path: /api/version
-              port: 5000
-            initialDelaySeconds: 30
-            periodSeconds: 30
-          readinessProbe:
-            httpGet:
-              path: /api/version
-              port: 5000
-            initialDelaySeconds: 15
-            periodSeconds: 10
-      # hostPath volumes are intentional for a single-node NVR deployment.
-      # Recordings and runtime data are non-critical (ephemeral/overwritten by retention policy)
-      # and must live on the host filesystem for performance and persistence across pod restarts.
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/control-plane
       volumes:
-        - name: config
-          configMap:
-            name: frigate-config
-        - name: data
-          hostPath:
-            path: /opt/frigate/data
-            type: DirectoryOrCreate
-        - name: media
-          hostPath:
-            path: /opt/frigate/media
-            type: DirectoryOrCreate
-        - name: cache
-          emptyDir:
-            medium: Memory
-            sizeLimit: 2Gi
-        - name: shm
-          emptyDir:
-            medium: Memory
-            sizeLimit: 256Mi
+      - configMap:
+          name: frigate-config
+        name: config
+      - hostPath:
+          path: /opt/frigate/data
+          type: DirectoryOrCreate
+        name: data
+      - hostPath:
+          path: /opt/frigate/media
+          type: DirectoryOrCreate
+        name: media
+      - emptyDir:
+          medium: Memory
+          sizeLimit: 2Gi
+        name: cache
+      - emptyDir:
+          medium: Memory
+          sizeLimit: 256Mi
+        name: shm

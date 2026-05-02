@@ -1,10 +1,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: start-page
-  namespace: start-page
   labels:
     app: start-page
+  name: start-page
+  namespace: start-page
 spec:
   replicas: 1
   selector:
@@ -15,25 +15,28 @@ spec:
       labels:
         app: start-page
     spec:
+      containers:
+      - envFrom:
+        - secretRef:
+            name: start-env
+        image: nginx:alpine
+        name: nginx
+        ports:
+        - containerPort: 80
+        resources:
+          limits:
+            cpu: 50m
+            memory: 32Mi
+          requests:
+            cpu: 10m
+            memory: 16Mi
+        volumeMounts:
+        - mountPath: /usr/share/nginx/html
+          name: html
+          readOnly: true
       nodeSelector:
         kubernetes.io/hostname: vmi3137202
-      containers:
-        - name: nginx
-          image: nginx:alpine
-          ports:
-            - containerPort: 80
-          volumeMounts:
-            - name: html
-              mountPath: /usr/share/nginx/html
-              readOnly: true
-          resources:
-            requests:
-              memory: 16Mi
-              cpu: 10m
-            limits:
-              memory: 32Mi
-              cpu: 50m
       volumes:
-        - name: html
-          configMap:
-            name: start-page-html
+      - configMap:
+          name: start-page-html
+        name: html

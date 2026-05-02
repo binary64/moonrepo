@@ -20,6 +20,10 @@ spec:
   - repoURL: https://github.com/binary64/moonrepo.git
     targetRevision: master
     path: infra/manifests/litellm
+  - repoURL: https://github.com/binary64/moonrepo.git
+    targetRevision: master
+    path: infra/app-of-apps/litellm
+    directory: {}
   ignoreDifferences:
   - group: gateway.networking.k8s.io
     kind: HTTPRoute

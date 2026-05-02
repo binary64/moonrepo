@@ -4,112 +4,57 @@ metadata:
   name: zigbee2mqtt
   namespace: argocd
   annotations:
-    moonrepo.dev/skip-local: "true"
+    moonrepo.dev/skip-local: 'true'
 spec:
   ignoreDifferences:
-    - group: apps
-      kind: StatefulSet
-      jqPathExpressions:
-        - .spec.volumeClaimTemplates[]?.spec.volumeMode
-        - .spec.volumeClaimTemplates[]?.status
-    - group: ""
-      kind: Service
-      jqPathExpressions:
-        - .spec.ports[]?.nodePort
+  - group: apps
+    kind: StatefulSet
+    jqPathExpressions:
+    - .spec.volumeClaimTemplates[]?.spec.volumeMode
+    - .spec.volumeClaimTemplates[]?.status
+  - group: ''
+    kind: Service
+    jqPathExpressions:
+    - .spec.ports[]?.nodePort
   project: default
-  source:
-    repoURL: https://charts.zigbee2mqtt.io/
-    targetRevision: "2.9.1"
-    chart: zigbee2mqtt
-    helm:
-      releaseName: zigbee2mqtt
-      values: |
-        zigbee2mqtt:
-          frontend:
-            auth_token: KGabURkzkattsvLD5u3iDefsBELCGQ5uduqKWYMJ
-
-          mqtt:
-            server: 'mqtt://mosquitto:1883'
-            username: mqtt
-            password: mqtt
-
-          serial:
-            adapter: ember
-            port: /dev/ttyUSB0
-
-          advanced:
-            network_key:
-              - 231
-              - 8
-              - 97
-              - 166
-              - 138
-              - 38
-              - 9
-              - 36
-              - 36
-              - 155
-              - 111
-              - 51
-              - 190
-              - 211
-              - 211
-              - 14
-            pan_id: 31237
-            channel: 25
-            log_level: info
-
-        service:
-          type: NodePort
-          port: 8080
-
-        statefulset:
-          podAnnotations:
-            traffic.sidecar.istio.io/excludeOutboundPorts: "1883"
-
-          storage:
-            enabled: true
-            size: 10Gi
-            storageClassName: local-path
-
-          resources:
-            requests:
-              cpu: 25m
-              memory: 128Mi
-            limits:
-              cpu: 200m
-              memory: 600Mi
-
-          podSecurityContext:
-            runAsUser: 0
-            runAsGroup: 0
-
-          securityContext:
-            privileged: true
-
-          volumes:
-            - name: zigbee-usb
-              hostPath:
-                path: /dev/serial/by-id/usb-SMLIGHT_SMLIGHT_SLZB-07Mg24_fa2c7763f172ed118d9e75773dbf42d5-if00-port0
-
-          volumeMounts:
-            - name: zigbee-usb
-              mountPath: /dev/ttyUSB0
-
   destination:
     server: https://kubernetes.default.svc
     namespace: home-assistant
-
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
-      - CreateNamespace=true
-      - ServerSideApply=true
+    - CreateNamespace=true
+    - ServerSideApply=true
     retry:
       limit: 5
       backoff:
         duration: 5s
         factor: 2
         maxDuration: 3m
+  sources:
+  - repoURL: https://charts.zigbee2mqtt.io/
+    chart: zigbee2mqtt
+    targetRevision: 2.9.1
+    helm:
+      releaseName: zigbee2mqtt
+      values: "zigbee2mqtt:\n  frontend:\n    auth_token: KGabURkzkattsvLD5u3iDefsBELCGQ5uduqKWYMJ\n\
+        \n  mqtt:\n    server: 'mqtt://mosquitto:1883'\n    username: mqtt\n    password:\
+        \ mqtt\n\n  serial:\n    adapter: ember\n    port: /dev/ttyUSB0\n\n  advanced:\n\
+        \    network_key:\n      - 231\n      - 8\n      - 97\n      - 166\n     \
+        \ - 138\n      - 38\n      - 9\n      - 36\n      - 36\n      - 155\n    \
+        \  - 111\n      - 51\n      - 190\n      - 211\n      - 211\n      - 14\n\
+        \    pan_id: 31237\n    channel: 25\n    log_level: info\n\nservice:\n  type:\
+        \ NodePort\n  port: 8080\n\nstatefulset:\n  podAnnotations:\n    traffic.sidecar.istio.io/excludeOutboundPorts:\
+        \ \"1883\"\n\n  storage:\n    enabled: true\n    size: 10Gi\n    storageClassName:\
+        \ local-path\n\n  resources:\n    requests:\n      cpu: 25m\n      memory:\
+        \ 128Mi\n    limits:\n      cpu: 200m\n      memory: 600Mi\n\n  podSecurityContext:\n\
+        \    runAsUser: 0\n    runAsGroup: 0\n\n  securityContext:\n    privileged:\
+        \ true\n\n  volumes:\n    - name: zigbee-usb\n      hostPath:\n        path:\
+        \ /dev/serial/by-id/usb-SMLIGHT_SMLIGHT_SLZB-07Mg24_fa2c7763f172ed118d9e75773dbf42d5-if00-port0\n\
+        \n  volumeMounts:\n    - name: zigbee-usb\n      mountPath: /dev/ttyUSB0\n"
+  - repoURL: https://github.com/binary64/moonrepo.git
+    targetRevision: master
+    path: infra/app-of-apps/home-assistant/zigbee-secret
+    directory: {}
