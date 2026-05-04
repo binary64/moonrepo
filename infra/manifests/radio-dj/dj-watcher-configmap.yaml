@@ -7,8 +7,8 @@ data:
     \ then\n            LAST_TRACK=\"$TRACK_PATH\"\n            ARTIST=\"$(basename\
     \ \"$(dirname \"$TRACK_PATH\")\")\"\n            TITLE=\"$(basename \"$TRACK_PATH\"\
     \ .mp3)\"\n            TITLE=\"$(basename \"$TITLE\")\"\n            echo \"[dj-watcher]\
-    \ New track: $ARTIST - $TITLE\"\n            export ARTIST TITLE\n           \
-    \ COMMENTARY=$(python3 - <<PY\nimport json, os, datetime\nARTIST = os.environ.get(\"\
+    \ New track: $ARTIST - $TITLE\"\n            COMMENTARY=$(python3 - <<PY\n   \
+    \         export ARTIST TITLE\nimport json, os, datetime\nARTIST = os.environ.get(\"\
     ARTIST\", \"Unknown Artist\")\nTITLE = os.environ.get(\"TITLE\", \"Unknown Title\"\
     )\ncontext = \"Arthur DJ Context \\u2014 James & Abi\\n\\nJames: Technical, direct,\
     \ loves details (PRs, k8s, infra, crypto, money).\\nAbi: Practical, health-conscious,\
