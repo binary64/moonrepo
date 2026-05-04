@@ -4,8 +4,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 const STREAM_URL =
   process.env.NEXT_PUBLIC_STREAM_URL ?? "http://192.168.1.201:30100/stream";
-const RETRY_CAP_MS = 10000;
+// Aggressive retry settings for weak signal areas
+const INITIAL_RETRY_DELAY_MS = 500; // Start fast
+const MAX_RETRY_DELAY_MS = 60000; // Allow up to 60s between retries
+const RETRY_BACKOFF_MULTIPLIER = 1.5; // Gradual increase (was 2)
+const MAX_STALLED_TIMEOUT_MS = 60000; // Wait up to 60s for stalled recovery
 const SKIP_TIMEOUT_MS = 15000;
+const MAX_RETRIES = 0; // 0 = unlimited retries for weak signal resilience
 
 type PlayerState = "idle" | "buffering" | "playing";
 
@@ -43,11 +48,14 @@ export default function RadioPlayer({
   const [skipping, setSkipping] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const retryDelayRef = useRef(1000);
+  const retryDelayRef = useRef(INITIAL_RETRY_DELAY_MS);
+  const retryCountRef = useRef(0);
   const skipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stalledTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const trackAtSkipRef = useRef<string>("");
   const mountedRef = useRef(true);
+  const wasPlayingRef = useRef(false); // Remember play state across retries
+  const onlineHandlerRef = useRef<(() => void) | null>(null);
 
   // Clear skipping state when track changes
   useEffect(() => {
@@ -60,6 +68,10 @@ export default function RadioPlayer({
   const cleanup = useCallback(() => {
     if (retryRef.current) clearTimeout(retryRef.current);
     if (stalledTimeoutRef.current) clearTimeout(stalledTimeoutRef.current);
+    if (onlineHandlerRef.current) {
+      window.removeEventListener("online", onlineHandlerRef.current);
+      onlineHandlerRef.current = null;
+    }
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.removeAttribute("src");
@@ -68,69 +80,126 @@ export default function RadioPlayer({
     }
   }, []);
 
-  const startStream = useCallback(() => {
-    if (!mountedRef.current) return;
-    cleanup();
-    setState("buffering");
-
-    const audio = new Audio();
-    // No crossOrigin — Icecast doesn't send CORS headers
-    audioRef.current = audio;
-
-    audio.src = `${STREAM_URL}?t=${Date.now()}`;
-
-    const onCanPlay = () => {
+  const startStream = useCallback(
+    (isRetry = false) => {
       if (!mountedRef.current) return;
-      audio
-        .play()
-        .then(() => {
-          if (mountedRef.current) {
-            setState("playing");
-            retryDelayRef.current = 1000;
-          }
-        })
-        .catch((err: unknown) => {
-          // Autoplay may be blocked by browser policy — route into retry flow
-          if (!mountedRef.current) return;
-          const message = err instanceof Error ? err.message : String(err);
-          // AbortError means the element was replaced before play() resolved — ignore
-          if (message.includes("AbortError") || message.includes("interrupted"))
-            return;
-          handleError();
-        });
-    };
 
-    const handleError = () => {
-      if (!mountedRef.current) return;
-      setState("buffering");
-      retryRef.current = setTimeout(() => {
-        retryDelayRef.current = Math.min(
-          retryDelayRef.current * 2,
-          RETRY_CAP_MS,
-        );
-        startStream();
-      }, retryDelayRef.current);
-    };
-
-    audio.addEventListener("canplay", onCanPlay, { once: true });
-    audio.addEventListener("error", handleError);
-    audio.addEventListener("stalled", () => {
-      // Clear any existing stalled timer to avoid orphaned timers causing duplicate retries
-      if (stalledTimeoutRef.current !== null) {
-        clearTimeout(stalledTimeoutRef.current);
-        stalledTimeoutRef.current = null;
-      }
-      // Only retry if we haven't started playing yet, or if actually stuck
-      stalledTimeoutRef.current = setTimeout(() => {
-        stalledTimeoutRef.current = null;
-        if (audioRef.current && audioRef.current.readyState < 3) {
-          handleError();
+      // On retry, check if we've exceeded max attempts (if set)
+      if (isRetry) {
+        retryCountRef.current += 1;
+        if (MAX_RETRIES > 0 && retryCountRef.current > MAX_RETRIES) {
+          console.error(
+            `Radio player: exceeded ${MAX_RETRIES} retries, giving up`,
+          );
+          setState("idle");
+          return;
         }
-      }, 20000);
-    });
+      } else {
+        // Fresh start — reset counters
+        retryCountRef.current = 0;
+        retryDelayRef.current = INITIAL_RETRY_DELAY_MS;
+      }
 
-    audio.load();
-  }, [cleanup]);
+      cleanup();
+      setState("buffering");
+
+      const audio = new Audio();
+      // No crossOrigin — Icecast doesn't send CORS headers
+      audioRef.current = audio;
+
+      // Cache-busting query param to force fresh connection
+      audio.src = `${STREAM_URL}?t=${Date.now()}`;
+
+      const onCanPlay = () => {
+        if (!mountedRef.current) return;
+        audio
+          .play()
+          .then(() => {
+            if (mountedRef.current) {
+              setState("playing");
+              // Reset retry state on successful playback
+              retryDelayRef.current = INITIAL_RETRY_DELAY_MS;
+              retryCountRef.current = 0;
+            }
+          })
+          .catch((err: unknown) => {
+            if (!mountedRef.current) return;
+            const message = err instanceof Error ? err.message : String(err);
+            if (
+              message.includes("AbortError") ||
+              message.includes("interrupted")
+            )
+              return;
+            handleError();
+          });
+      };
+
+      const handleError = () => {
+        if (!mountedRef.current) return;
+        setState("buffering");
+
+        // Calculate next delay: exponential backoff but gradual (1.5x)
+        const nextDelay = Math.min(
+          retryDelayRef.current * RETRY_BACKOFF_MULTIPLIER,
+          MAX_RETRY_DELAY_MS,
+        );
+        retryDelayRef.current = nextDelay;
+
+        // Log retry attempt for debugging weak signal areas
+        console.log(
+          `Radio retry #${retryCountRef.current} in ${Math.round(
+            nextDelay / 1000,
+          )}s`,
+        );
+
+        retryRef.current = setTimeout(() => {
+          startStream(true); // Retry with backoff
+        }, nextDelay);
+      };
+
+      const handleStalled = () => {
+        // Clear any existing stalled timer to avoid orphaned timers causing duplicate retries
+        if (stalledTimeoutRef.current !== null) {
+          clearTimeout(stalledTimeoutRef.current);
+          stalledTimeoutRef.current = null;
+        }
+        // Wait longer before retrying — gives weak signal time to recover
+        stalledTimeoutRef.current = setTimeout(() => {
+          stalledTimeoutRef.current = null;
+          if (audioRef.current && audioRef.current.readyState < 3) {
+            console.log("Stream stalled (readyState < 3), triggering retry");
+            handleError();
+          }
+        }, MAX_STALLED_TIMEOUT_MS);
+      };
+
+      const handleWaiting = () => {
+        // HTMLMediaElement.WAITING event — buffering due to lack of data
+        // We keep state as "buffering" but don't retry yet
+        console.log("Stream buffering (waiting event)");
+      };
+
+      audio.addEventListener("canplay", onCanPlay, { once: true });
+      audio.addEventListener("error", handleError);
+      audio.addEventListener("stalled", handleStalled);
+      audio.addEventListener("waiting", handleWaiting);
+
+      // Network recovery: if browser detects network coming back, retry immediately
+      const handleOnline = () => {
+        console.log("Network restored — retrying stream immediately");
+        if (retryRef.current) clearTimeout(retryRef.current);
+        retryDelayRef.current = INITIAL_RETRY_DELAY_MS;
+        startStream(true);
+      };
+
+      // Store handler in ref so cleanup can remove it
+      onlineHandlerRef.current = handleOnline;
+      window.addEventListener("online", handleOnline);
+
+      audio.load();
+    },
+    [cleanup],
+  );
 
   const toggle = useCallback(() => {
     if (state === "idle") {
