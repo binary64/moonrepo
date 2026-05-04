@@ -28,7 +28,7 @@ data:
     \ welcoming\n- NO generic 'here's a song' \u2014 talk to friends.\"\"\"\nimport\
     \ urllib.request\nLITELLM_KEY = os.environ.get(\"LITELLM_MASTER_KEY\", \"\")\n\
     if not LITELLM_KEY:\n    print(\"[[skip]]\")\n    exit(0)\npayload = json.dumps({\n\
-    \    \"model\": \"claude-3-haiku-20240307\",\n    \"messages\": [{\"role\": \"\
+    \    \"model\": \"gemini-3-flash-preview\",\n    \"messages\": [{\"role\": \"\
     user\", \"content\": prompt}],\n    \"max_tokens\": 150, \"temperature\": 0.8\n\
     }).encode()\nreq = urllib.request.Request(\n    \"http://litellm.litellm.svc.cluster.local:4000/v1/chat/completions\"\
     ,\n    data=payload,\n    headers={\n        \"Authorization\": f\"Bearer {LITELLM_KEY}\"\
