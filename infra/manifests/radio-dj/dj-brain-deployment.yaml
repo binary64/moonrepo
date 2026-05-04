@@ -18,7 +18,10 @@ spec:
         app: dj-brain
     spec:
       containers:
-      - env:
+      - command:
+        - /bin/bash
+        - /data/radio/dj-watcher.sh
+        env:
         - name: OPENAI_API_KEY
           valueFrom:
             secretKeyRef:
