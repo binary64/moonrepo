@@ -126,7 +126,7 @@ export default function RadioPlayer({
         if (audioRef.current && audioRef.current.readyState < 3) {
           handleError();
         }
-      }, 5000);
+      }, 20000);
     });
 
     audio.load();
