@@ -75,6 +75,7 @@ spec:
           readOnly: true
         - mountPath: /radio/dj-watcher.sh
           name: dj-watcher-script
+          subPath: dj-watcher.sh
       nodeSelector:
         kubernetes.io/hostname: vmi3137202
       securityContext:
