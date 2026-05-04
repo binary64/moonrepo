@@ -75,7 +75,10 @@ PREPARE_RESPONSE=$(curl -sf \
 DOWNLOAD_URL=$(echo "$PREPARE_RESPONSE" | jq -r '.url // empty')
 if [ -z "$DOWNLOAD_URL" ]; then
     echo "[dj-commentary] ERROR: No URL in TTS response: $PREPARE_RESPONSE" >&2
-    exit 1
+    # exit 1 — non-fatal
+
+    continue
+
 fi
 
 # Step 2: Download the MP3
