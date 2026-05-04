@@ -88,45 +88,19 @@ fastify.register(async (webhookPlugin) => {
   );
 
   webhookPlugin.post("/webhook", async (request, reply) => {
-    const sig = request.headers["x-hub-signature-256"] as string | undefined;
-    if (!sig) {
-      console.warn("Missing X-Hub-Signature-256 header");
-      return reply.code(401).send({ error: "Missing signature" });
+    const sigCheck = verifySignature(request);
+    if (!sigCheck.ok) {
+      return reply.code(sigCheck.code).send({ error: sigCheck.error });
     }
 
-    const rawBody = request.body as Buffer;
-    if (!Buffer.isBuffer(rawBody)) {
-      console.warn("Webhook payload is not a raw JSON buffer");
-      return reply.code(400).send({ error: "Invalid payload type" });
-    }
-
-    const expected = `sha256=${crypto.createHmac("sha256", WEBHOOK_SECRET).update(rawBody).digest("hex")}`;
-
-    const sigBuf = Buffer.from(sig);
-    const expBuf = Buffer.from(expected);
-    if (
-      sigBuf.length !== expBuf.length ||
-      !crypto.timingSafeEqual(sigBuf, expBuf)
-    ) {
-      console.warn("Invalid webhook signature");
-      return reply.code(401).send({ error: "Invalid signature" });
+    const parsed = parsePayload(sigCheck.rawBody);
+    if (!parsed.ok) {
+      return reply.code(400).send({ error: parsed.error });
     }
 
     const event = request.headers["x-github-event"] as string | undefined;
-    let payload: Record<string, unknown>;
-
     try {
-      payload = JSON.parse(rawBody.toString());
-    } catch (err: unknown) {
-      console.error(
-        "Failed to parse webhook payload:",
-        err instanceof Error ? err.message : String(err),
-      );
-      return reply.code(400).send({ error: "Invalid JSON payload" });
-    }
-
-    try {
-      await handleEvent(event || "", payload);
+      await handleEvent(event || "", parsed.payload);
       return reply.code(200).send({ ok: true });
     } catch (err: unknown) {
       console.error(
@@ -137,6 +111,52 @@ fastify.register(async (webhookPlugin) => {
     }
   });
 }); // end webhookPlugin
+
+type SigOk = { ok: true; rawBody: Buffer };
+type SigErr = { ok: false; code: number; error: string };
+
+function verifySignature(request: {
+  headers: Record<string, unknown>;
+  body: unknown;
+}): SigOk | SigErr {
+  const sig = request.headers["x-hub-signature-256"] as string | undefined;
+  if (!sig) {
+    console.warn("Missing X-Hub-Signature-256 header");
+    return { ok: false, code: 401, error: "Missing signature" };
+  }
+  const rawBody = request.body as Buffer;
+  if (!Buffer.isBuffer(rawBody)) {
+    console.warn("Webhook payload is not a raw JSON buffer");
+    return { ok: false, code: 400, error: "Invalid payload type" };
+  }
+  const expected = `sha256=${crypto.createHmac("sha256", WEBHOOK_SECRET).update(rawBody).digest("hex")}`;
+  const sigBuf = Buffer.from(sig);
+  const expBuf = Buffer.from(expected);
+  if (
+    sigBuf.length !== expBuf.length ||
+    !crypto.timingSafeEqual(sigBuf, expBuf)
+  ) {
+    console.warn("Invalid webhook signature");
+    return { ok: false, code: 401, error: "Invalid signature" };
+  }
+  return { ok: true, rawBody };
+}
+
+function parsePayload(
+  rawBody: Buffer,
+):
+  | { ok: true; payload: Record<string, unknown> }
+  | { ok: false; error: string } {
+  try {
+    return { ok: true, payload: JSON.parse(rawBody.toString()) };
+  } catch (err: unknown) {
+    console.error(
+      "Failed to parse webhook payload:",
+      err instanceof Error ? err.message : String(err),
+    );
+    return { ok: false, error: "Invalid JSON payload" };
+  }
+}
 
 type PullRequestRef = {
   number: number;
