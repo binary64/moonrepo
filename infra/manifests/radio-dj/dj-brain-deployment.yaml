@@ -23,7 +23,7 @@ spec:
         - name: LITELLM_MASTER_KEY
           valueFrom:
             secretKeyRef:
-              key: key
+              key: LITELLM_MASTER_KEY
               name: litellm-gateway-key
         image: ghcr.io/binary64/dj-brain:latest
         imagePullPolicy: Always
