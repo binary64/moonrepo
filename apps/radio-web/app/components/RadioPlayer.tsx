@@ -57,7 +57,7 @@ export default function RadioPlayer({
   const stalledTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const trackAtSkipRef = useRef<string>("");
   const mountedRef = useRef(true);
-  const wasPlayingRef = useRef(false); // Remember play state across retries
+  const _wasPlayingRef = useRef(false); // Remember play state across retries (reserved for retry-state preservation)
   const onlineHandlerRef = useRef<(() => void) | null>(null);
   const mediaSourceRef = useRef<MediaSource | null>(null);
   const sourceBufferRef = useRef<SourceBuffer | null>(null);
@@ -311,6 +311,14 @@ export default function RadioPlayer({
       setSkipping(false);
     }
   }, [skipping, state, currentTrack]);
+  const toggle = useCallback(() => {
+    if (state === "playing") {
+      cleanup();
+      setState("idle");
+    } else {
+      startStream();
+    }
+  }, [state, cleanup, startStream]);
 
   return (
     <div className="flex items-center justify-center gap-6">
