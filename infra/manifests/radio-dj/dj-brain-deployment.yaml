@@ -36,6 +36,8 @@ spec:
           name: schedule
         - mountPath: /data/radio-dj-script
           name: dj-watcher-script
+      imagePullSecrets:
+      - name: dj-brain-secret
       volumes:
       - emptyDir: {}
         name: state
