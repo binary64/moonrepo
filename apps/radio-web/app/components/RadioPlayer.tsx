@@ -10,6 +10,9 @@ const MAX_RETRY_DELAY_MS = 60000; // Allow up to 60s between retries
 const RETRY_BACKOFF_MULTIPLIER = 1.5; // Gradual increase (was 2)
 const MAX_STALLED_TIMEOUT_MS = 60000; // Wait up to 60s for stalled recovery
 const SKIP_TIMEOUT_MS = 15000;
+const TARGET_BUFFER_SECONDS = 30; // How many seconds to buffer before playback starts
+const MAX_BUFFER_SECONDS = 60; // Hard cap — prevents unbounded memory growth
+
 const MAX_RETRIES = 0; // 0 = unlimited retries for weak signal resilience
 
 type PlayerState = "idle" | "buffering" | "playing";
@@ -54,8 +57,13 @@ export default function RadioPlayer({
   const stalledTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const trackAtSkipRef = useRef<string>("");
   const mountedRef = useRef(true);
-  const wasPlayingRef = useRef(false); // Remember play state across retries
+  const _wasPlayingRef = useRef(false); // Remember play state across retries (reserved for retry-state preservation)
   const onlineHandlerRef = useRef<(() => void) | null>(null);
+  const mediaSourceRef = useRef<MediaSource | null>(null);
+  const sourceBufferRef = useRef<SourceBuffer | null>(null);
+  const fetchControllerRef = useRef<AbortController | null>(null);
+  const bufferedSecondsRef = useRef(0);
+  const chunkQueueRef = useRef<Uint8Array[]>([]);
 
   // Clear skipping state when track changes
   useEffect(() => {
@@ -72,11 +80,74 @@ export default function RadioPlayer({
       window.removeEventListener("online", onlineHandlerRef.current);
       onlineHandlerRef.current = null;
     }
+    if (fetchControllerRef.current) {
+      fetchControllerRef.current.abort();
+      fetchControllerRef.current = null;
+    }
+    if (sourceBufferRef.current) {
+      try {
+        sourceBufferRef.current.abort();
+      } catch (_) {}
+      sourceBufferRef.current = null;
+    }
+    if (mediaSourceRef.current) {
+      try {
+        mediaSourceRef.current.endOfStream();
+      } catch (_) {}
+      mediaSourceRef.current = null;
+    }
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.removeAttribute("src");
       audioRef.current.load();
       audioRef.current = null;
+    }
+    chunkQueueRef.current = [];
+    bufferedSecondsRef.current = 0;
+  }, []);
+
+  // Estimate MP3 seconds from byte count (192kbps ≈ 24KB/s)
+  const processBuffer = useCallback(() => {
+    if (!sourceBufferRef.current || sourceBufferRef.current.updating) return;
+
+    const queue = chunkQueueRef.current;
+    if (queue.length === 0) return;
+
+    const totalBufferedBytes = queue.reduce(
+      (sum, chunk) => sum + chunk.byteLength,
+      0,
+    );
+    const totalSeconds = totalBufferedBytes / 24000; // 192kbps ≈ 24KB/s
+
+    // Only start playback once we've hit target buffer
+    if (totalSeconds < TARGET_BUFFER_SECONDS) {
+      return;
+    }
+
+    // Enforce hard cap to prevent unbounded memory growth
+    if (totalSeconds > MAX_BUFFER_SECONDS) {
+      console.log(
+        `Buffer cap hit (${totalSeconds.toFixed(1)}s > ${MAX_BUFFER_SECONDS}s) — stopping fetch`,
+      );
+      return;
+    }
+
+    // Concatenate all queued chunks
+    const totalLength = queue.reduce((sum, chunk) => sum + chunk.byteLength, 0);
+    const merged = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const chunk of queue) {
+      merged.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    chunkQueueRef.current = [];
+
+    try {
+      sourceBufferRef.current.appendBuffer(merged);
+      bufferedSecondsRef.current = totalSeconds;
+      console.log(`Buffer: appended ${Math.round(totalSeconds)}s of audio`);
+    } catch (err) {
+      console.error("SourceBuffer append error:", err);
     }
   }, []);
 
@@ -84,7 +155,6 @@ export default function RadioPlayer({
     (isRetry = false) => {
       if (!mountedRef.current) return;
 
-      // On retry, check if we've exceeded max attempts (if set)
       if (isRetry) {
         retryCountRef.current += 1;
         if (MAX_RETRIES > 0 && retryCountRef.current > MAX_RETRIES) {
@@ -95,75 +165,101 @@ export default function RadioPlayer({
           return;
         }
       } else {
-        // Fresh start — reset counters
         retryCountRef.current = 0;
         retryDelayRef.current = INITIAL_RETRY_DELAY_MS;
       }
 
       cleanup();
       setState("buffering");
+      bufferedSecondsRef.current = 0;
+      chunkQueueRef.current = [];
 
       const audio = new Audio();
-      // No crossOrigin — Icecast doesn't send CORS headers
       audioRef.current = audio;
 
-      // Cache-busting query param to force fresh connection
-      audio.src = `${STREAM_URL}?t=${Date.now()}`;
+      // Use MediaSource for explicit buffer control
+      const mediaSource = new MediaSource();
+      mediaSourceRef.current = mediaSource;
+      audio.src = URL.createObjectURL(mediaSource);
 
-      const onCanPlay = () => {
+      mediaSource.addEventListener("sourceopen", async () => {
         if (!mountedRef.current) return;
-        audio
-          .play()
-          .then(() => {
-            if (mountedRef.current) {
-              setState("playing");
-              // Reset retry state on successful playback
-              retryDelayRef.current = INITIAL_RETRY_DELAY_MS;
-              retryCountRef.current = 0;
-            }
-          })
-          .catch((err: unknown) => {
-            if (!mountedRef.current) return;
-            const message = err instanceof Error ? err.message : String(err);
-            if (
-              message.includes("AbortError") ||
-              message.includes("interrupted")
-            )
-              return;
-            handleError();
+
+        console.log("MediaSource opened, creating SourceBuffer");
+        const sourceBuffer = mediaSource.addSourceBuffer("audio/mpeg");
+        sourceBufferRef.current = sourceBuffer;
+
+        sourceBuffer.addEventListener("updateend", () => {
+          if (audio.readyState >= 3 && state === "buffering") {
+            setState("playing");
+          }
+          processBuffer();
+        });
+
+        sourceBuffer.addEventListener("error", (e) => {
+          console.error("SourceBuffer error:", e);
+          handleError();
+        });
+
+        try {
+          fetchControllerRef.current = new AbortController();
+          const res = await fetch(STREAM_URL, {
+            signal: fetchControllerRef.current.signal,
+            cache: "no-store",
           });
-      };
+
+          if (!res.ok || !res.body) {
+            throw new Error(`Fetch failed: ${res.status}`);
+          }
+
+          const reader = res.body.getReader();
+          const pump = async () => {
+            if (!mountedRef.current) return;
+            try {
+              const { done, value } = await reader.read();
+              if (done) {
+                console.log("Stream ended — restarting");
+                handleError();
+                return;
+              }
+              chunkQueueRef.current.push(value);
+              processBuffer();
+              pump();
+            } catch (err: unknown) {
+              if (err instanceof Error && err.name === "AbortError") return;
+              console.error("Stream read error:", err);
+              handleError();
+            }
+          };
+          pump();
+        } catch (err: unknown) {
+          if (err instanceof Error && err.name === "AbortError") return;
+          console.error("Fetch init error:", err);
+          handleError();
+        }
+      });
 
       const handleError = () => {
         if (!mountedRef.current) return;
         setState("buffering");
-
-        // Calculate next delay: exponential backoff but gradual (1.5x)
         const nextDelay = Math.min(
           retryDelayRef.current * RETRY_BACKOFF_MULTIPLIER,
           MAX_RETRY_DELAY_MS,
         );
         retryDelayRef.current = nextDelay;
-
-        // Log retry attempt for debugging weak signal areas
         console.log(
-          `Radio retry #${retryCountRef.current} in ${Math.round(
-            nextDelay / 1000,
-          )}s`,
+          `Radio retry #${retryCountRef.current} in ${Math.round(nextDelay / 1000)}s`,
         );
-
         retryRef.current = setTimeout(() => {
-          startStream(true); // Retry with backoff
+          startStream(true);
         }, nextDelay);
       };
 
       const handleStalled = () => {
-        // Clear any existing stalled timer to avoid orphaned timers causing duplicate retries
         if (stalledTimeoutRef.current !== null) {
           clearTimeout(stalledTimeoutRef.current);
           stalledTimeoutRef.current = null;
         }
-        // Wait longer before retrying — gives weak signal time to recover
         stalledTimeoutRef.current = setTimeout(() => {
           stalledTimeoutRef.current = null;
           if (audioRef.current && audioRef.current.readyState < 3) {
@@ -174,41 +270,25 @@ export default function RadioPlayer({
       };
 
       const handleWaiting = () => {
-        // HTMLMediaElement.WAITING event — buffering due to lack of data
-        // We keep state as "buffering" but don't retry yet
         console.log("Stream buffering (waiting event)");
       };
 
-      audio.addEventListener("canplay", onCanPlay, { once: true });
-      audio.addEventListener("error", handleError);
-      audio.addEventListener("stalled", handleStalled);
-      audio.addEventListener("waiting", handleWaiting);
-
-      // Network recovery: if browser detects network coming back, retry immediately
       const handleOnline = () => {
         console.log("Network restored — retrying stream immediately");
         if (retryRef.current) clearTimeout(retryRef.current);
         retryDelayRef.current = INITIAL_RETRY_DELAY_MS;
         startStream(true);
       };
-
-      // Store handler in ref so cleanup can remove it
       onlineHandlerRef.current = handleOnline;
       window.addEventListener("online", handleOnline);
 
-      audio.load();
+      audio.addEventListener("canplay", () => console.log("Audio can play"));
+      audio.addEventListener("error", handleError);
+      audio.addEventListener("stalled", handleStalled);
+      audio.addEventListener("waiting", handleWaiting);
     },
-    [cleanup],
+    [cleanup, processBuffer, state],
   );
-
-  const toggle = useCallback(() => {
-    if (state === "idle") {
-      startStream();
-    } else {
-      cleanup();
-      setState("idle");
-    }
-  }, [state, startStream, cleanup]);
 
   const skip = useCallback(async () => {
     if (skipping || state !== "playing") return;
@@ -231,15 +311,14 @@ export default function RadioPlayer({
       setSkipping(false);
     }
   }, [skipping, state, currentTrack]);
-
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
+  const toggle = useCallback(() => {
+    if (state === "playing") {
       cleanup();
-      if (skipTimeoutRef.current) clearTimeout(skipTimeoutRef.current);
-    };
-  }, [cleanup]);
+      setState("idle");
+    } else {
+      startStream();
+    }
+  }, [state, cleanup, startStream]);
 
   return (
     <div className="flex items-center justify-center gap-6">

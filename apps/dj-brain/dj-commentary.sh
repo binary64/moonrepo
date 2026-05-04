@@ -51,7 +51,6 @@ cleanup() {
 trap cleanup EXIT
 
 # Build auth header
-AUTH_HEADER=""
 if [ -n "$TTS_AUTH_TOKEN" ]; then
     AUTH_HEADER="Authorization: Bearer ${TTS_AUTH_TOKEN}"
 fi
