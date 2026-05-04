@@ -1,71 +1,121 @@
 #!/bin/bash
-set -e
-EVENT_FILE="/state/new-track-event"
-LAST_TRACK=""
-echo "[dj-watcher] Started. Polling ${EVENT_FILE} every 5s..."
-while true; do
-    if [ -f "$EVENT_FILE" ]; then
-        TRACK_PATH=$(cat "$EVENT_FILE")
-        if [ -n "$TRACK_PATH" ] && [ "$TRACK_PATH" != "$LAST_TRACK" ]; then
-            LAST_TRACK="$TRACK_PATH"
-            ARTIST="$(basename "$(dirname "$TRACK_PATH")")"
-            TITLE="$(basename "$TRACK_PATH" .mp3)"
-            TITLE="$(basename "$TITLE")"
-            echo "[dj-watcher] New track: $ARTIST - $TITLE"
-            export ARTIST TITLE
-            COMMENTARY=$(python3 - <<PY
-import json, os, datetime
-ARTIST = os.environ.get("ARTIST", "Unknown Artist")
-TITLE = os.environ.get("TITLE", "Unknown Title")
-context = "Arthur DJ Context \u2014 James & Abi\n\nJames: Technical, direct, loves details (PRs, k8s, infra, crypto, money).\nAbi: Practical, health-conscious, values clarity. PoTS 12 years, hypermobile, bereavement recovery (2y). \nCurrently 61.3kg, maintenance/strength phase. Carb rotation monthly (rice). Blood work good (Jan). \nMilo digestive: rice-sensitive, on tripe-only + sweet potato trial. Wales trip 30 May-1 Jun.\nTravel: Abi packs/logistics; James's readiness bottleneck. Service stops: Burger King/coffee for James + secure dog area for Milo.\nGarden: Sunny border complete (peony + 45 bulbs + 5 perennials). Broad beans planted. 11 weeks to early July.\nGoal: wellbeing, FI (new house+pool, 2 cars, 7 holidays/yr), longevity."
-prompt = f"""You are Cara, Arthur's radio DJ — warm, witty, genuinely passionate about music.
+# dj-commentary.sh — Generate TTS commentary and inject into Liquidsoap queue
+# Usage: dj-commentary.sh <dj_name> <track_name> <text>
+#
+# Calls the tts-server to generate speech, pads with 300ms silence for
+# smooth ducking lead-in, then pushes to the appropriate Liquidsoap queue.
 
-Context:
-{context}
+set -euo pipefail
 
-Now: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}
-Track: {ARTIST} — "{TITLE}"
+DJ_NAME="${1:?Usage: dj-commentary.sh <dj_name> <track_name> <text>}"
+TRACK_NAME="${2:?Usage: dj-commentary.sh <dj_name> <track_name> <text>}"
+TEXT="${3:?Usage: dj-commentary.sh <dj_name> <track_name> <text>}"
 
-Generate 1-2 sentence radio intro/outro that:
-- Feels spontaneous & personalised to James & Abi
-- References something relevant (garden, health, travel) if apt
-- Matches Cara: upbeat, slightly cheeky, always welcoming
-- NO generic 'here's a song' — talk to friends."""
-import urllib.request
-LITELLM_KEY = os.environ.get("LITELLM_MASTER_KEY", "")
-if not LITELLM_KEY:
-    print("[[skip]]")
-    exit(0)
-payload = json.dumps({
-    "model": "gemini-3-flash-preview",
-    "messages": [{"role": "user", "content": prompt}],
-    "max_tokens": 150, "temperature": 0.8
-}).encode()
-req = urllib.request.Request(
-    "http://litellm.litellm.svc.cluster.local:4000/v1/chat/completions",
-    data=payload,
-    headers={
-        "Authorization": f"Bearer {LITELLM_KEY}",
-        "Content-Type": "application/json"
-    },
-    method="POST"
-)
-try:
-    with urllib.request.urlopen(req, timeout=10) as resp:
-        result = json.loads(resp.read().decode())
-        text = result["choices"][0]["message"]["content"].strip()
-        text = text.replace('\n', ' ').strip()
-        if text.startswith('"') and text.endswith('"'):
-            text = text[1:-1]
-        print(text)
-except Exception as e:
-    print(f"[[error:{e}]]")
-PY
-)
-            if [ -n "$COMMENTARY" ] && [[ ! "$COMMENTARY" == *"[[skip]]"* ]] && [[ ! "$COMMENTARY" == *"[[error:"* ]]; then
-                /radio/dj-commentary.sh "$ARTIST" "$TITLE" "$COMMENTARY"
-            fi
-        fi
-    fi
-    sleep 5
-done
+# TTS server URL — plain HTTP is intentional: the cluster runs on a single node
+# (vmi3137202) so dj-brain → tts-server traffic stays on localhost/pod network.
+# TLS termination is handled by Istio at the ingress layer for external access.
+# If the TTS server moves off-node, switch this to HTTPS.
+TTS_SERVER_URL="${TTS_SERVER_URL:-http://tts-server.tts-server.svc.cluster.local:3090}"
+TTS_AUTH_TOKEN="${TTS_AUTH_TOKEN:-}"
+LIQUIDSOAP_HOST="${LIQUIDSOAP_HOST:-liquidsoap.radio-dj.svc.cluster.local}"
+LIQUIDSOAP_PORT="${LIQUIDSOAP_PORT:-1234}"
+
+# Voice IDs
+ARTHUR_VOICE_ID="b4e39673-3fec-446a-a965-6517b5e0ea52"
+CARA_VOICE_ID="7c45223a-60a8-45e5-9c74-0339f354ca81"
+
+# Determine voice ID and queue name from DJ name
+case "${DJ_NAME,,}" in
+    arthur)
+        VOICE_ID="$ARTHUR_VOICE_ID"
+        QUEUE_NAME="queue_arthur"
+        ;;
+    cara)
+        VOICE_ID="$CARA_VOICE_ID"
+        QUEUE_NAME="queue_cara"
+        ;;
+    *)
+        echo "[dj-commentary] Unknown DJ: $DJ_NAME" >&2
+        exit 1
+        ;;
+esac
+
+# Generate unique filename
+CLIP_ID="dj-$(date +%s)-$$"
+RAW_FILE="/state/${CLIP_ID}-raw.mp3"
+PADDED_FILE="/state/${CLIP_ID}.mp3"
+
+cleanup() {
+    rm -f "$RAW_FILE" "$PADDED_FILE" 2>/dev/null || true
+}
+trap cleanup EXIT
+
+# Build auth header
+if [ -n "$TTS_AUTH_TOKEN" ]; then
+    AUTH_HEADER="Authorization: Bearer ${TTS_AUTH_TOKEN}"
+fi
+
+# Step 1: Call /prepare to generate TTS
+echo "[dj-commentary] Generating TTS for DJ $DJ_NAME: ${TEXT:0:60}..."
+PREPARE_RESPONSE=$(curl -sf \
+    --max-time 30 \
+    -X POST \
+    -H "Content-Type: application/json" \
+    ${AUTH_HEADER:+-H "$AUTH_HEADER"} \
+    -d "$(jq -n \
+        --arg text "$TEXT" \
+        --arg voice_id "$VOICE_ID" \
+        '{utterances: [{text: $text, voice: {id: $voice_id}}], format: {type: "mp3"}}')" \
+    "${TTS_SERVER_URL}/prepare") || {
+    echo "[dj-commentary] ERROR: TTS /prepare failed" >&2
+    # exit 1 — allow continuing
+}
+
+# Extract download URL from response
+DOWNLOAD_URL=$(echo "$PREPARE_RESPONSE" | jq -r '.url // empty')
+if [ -z "$DOWNLOAD_URL" ]; then
+    echo "[dj-commentary] ERROR: No URL in TTS response: $PREPARE_RESPONSE" >&2
+    exit 1
+fi
+
+# Step 2: Download the MP3
+echo "[dj-commentary] Downloading TTS clip from $DOWNLOAD_URL..."
+curl -sf --max-time 30 \
+    ${AUTH_HEADER:+-H "$AUTH_HEADER"} \
+    -o "$RAW_FILE" \
+    "$DOWNLOAD_URL" || {
+    echo "[dj-commentary] ERROR: Failed to download TTS clip" >&2
+    exit 1
+}
+
+# Verify we got a valid file
+if [ ! -s "$RAW_FILE" ]; then
+    echo "[dj-commentary] ERROR: Downloaded file is empty" >&2
+    exit 1
+fi
+
+# Step 3: Pad 300ms silence at start for smooth ducking lead-in
+echo "[dj-commentary] Padding 300ms silence..."
+ffmpeg -y -loglevel error \
+    -f lavfi -i "anullsrc=r=44100:cl=stereo" \
+    -i "$RAW_FILE" \
+    -filter_complex "[0]atrim=0:0.3[silence];[silence][1:a]concat=n=2:v=0:a=1" \
+    "$PADDED_FILE" || {
+    echo "[dj-commentary] WARN: ffmpeg padding failed, using raw file" >&2
+    cp "$RAW_FILE" "$PADDED_FILE"
+}
+
+# Step 4: Push to Liquidsoap queue via telnet
+echo "[dj-commentary] Pushing to ${QUEUE_NAME} via ${LIQUIDSOAP_HOST}:${LIQUIDSOAP_PORT}..."
+PUSH_RESPONSE=$(echo "${QUEUE_NAME}.push ${PADDED_FILE}" | nc -w2 "$LIQUIDSOAP_HOST" "$LIQUIDSOAP_PORT" 2>&1) || {
+    echo "[dj-commentary] ERROR: Failed to push to Liquidsoap queue" >&2
+    exit 1
+}
+
+# On success, disable the EXIT trap for PADDED_FILE — schedule delayed cleanup
+# instead so Liquidsoap has time to read the file before it's removed.
+trap - EXIT
+rm -f "$RAW_FILE" 2>/dev/null || true
+(sleep "${CLEANUP_DELAY_SECS:-30}" && rm -f "$PADDED_FILE") &
+
+echo "[dj-commentary] Done — DJ $DJ_NAME commentary queued ($CLIP_ID)"
