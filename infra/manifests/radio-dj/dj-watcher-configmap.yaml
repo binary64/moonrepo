@@ -44,6 +44,9 @@ data:
     \n            fi\n        fi\n    fi\n    sleep 5\ndone\n"
 kind: ConfigMap
 metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+    moonrepo.dev/skip-local: "true"
   labels:
     argocd.argoproj.io/instance: radio-dj
   name: dj-watcher-script
