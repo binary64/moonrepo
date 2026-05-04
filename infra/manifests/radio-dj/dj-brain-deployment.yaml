@@ -25,6 +25,11 @@ spec:
             secretKeyRef:
               key: LITELLM_MASTER_KEY
               name: litellm-gateway-key
+        - name: TTS_AUTH_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: tts-auth-token
+              key: auth-token
         image: ghcr.io/binary64/dj-brain:latest
         imagePullPolicy: Always
         name: dj-brain

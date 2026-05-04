@@ -68,7 +68,7 @@ PREPARE_RESPONSE=$(curl -sf \
         '{utterances: [{text: $text, voice: {id: $voice_id}}], format: {type: "mp3"}}')" \
     "${TTS_SERVER_URL}/prepare") || {
     echo "[dj-commentary] ERROR: TTS /prepare failed" >&2
-    exit 1
+    # exit 1 — allow continuing
 }
 
 # Extract download URL from response
