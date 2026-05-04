@@ -26,6 +26,7 @@ spec:
               key: key
               name: litellm-gateway-key
         image: ghcr.io/binary64/dj-brain:latest
+        imagePullPolicy: Always
         name: dj-brain
         volumeMounts:
         - mountPath: /state
@@ -37,7 +38,7 @@ spec:
         - mountPath: /data/radio-dj-script
           name: dj-watcher-script
       imagePullSecrets:
-      - name: dj-brain-secret
+      - name: ghcr-auth
       volumes:
       - emptyDir: {}
         name: state
