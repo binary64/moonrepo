@@ -1,13 +1,17 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - namespace.yaml
-  - icecast-secret.yaml
-  - icecast-deployment.yaml
-  - icecast-service.yaml
-  - liquidsoap-secret.yaml
-  - liquidsoap-deployment.yaml
-  - liquidsoap-service.yaml
-  - dj-brain-secret.yaml
-  - dj-brain-deployment.yaml
-  - dj-brain-service.yaml
+- dj-brain-deployment.yaml
+- dj-brain-secret.yaml
+- dj-brain-service.yaml
+- dj-override-configmap.yaml
+- dj-watcher-configmap.yaml
+- icecast-deployment.yaml
+- icecast-secret.yaml
+- icecast-service.yaml
+- liquidsoap-deployment.yaml
+- liquidsoap-secret.yaml
+- liquidsoap-service.yaml
+- litellm-gateway-key-secret.yaml
+- namespace.yaml
+- schedule-configmap.yaml

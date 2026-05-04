@@ -18,6 +18,8 @@ spec:
         app.kubernetes.io/name: mgmt-dashboard
         app.kubernetes.io/instance: mgmt-dashboard
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: vmi3137202
       containers:
         - name: mgmt-dashboard
           image: ghcr.io/binary64/mgmt-dashboard:latest

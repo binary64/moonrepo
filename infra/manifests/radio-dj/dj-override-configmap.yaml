@@ -1,0 +1,7 @@
+apiVersion: v1
+data:
+  dj-override.json: '{}'
+kind: ConfigMap
+metadata:
+  name: dj-override
+  namespace: radio-dj
