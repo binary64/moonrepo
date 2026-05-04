@@ -1,0 +1,84 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dj-watcher-script
+  namespace: radio-dj
+data:
+  dj-watcher.sh: "#!/bin/bash\n# dj-watcher.sh \u2014 watches /state/new-track-event\
+    \ and triggers DJ commentary\n# Polls every 5 seconds. When a new track event\
+    \ is detected (different path\n# than last processed), runs commentary logic in\
+    \ the background.\n\nset -e\n\nEVENT_FILE=\"/state/new-track-event\"\nLAST_TRACK=\"\
+    \"\n\necho \"[dj-watcher] Started. Polling ${EVENT_FILE} every 5s...\"\n\nwhile\
+    \ true; do\n    if [ -f \"$EVENT_FILE\" ]; then\n        TRACK_PATH=$(jq -r '.path\
+    \ // empty' \"$EVENT_FILE\" 2>/dev/null || echo \"\")\n        PRETTY_NAME=$(jq\
+    \ -r '.name // empty' \"$EVENT_FILE\" 2>/dev/null || echo \"\")\n\n        if\
+    \ [ -n \"$TRACK_PATH\" ] && [ \"$TRACK_PATH\" != \"$LAST_TRACK\" ]; then\n   \
+    \         LAST_TRACK=\"$TRACK_PATH\"\n            echo \"[dj-watcher] New track\
+    \ detected: $PRETTY_NAME\"\n\n            # Run commentary in background \u2014\
+    \ non-blocking\n            (\n                # 75% chance of commentary (25%\
+    \ skip)\n                ROLL=$((RANDOM % 100))\n                if [ \"$ROLL\"\
+    \ -ge 75 ]; then\n                    echo \"[dj-watcher] Skipping DJ commentary\
+    \ (roll=$ROLL)\" >&2\n                    exit 0\n                fi\n\n     \
+    \           # Determine which DJ is on based on day/time and schedule\n      \
+    \          CURRENT_HOUR=$(date +%-H)\n                DAY_OF_WEEK=$(date +%u)\
+    \  # 1=Monday ... 7=Sunday\n\n                # Default: Arthur weekday daytime\
+    \ (8-18), Cara evenings/weekends\n                DJ_NAME=\"cara\"\n         \
+    \       if [ \"$DAY_OF_WEEK\" -le 5 ] && [ \"$CURRENT_HOUR\" -ge 8 ] && [ \"$CURRENT_HOUR\"\
+    \ -lt 18 ]; then\n                    DJ_NAME=\"arthur\"\n                fi\n\
+    \n                # Check schedule.json for Abi's work status\n              \
+    \  if [ -f /config/schedule.json ]; then\n                    TODAY=$(date +%Y-%m-%d)\n\
+    \                    ABI_STATUS=$(jq -r --arg d \"$TODAY\" '\n               \
+    \         if (.schedule? | type) == \"array\" then\n                         \
+    \   ([.schedule[] | select(.date == $d) | .abi][0] // \"working\") | if type ==\
+    \ \"object\" then .status // \"working\" else . end\n                        else\n\
+    \                            (.abi[$d] // .[$d].abi // \"working\") | if type\
+    \ == \"object\" then .status // \"working\" else . end\n                     \
+    \   end\n                    ' /config/schedule.json 2>/dev/null || echo \"working\"\
+    )\n                    if [ \"$ABI_STATUS\" = \"not-working\" ] && [ \"$DJ_NAME\"\
+    \ = \"arthur\" ]; then\n                        DJ_NAME=\"cara\"\n           \
+    \         fi\n                fi\n\n                # Check for manual DJ override\n\
+    \                if [ -f /data/music/dj-override.json ]; then\n              \
+    \      OVERRIDE_DJ=$(jq -r '.dj // empty' /data/music/dj-override.json 2>/dev/null\
+    \ || true)\n                    if [ -n \"$OVERRIDE_DJ\" ]; then\n           \
+    \             DJ_NAME=\"$OVERRIDE_DJ\"\n                    fi\n             \
+    \   fi\n\n                # Check listener count \u2014 skip commentary if nobody's\
+    \ listening\n                LISTENERS=$(curl -s --max-time 2 http://icecast.radio-dj.svc.cluster.local:8100/status-json.xsl\
+    \ 2>/dev/null \\\n                    | python3 -c \"import json,sys; print(json.load(sys.stdin)['icestats'].get('source',{}).get('listeners',0))\"\
+    \ 2>/dev/null || echo \"0\")\n                if [ \"${LISTENERS:-0}\" -eq 0 ];\
+    \ then\n                    echo \"[dj-watcher] 0 listeners \u2014 skipping DJ\
+    \ commentary\" >&2\n                    exit 0\n                fi\n         \
+    \       echo \"[dj-watcher] ${LISTENERS} listener(s) \u2014 proceeding with commentary\"\
+    \ >&2\n\n\n                # Generate DJ line via LLM (OpenAI API, gpt-4o-mini)\n\
+    \                OPENAI_API_KEY=\"${OPENAI_API_KEY:-}\"\n                if [\
+    \ -z \"$OPENAI_API_KEY\" ]; then\n                    echo \"[dj-watcher] No OPENAI_API_KEY,\
+    \ skipping DJ commentary\" >&2\n                    exit 0\n                fi\n\
+    \n                CURRENT_TIME=$(date +\"%H:%M\")\n                DJ_DISPLAY_NAME=$(echo\
+    \ \"$DJ_NAME\" | sed 's/^./\\U&/')  # Capitalize first letter\n\n            \
+    \    SYSTEM_PROMPT=\"You are DJ ${DJ_DISPLAY_NAME} on Arthur Radio. Currently\
+    \ playing: ${PRETTY_NAME}. Time: ${CURRENT_TIME}. 1-2 sentences, natural radio\
+    \ DJ style. Reply with ONLY the line.\"\n\n                LLM_RESPONSE=$(curl\
+    \ -sf --max-time 15 \\\n                    -X POST \\\n                    -H\
+    \ \"Content-Type: application/json\" \\\n                    -H \"Authorization:\
+    \ Bearer ${OPENAI_API_KEY}\" \\\n                    -d \"$(jq -n \\\n       \
+    \                 --arg sys \"$SYSTEM_PROMPT\" \\\n                        '{\n\
+    \                            model: \"gpt-4o-mini\",\n                       \
+    \     max_tokens: 100,\n                            temperature: 0.9,\n      \
+    \                      messages: [\n                                {role: \"\
+    system\", content: $sys},\n                                {role: \"user\", content:\
+    \ \"Say something about this track.\"}\n                            ]\n      \
+    \                  }')\" \\\n                    \"https://api.openai.com/v1/chat/completions\"\
+    \ 2>/dev/null) || {\n                    echo \"[dj-watcher] LLM call failed,\
+    \ skipping commentary\" >&2\n                    exit 0\n                }\n\n\
+    \                DJ_LINE=$(echo \"$LLM_RESPONSE\" | jq -r '.choices[0].message.content\
+    \ // empty' 2>/dev/null)\n                if [ -z \"$DJ_LINE\" ]; then\n     \
+    \               echo \"[dj-watcher] Empty LLM response, skipping commentary\"\
+    \ >&2\n                    exit 0\n                fi\n\n                echo\
+    \ \"[dj-watcher] DJ $DJ_DISPLAY_NAME says: $DJ_LINE\"\n\n                # Re-check\
+    \ track hasn't changed while LLM was generating\n                CURRENT_TRACK=$(jq\
+    \ -r '.path // empty' \"$EVENT_FILE\" 2>/dev/null || echo \"\")\n            \
+    \    if [ \"$CURRENT_TRACK\" = \"$TRACK_PATH\" ]; then\n                    /radio/dj-commentary.sh\
+    \ \"$DJ_NAME\" \"$PRETTY_NAME\" \"$DJ_LINE\" || {\n                        echo\
+    \ \"[dj-watcher] TTS commentary failed, continuing\" >&2\n                   \
+    \ }\n                else\n                    echo \"[dj-watcher] Track changed,\
+    \ skipping stale commentary\" >&2\n                fi\n            ) &\n     \
+    \   fi\n    fi\n\n    sleep 5\ndone\n"
