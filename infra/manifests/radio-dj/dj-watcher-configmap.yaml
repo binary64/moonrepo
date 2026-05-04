@@ -40,8 +40,8 @@ data:
     \ text[1:-1]\n        print(text)\nexcept Exception as e:\n    print(f\"[[error:{e}]]\"\
     )\nPY\n)\n            if [ -n \"$COMMENTARY\" ] && [[ ! \"$COMMENTARY\" == *\"\
     [[skip]]\"* ]] && [[ ! \"$COMMENTARY\" == *\"[[error:\"* ]]; then\n          \
-    \      echo \"$COMMENTARY\" | /radio/dj-commentary.sh \"$ARTIST\" \"$TITLE\"\n\
-    \            fi\n        fi\n    fi\n    sleep 5\ndone\n"
+    \      /radio/dj-commentary.sh \"$ARTIST\" \"$TITLE\" \"$COMMENTARY\"\n      \
+    \      fi\n        fi\n    fi\n    sleep 5\ndone\n"
 kind: ConfigMap
 metadata:
   labels:
