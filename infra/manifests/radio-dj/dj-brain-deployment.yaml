@@ -1,10 +1,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: dj-brain
-  namespace: radio-dj
   labels:
     app: dj-brain
+  name: dj-brain
+  namespace: radio-dj
 spec:
   replicas: 1
   selector:
@@ -16,35 +16,35 @@ spec:
         app: dj-brain
     spec:
       containers:
-      - name: dj-brain
-        image: arthur-radio-dj-brain:latest
-        command:
+      - command:
         - /bin/bash
         - /data/radio-dj-script/dj-watcher.sh
         env:
         - name: LITELLM_MASTER_KEY
           valueFrom:
             secretKeyRef:
-              name: litellm-gateway-key
               key: key
+              name: litellm-gateway-key
+        image: ghcr.io/binary64/dj-brain:latest
+        name: dj-brain
         volumeMounts:
-        - name: state
-          mountPath: /state
-        - name: dj-override
-          mountPath: /data/music/dj-override.json
-        - name: schedule
-          mountPath: /config/schedule.json
-        - name: dj-watcher-script
-          mountPath: /data/radio-dj-script
-      volumes:
-      - name: state
-        emptyDir: {}
-      - name: dj-override
-        configMap:
+        - mountPath: /state
+          name: state
+        - mountPath: /data/music/dj-override.json
           name: dj-override
-      - name: schedule
-        configMap:
+        - mountPath: /config/schedule.json
           name: schedule
-      - name: dj-watcher-script
-        configMap:
+        - mountPath: /data/radio-dj-script
           name: dj-watcher-script
+      volumes:
+      - emptyDir: {}
+        name: state
+      - configMap:
+          name: dj-override
+        name: dj-override
+      - configMap:
+          name: schedule
+        name: schedule
+      - configMap:
+          name: dj-watcher-script
+        name: dj-watcher-script
