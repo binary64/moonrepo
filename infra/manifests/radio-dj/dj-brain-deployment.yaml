@@ -20,7 +20,7 @@ spec:
       containers:
       - command:
         - /bin/bash
-        - /radio/dj-watcher.sh
+        - /data/radio/dj-watcher.sh
         env:
         - name: OPENAI_API_KEY
           valueFrom:
@@ -73,9 +73,8 @@ spec:
         - mountPath: /config/schedule.json
           name: schedule
           readOnly: true
-        - mountPath: /radio/dj-watcher.sh
+        - mountPath: /data/radio
           name: dj-watcher-script
-          subPath: dj-watcher.sh
       nodeSelector:
         kubernetes.io/hostname: vmi3137202
       securityContext:
