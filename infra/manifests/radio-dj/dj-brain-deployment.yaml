@@ -1,95 +1,95 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: dj-brain
-  namespace: radio-dj
   labels:
     app: dj-brain
+  name: dj-brain
+  namespace: radio-dj
 spec:
   replicas: 1
-  strategy:
-    type: Recreate
   selector:
     matchLabels:
       app: dj-brain
+  strategy:
+    type: Recreate
   template:
     metadata:
       labels:
         app: dj-brain
     spec:
-      nodeSelector:
-        kubernetes.io/hostname: vmi3137202
-      securityContext:
-        fsGroup: 999
       containers:
-      - name: dj-brain
-        image: ghcr.io/binary64/dj-brain:latest
-        imagePullPolicy: Always
-        env:
+      - env:
         - name: OPENAI_API_KEY
           valueFrom:
             secretKeyRef:
-              name: dj-brain-secret
               key: openai-api-key
+              name: dj-brain-secret
         - name: TTS_SERVER_URL
           value: http://tts-server.tts-server.svc.cluster.local:3090
         - name: TTS_AUTH_TOKEN
           valueFrom:
             secretKeyRef:
-              name: dj-brain-secret
               key: tts-auth-token
+              name: dj-brain-secret
               optional: true
         - name: HUME_API_KEY
           valueFrom:
             secretKeyRef:
-              name: dj-brain-secret
               key: hume-api-key
+              name: dj-brain-secret
               optional: true
         - name: ZAI_API_KEY
           valueFrom:
             secretKeyRef:
-              name: dj-brain-secret
               key: zai-api-key
+              name: dj-brain-secret
               optional: true
         - name: LITELLM_MASTER_KEY
           valueFrom:
             secretKeyRef:
-              name: litellm-gateway-key
               key: LITELLM_MASTER_KEY
+              name: litellm-gateway-key
         - name: TZ
           value: Europe/London
+        image: ghcr.io/binary64/dj-brain:latest
+        imagePullPolicy: Always
+        name: dj-brain
         resources:
-          requests:
-            cpu: 50m
-            memory: 64Mi
           limits:
             cpu: 200m
             memory: 256Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
         volumeMounts:
-        - name: state
-          mountPath: /state
-        - name: dj-override
-          mountPath: /data/music/dj-override.json
+        - mountPath: /state
+          name: state
+        - mountPath: /data/music/dj-override.json
+          name: dj-override
           readOnly: true
-        - name: schedule
-          mountPath: /config/schedule.json
+        - mountPath: /config/schedule.json
+          name: schedule
           readOnly: true
-        - name: dj-watcher-script
-          mountPath: /radio/dj-watcher.sh
+        - mountPath: /data/radio/dj-watcher.sh
+          name: dj-watcher-script
           subPath: dj-watcher.sh
+      nodeSelector:
+        kubernetes.io/hostname: vmi3137202
+      securityContext:
+        fsGroup: 999
       volumes:
-      - name: state
-        hostPath:
+      - hostPath:
           path: /tmp/radio-state
           type: DirectoryOrCreate
-      - name: dj-override
-        hostPath:
+        name: state
+      - hostPath:
           path: /mnt/arthur/clawd/data/music/dj-override.json
           type: File
-      - name: schedule
-        hostPath:
+        name: dj-override
+      - hostPath:
           path: /mnt/arthur/clawd/memory/schedule.json
           type: File
-      - name: dj-watcher-script
-        configMap:
+        name: schedule
+      - configMap:
           name: dj-watcher-script
+        name: dj-watcher-script
