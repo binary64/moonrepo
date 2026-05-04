@@ -22,6 +22,14 @@ const fastifyRateLimit = require("@fastify/rate-limit");
 const crypto = require("node:crypto");
 const fs = require("node:fs");
 
+// Strip trailing '/' chars without a regex to avoid ReDoS on user-controlled
+// inputs (CodeQL: js/polynomial-redos). Linear-time, no backtracking.
+function stripTrailingSlashes(s) {
+  let end = s.length;
+  while (end > 0 && s.charCodeAt(end - 1) === 47 /* '/' */) end--;
+  return end === s.length ? s : s.slice(0, end);
+}
+
 const PORT = process.env.TTS_PORT || 3090;
 const AUTH_TOKEN = process.env.TTS_AUTH_TOKEN || "";
 const HUME_API_KEY =
@@ -167,7 +175,7 @@ async function start() {
       (requestHost ? `http://${requestHost}` : `http://192.168.1.201:${PORT}`);
     return reply.send({
       token,
-      url: `${baseUrl.replace(/\/+$/, "")}/play/${token}`,
+      url: `${stripTrailingSlashes(baseUrl)}/play/${token}`,
       utteranceCount: utterances.length,
       totalChars,
     });
