@@ -10,8 +10,6 @@ spec:
   selector:
     matchLabels:
       app: dj-brain
-  strategy:
-    type: Recreate
   template:
     metadata:
       labels:
@@ -22,75 +20,30 @@ spec:
         - /bin/bash
         - /data/radio-dj-script/dj-watcher.sh
         env:
-        - name: OPENAI_API_KEY
-          valueFrom:
-            secretKeyRef:
-              key: openai-api-key
-              name: dj-brain-secret
-        - name: TTS_SERVER_URL
-          value: http://tts-server.tts-server.svc.cluster.local:3090
-        - name: TTS_AUTH_TOKEN
-          valueFrom:
-            secretKeyRef:
-              key: tts-auth-token
-              name: dj-brain-secret
-              optional: true
-        - name: HUME_API_KEY
-          valueFrom:
-            secretKeyRef:
-              key: hume-api-key
-              name: dj-brain-secret
-              optional: true
-        - name: ZAI_API_KEY
-          valueFrom:
-            secretKeyRef:
-              key: zai-api-key
-              name: dj-brain-secret
-              optional: true
         - name: LITELLM_MASTER_KEY
           valueFrom:
             secretKeyRef:
-              key: LITELLM_MASTER_KEY
+              key: key
               name: litellm-gateway-key
-        - name: TZ
-          value: Europe/London
-        image: ghcr.io/binary64/dj-brain:latest
-        imagePullPolicy: Always
+        image: arthur-radio-dj-brain:latest
         name: dj-brain
-        resources:
-          limits:
-            cpu: 200m
-            memory: 256Mi
-          requests:
-            cpu: 50m
-            memory: 64Mi
         volumeMounts:
         - mountPath: /state
           name: state
         - mountPath: /data/music/dj-override.json
           name: dj-override
-          readOnly: true
         - mountPath: /config/schedule.json
           name: schedule
-          readOnly: true
         - mountPath: /data/radio-dj-script
           name: dj-watcher-script
-      nodeSelector:
-        kubernetes.io/hostname: vmi3137202
-      securityContext:
-        fsGroup: 999
       volumes:
-      - hostPath:
-          path: /tmp/radio-state
-          type: DirectoryOrCreate
+      - emptyDir: {}
         name: state
-      - hostPath:
-          path: /mnt/arthur/clawd/data/music/dj-override.json
-          type: File
+      - configMap:
+          name: dj-override
         name: dj-override
-      - hostPath:
-          path: /mnt/arthur/clawd/memory/schedule.json
-          type: File
+      - configMap:
+          name: schedule
         name: schedule
       - configMap:
           name: dj-watcher-script
