@@ -92,6 +92,7 @@ class DJHandler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(b'Not found')
 
 if __name__ == '__main__':
+    socketserver.TCPServer.allow_reuse_address = True
     with socketserver.TCPServer(('', PORT), DJHandler) as httpd:
         print(f'DJ Brain API listening on :{PORT}')
         httpd.serve_forever()
