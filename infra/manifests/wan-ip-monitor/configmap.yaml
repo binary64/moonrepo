@@ -11,23 +11,18 @@ metadata:
 data:
   check-wan-ip.sh: |
     #!/bin/sh
-    set -euo pipefail
+    set -e
 
-    # Validate required env vars
-    if [ -z "${NR_ACCOUNT_ID:-}" ] || [ "${NR_ACCOUNT_ID}" = "REPLACE_WITH_NR_ACCOUNT_ID" ]; then
+    # Validate required env vars before doing anything
+    if [ -z "${NR_ACCOUNT_ID}" ] || [ "${NR_ACCOUNT_ID}" = "REPLACE_WITH_NR_ACCOUNT_ID" ]; then
       echo "ERROR: NR_ACCOUNT_ID is not set or is still the placeholder value."
+      echo "       Set it in infra/manifests/wan-ip-monitor/config.yaml before deploying."
       exit 1
     fi
 
-    if [ -z "${NR_LICENSE_KEY:-}" ]; then
-      echo "ERROR: NR_LICENSE_KEY is not set."
+    if [ -z "${NR_LICENSE_KEY}" ]; then
+      echo "ERROR: NR_LICENSE_KEY is not set. Ensure the newrelic-secret Secret exists."
       exit 1
-    fi
-
-    CLOUDFLARE_ENABLED=false
-    if [ -n "${CLOUDFLARE_API_TOKEN:-}" ]; then
-      CLOUDFLARE_ENABLED=true
-      CLOUDFLARE_ZONE_ID="${CLOUDFLARE_ZONE_ID:-ecb09a98b97ba002587403424405610f}"
     fi
 
     STATE_DIR="/state"
@@ -46,17 +41,19 @@ data:
 
     echo "Current WAN IP: ${CURRENT_IP}"
 
-    # Read last known IP
-    LAST_IP=""
+    # Read last known IP (empty if first run)
     if [ -f "${STATE_FILE}" ]; then
       LAST_IP=$(cat "${STATE_FILE}")
+    else
+      LAST_IP=""
     fi
 
-    # Only act if IP has changed
+    # Only send event if IP has changed (or first run)
     if [ "${CURRENT_IP}" != "${LAST_IP}" ]; then
       echo "WAN IP changed: '${LAST_IP}' -> '${CURRENT_IP}'"
 
       TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
       PAYLOAD="[{\"eventType\":\"WanIpChange\",\"newIp\":\"${CURRENT_IP}\",\"oldIp\":\"${LAST_IP}\",\"timestamp\":\"${TIMESTAMP}\",\"node\":\"nuc\"}]"
 
       HTTP_STATUS=$(curl -sS --max-time 15 \
@@ -66,42 +63,15 @@ data:
         --data "${PAYLOAD}" \
         --write-out "%{http_code}" \
         --output /dev/null \
-        "${NR_ENDPOINT}") || true
+        "${NR_ENDPOINT}")
 
       if [ "${HTTP_STATUS}" = "200" ]; then
-        echo "✓ Event sent to New Relic (HTTP ${HTTP_STATUS})"
+        echo "Event sent to New Relic (HTTP ${HTTP_STATUS})"
+        echo "${CURRENT_IP}" > "${STATE_FILE}"
       else
-        echo "WARNING: New Relic API returned HTTP ${HTTP_STATUS} — continuing anyway"
+        echo "ERROR: New Relic API returned HTTP ${HTTP_STATUS}"
+        exit 1
       fi
-
-      # Update home-network secret to trigger external-dns DNS update
-  echo "Updating home-network secret..."
-  if [ -f /var/run/secrets/kubernetes.io/serviceaccount/token ]; then
-    SA_TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
-    NEW_IP_B64=$(echo -n "${CURRENT_IP}" | base64 | tr -d '
-')
-    PATCH_DATA='{"data":{"public-ip":"'${NEW_IP_B64}'"}}'
-    PATCH_RESPONSE=$(curl -sS --max-time 15 \
-      -X PATCH \
-      -H "Authorization: Bearer ${SA_TOKEN}" \
-      -H "Content-Type: application/strategic-merge-patch+json" \
-      --data "${PATCH_DATA}" \
-      "https://kubernetes.default.svc/api/v1/namespaces/external-dns/secrets/home-network")
-    if echo "${PATCH_RESPONSE}" | grep -q '"success":true\|"data"'; then
-      echo "✓ home-network secret updated (external-dns will reconcile DNS)"
-    else
-      echo "WARNING: Secret patch may have failed: ${PATCH_RESPONSE}" >&2
-    fi
-  else
-    echo "WARNING: Service account token not found — skipping secret update" >&2
-  fi
-
-  # Persist the new IP
-  # Persist the new IP
-      echo "${CURRENT_IP}" > "${STATE_FILE}"
-      echo "✓ State file updated."
     else
       echo "WAN IP unchanged: ${CURRENT_IP}"
     fi
-
-    echo "Done."
