@@ -10,6 +10,16 @@ LAST_TRACK=""
 
 echo "[dj-watcher] Started. Polling ${EVENT_FILE} every 5s..."
 
+
+# Start Python API server in background
+if [ -f /server/server.py ]; then
+    echo "[dj-watcher] Starting Python API server..."
+    python3 /server/server.py &
+    sleep 1
+else
+    echo "[dj-watcher] WARNING: /server/server.py not found — API endpoint unavailable" >&2
+fi
+
 while true; do
     if [ -f "$EVENT_FILE" ]; then
         TRACK_PATH=$(jq -r '.path // empty' "$EVENT_FILE" 2>/dev/null || echo "")

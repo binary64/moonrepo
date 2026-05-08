@@ -108,9 +108,8 @@ ffmpeg -y -loglevel error \
 
 # Step 4: Push to Liquidsoap queue via telnet
 echo "[dj-commentary] Pushing to ${QUEUE_NAME} via ${LIQUIDSOAP_HOST}:${LIQUIDSOAP_PORT}..."
-PUSH_RESPONSE=$(echo "${QUEUE_NAME}.push ${PADDED_FILE}" | nc -w2 "$LIQUIDSOAP_HOST" "$LIQUIDSOAP_PORT" 2>&1) || {
-    echo "[dj-commentary] ERROR: Failed to push to Liquidsoap queue" >&2
-    exit 1
+PUSH_RESPONSE=$(echo "${QUEUE_NAME}.push ${PADDED_FILE}" | nc -w2 "$LIQUIDSOAP_HOST" "$LIQUIDSOAP_PORT" 2>&1) || true
+    echo "[dj-commentary] WARNING: Push to Liquidsoap failed, continuing anyway" >&2
 }
 
 # On success, disable the EXIT trap for PADDED_FILE — schedule delayed cleanup
