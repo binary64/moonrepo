@@ -1,0 +1,14 @@
+version = 1
+
+# Mark this repo as containing both Node.js server-side and browser code.
+# apps/ptt-server is pure Node.js (http/https/ws server); apps/app is Next.js
+# (hybrid SSR/browser). Without this, DeepSource's JavaScript analyzer fires
+# "Avoid using console in code that runs on the browser" against legitimate
+# server-side console.log calls.
+# Docs: https://docs.deepsource.com/docs/analyzers-javascript#meta
+
+[[analyzers]]
+name = "javascript"
+
+  [analyzers.meta]
+  environment = ["nodejs", "browser"]
