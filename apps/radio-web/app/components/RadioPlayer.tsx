@@ -49,6 +49,7 @@ export default function RadioPlayer({
 }) {
   const [state, setState] = useState<PlayerState>("idle");
   const [skipping, setSkipping] = useState(false);
+  const [bufferSeconds, setBufferSeconds] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryDelayRef = useRef(INITIAL_RETRY_DELAY_MS);
@@ -104,6 +105,7 @@ export default function RadioPlayer({
     }
     chunkQueueRef.current = [];
     bufferedSecondsRef.current = 0;
+    setBufferSeconds(0);
   }, []);
 
   // Estimate MP3 seconds from byte count (192kbps ≈ 24KB/s)
@@ -145,6 +147,7 @@ export default function RadioPlayer({
     try {
       sourceBufferRef.current.appendBuffer(merged);
       bufferedSecondsRef.current = totalSeconds;
+      setBufferSeconds(totalSeconds);
       console.log(`Buffer: appended ${Math.round(totalSeconds)}s of audio`);
     } catch (err) {
       console.error("SourceBuffer append error:", err);
@@ -172,6 +175,7 @@ export default function RadioPlayer({
       cleanup();
       setState("buffering");
       bufferedSecondsRef.current = 0;
+      setBufferSeconds(0);
       chunkQueueRef.current = [];
 
       const audio = new Audio();
@@ -321,128 +325,152 @@ export default function RadioPlayer({
   }, [state, cleanup, startStream]);
 
   return (
-    <div className="flex items-center justify-center gap-6">
-      {/* Play/Pause button with wave rings */}
-      <div className="relative w-[80px] h-[80px] flex items-center justify-center">
-        <WaveformRing active={state === "playing"} />
+    <div className="flex flex-col items-center gap-3">
+      <div className="flex items-center justify-center gap-6">
+        {/* Play/Pause button with wave rings */}
+        <div className="relative w-[80px] h-[80px] flex items-center justify-center">
+          <WaveformRing active={state === "playing"} />
 
-        {state === "buffering" && (
-          <svg
-            className="absolute inset-0 w-[80px] h-[80px] animate-spin-slow"
-            viewBox="0 0 80 80"
-            aria-label="Buffering"
-            role="img"
-          >
-            <circle
-              cx="40"
-              cy="40"
-              r="36"
-              fill="none"
-              stroke="url(#spinner-gradient)"
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeDasharray="180 90"
-            />
-            <defs>
-              <linearGradient
-                id="spinner-gradient"
-                x1="0%"
-                y1="0%"
-                x2="100%"
-                y2="0%"
-              >
-                <stop offset="0%" stopColor="#a78bfa" stopOpacity="1" />
-                <stop offset="100%" stopColor="#a78bfa" stopOpacity="0" />
-              </linearGradient>
-            </defs>
-          </svg>
-        )}
-
-        {state === "playing" && (
-          <div className="absolute inset-0 rounded-full border-2 border-violet-500/20" />
-        )}
-
-        <button
-          type="button"
-          onClick={toggle}
-          className={`relative z-10 w-[56px] h-[56px] rounded-full flex items-center justify-center transition-all duration-300 ${
-            state === "playing"
-              ? "bg-violet-600 hover:bg-violet-500 shadow-lg shadow-violet-600/30"
-              : state === "buffering"
-                ? "bg-slate-700 hover:bg-slate-600"
-                : "bg-slate-800 hover:bg-violet-600 border border-slate-600 hover:border-violet-500"
-          }`}
-          aria-label={state === "playing" ? "Pause" : "Play"}
-        >
-          {state === "playing" ? (
+          {state === "buffering" && (
             <svg
-              className="w-5 h-5 text-white"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-              aria-label="Pause"
+              className="absolute inset-0 w-[80px] h-[80px] animate-spin-slow"
+              viewBox="0 0 80 80"
+              aria-label="Buffering"
               role="img"
             >
-              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-            </svg>
-          ) : state === "buffering" ? (
-            <div className="flex gap-1">
-              <div
-                className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse"
-                style={{ animationDelay: "0ms" }}
+              <circle
+                cx="40"
+                cy="40"
+                r="36"
+                fill="none"
+                stroke="url(#spinner-gradient)"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeDasharray="180 90"
               />
-              <div
-                className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse"
-                style={{ animationDelay: "150ms" }}
-              />
-              <div
-                className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse"
-                style={{ animationDelay: "300ms" }}
-              />
-            </div>
-          ) : (
-            <svg
-              className="w-6 h-6 text-white ml-0.5"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-              aria-label="Play"
-              role="img"
-            >
-              <path d="M8 5v14l11-7z" />
+              <defs>
+                <linearGradient
+                  id="spinner-gradient"
+                  x1="0%"
+                  y1="0%"
+                  x2="100%"
+                  y2="0%"
+                >
+                  <stop offset="0%" stopColor="#a78bfa" stopOpacity="1" />
+                  <stop offset="100%" stopColor="#a78bfa" stopOpacity="0" />
+                </linearGradient>
+              </defs>
             </svg>
           )}
-        </button>
+
+          {state === "playing" && (
+            <div className="absolute inset-0 rounded-full border-2 border-violet-500/20" />
+          )}
+
+          <button
+            type="button"
+            onClick={toggle}
+            className={`relative z-10 w-[56px] h-[56px] rounded-full flex items-center justify-center transition-all duration-300 ${
+              state === "playing"
+                ? "bg-violet-600 hover:bg-violet-500 shadow-lg shadow-violet-600/30"
+                : state === "buffering"
+                  ? "bg-slate-700 hover:bg-slate-600"
+                  : "bg-slate-800 hover:bg-violet-600 border border-slate-600 hover:border-violet-500"
+            }`}
+            aria-label={state === "playing" ? "Pause" : "Play"}
+          >
+            {state === "playing" ? (
+              <svg
+                className="w-5 h-5 text-white"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+                aria-label="Pause"
+                role="img"
+              >
+                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+              </svg>
+            ) : state === "buffering" ? (
+              <div className="flex gap-1">
+                <div
+                  className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse"
+                  style={{ animationDelay: "0ms" }}
+                />
+                <div
+                  className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse"
+                  style={{ animationDelay: "150ms" }}
+                />
+                <div
+                  className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse"
+                  style={{ animationDelay: "300ms" }}
+                />
+              </div>
+            ) : (
+              <svg
+                className="w-6 h-6 text-white ml-0.5"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+                aria-label="Play"
+                role="img"
+              >
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            )}
+          </button>
+        </div>
+
+        {/* Skip button */}
+        {state === "playing" && (
+          <button
+            type="button"
+            onClick={skip}
+            disabled={skipping}
+            className={`w-[44px] h-[44px] rounded-full flex items-center justify-center transition-all duration-300 ${
+              skipping
+                ? "bg-slate-800 border border-slate-700 cursor-not-allowed"
+                : "bg-slate-800/80 border border-slate-600 hover:bg-violet-600/20 hover:border-violet-500/60"
+            }`}
+            aria-label="Skip track"
+          >
+            <svg
+              className={`w-5 h-5 transition-all duration-300 ${
+                skipping ? "text-violet-400 animate-spin-slow" : "text-slate-300"
+              }`}
+              fill="currentColor"
+              viewBox="0 0 24 24"
+              aria-label="Skip"
+              role="img"
+            >
+              {skipping ? (
+                <path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+              ) : (
+                <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
+              )}
+            </svg>
+          </button>
+        )}
       </div>
 
-      {/* Skip button */}
-      {state === "playing" && (
-        <button
-          type="button"
-          onClick={skip}
-          disabled={skipping}
-          className={`w-[44px] h-[44px] rounded-full flex items-center justify-center transition-all duration-300 ${
-            skipping
-              ? "bg-slate-800 border border-slate-700 cursor-not-allowed"
-              : "bg-slate-800/80 border border-slate-600 hover:bg-violet-600/20 hover:border-violet-500/60"
-          }`}
-          aria-label="Skip track"
-        >
-          <svg
-            className={`w-5 h-5 transition-all duration-300 ${
-              skipping ? "text-violet-400 animate-spin-slow" : "text-slate-300"
-            }`}
-            fill="currentColor"
-            viewBox="0 0 24 24"
-            aria-label="Skip"
-            role="img"
-          >
-            {skipping ? (
-              <path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
-            ) : (
-              <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
-            )}
-          </svg>
-        </button>
-      )}
+      {/* MSE Buffer progress bar */}
+      <div className="w-full max-w-[200px]">
+        <div className="flex justify-between text-[11px] text-slate-500 mb-1 font-mono">
+          <span>MSE Buffer</span>
+          <span>{Math.round(bufferSeconds)}s / {MAX_BUFFER_SECONDS}s</span>
+        </div>
+        <div className="h-1 bg-slate-700/50 rounded-full overflow-hidden">
+          <div
+            className="h-full transition-all duration-300 rounded-full"
+            style={{
+              width: `${Math.min((bufferSeconds / MAX_BUFFER_SECONDS) * 100, 100)}%`,
+              backgroundColor:
+                bufferSeconds < TARGET_BUFFER_SECONDS
+                  ? "#f59e0b" // amber — still buffering
+                  : bufferSeconds >= MAX_BUFFER_SECONDS
+                    ? "#22c55e" // green — buffer full
+                    : "#a78bfa", // violet — healthy buffer
+            }}
+          />
+        </div>
+      </div>
     </div>
   );
 }
