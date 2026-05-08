@@ -94,6 +94,7 @@ data:
     \ then\n    echo \"[dj-commentary] WARNING: Push to Liquidsoap had issues: $PUSH_RESPONSE\"\
     \ >&2\nfi\n\n# Success \u2014 disable EXIT trap cleanup for PADDED_FILE (Liquidsoap\
     \ will consume it)\ntrap - EXIT\nrm -f \"$RAW_FILE\" 2>/dev/null || true\n(sleep\
-    \ \"${CLEANUP_DELAY_SECS:-30}\" && rm -f \"$PADDED_FILE\") &\n\necho \"[dj-commentary]\
-    \ Done \u2014 DJ $DJ_NAME commentary queued ($CLIP_ID)\"\n"
+    \ \"${CLEANUP_DELAY_SECS:-30}\" && rm -f \"$PADDED_FILE\") >/dev/null 2>&1 &\n\
+    \necho \"[dj-commentary] Done \u2014 DJ $DJ_NAME commentary queued ($CLIP_ID)\"\
+    \n"
 defaultMode: 493

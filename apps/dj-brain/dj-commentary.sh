@@ -99,6 +99,6 @@ fi
 # Success — disable EXIT trap cleanup for PADDED_FILE (Liquidsoap will consume it)
 trap - EXIT
 rm -f "$RAW_FILE" 2>/dev/null || true
-(sleep "${CLEANUP_DELAY_SECS:-30}" && rm -f "$PADDED_FILE") &
+(sleep "${CLEANUP_DELAY_SECS:-30}" && rm -f "$PADDED_FILE") >/dev/null 2>&1 &
 
 echo "[dj-commentary] Done — DJ $DJ_NAME commentary queued ($CLIP_ID)"
