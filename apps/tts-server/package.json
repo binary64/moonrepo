@@ -7,10 +7,7 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.21.0",
-    "express-rate-limit": "^7.5.0"
-  },
-  "overrides": {
-    "path-to-regexp": "0.1.13"
+    "@fastify/rate-limit": "^10.0.0",
+    "fastify": "^5.8.5"
   }
 }

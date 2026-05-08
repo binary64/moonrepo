@@ -13,7 +13,6 @@
     "markdown-it": "^14.0.0"
   },
   "overrides": {
-    "picomatch": "4.0.4",
-    "liquidjs": "10.25.3"
+    "liquidjs": "10.25.7"
   }
 }

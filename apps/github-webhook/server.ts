@@ -14,7 +14,7 @@
 import crypto from "node:crypto";
 import http from "node:http";
 import https from "node:https";
-import express, { type Request, type Response } from "express";
+import Fastify from "fastify";
 
 const PORT = parseInt(process.env.PORT || "3200", 10);
 if (!Number.isFinite(PORT) || PORT < 1 || PORT > 65535) {
@@ -55,8 +55,6 @@ try {
 }
 
 // Deduplication: repoFullName+prNumber → lastNotifiedConclusion
-// Keyed by repo+PR to avoid cross-repo collisions on shared PR numbers.
-// Written only after successful gateway delivery to avoid suppressing retries on failure.
 const lastNotified = new Map<string, string>();
 
 const GATEWAY_TIMEOUT_MS = parseInt(
@@ -70,41 +68,68 @@ if (!Number.isFinite(GATEWAY_TIMEOUT_MS) || GATEWAY_TIMEOUT_MS < 0) {
   process.exit(1);
 }
 
-const app = express();
-
-// Raw body needed for HMAC signature verification
-app.use(express.raw({ type: "application/json" }));
+const fastify = Fastify({ logger: false });
 
 // Health check
-app.get("/health", (_req: Request, res: Response) => {
-  res.json({ ok: true });
+fastify.get("/health", async () => {
+  return { ok: true };
 });
 
-app.post("/webhook", async (req: Request, res: Response) => {
-  // Verify HMAC-SHA256 signature
-  const sig = req.headers["x-hub-signature-256"] as string | undefined;
+// Scope the raw-buffer JSON parser to the webhook route only via an encapsulated
+// plugin so the rest of the service keeps Fastify's default JSON parsing.
+fastify.register(async (webhookPlugin) => {
+  // Raw body needed for HMAC signature verification
+  webhookPlugin.addContentTypeParser(
+    "application/json",
+    { parseAs: "buffer" },
+    (_req, body, done) => {
+      done(null, body);
+    },
+  );
+
+  webhookPlugin.post("/webhook", async (request, reply) => {
+    const sigCheck = verifySignature(request);
+    if (!sigCheck.ok) {
+      return reply.code(sigCheck.code).send({ error: sigCheck.error });
+    }
+
+    const parsed = parsePayload(sigCheck.rawBody);
+    if (!parsed.ok) {
+      return reply.code(400).send({ error: parsed.error });
+    }
+
+    const event = request.headers["x-github-event"] as string | undefined;
+    try {
+      await handleEvent(event || "", parsed.payload);
+      return reply.code(200).send({ ok: true });
+    } catch (err: unknown) {
+      console.error(
+        "Error handling event:",
+        err instanceof Error ? err.message : String(err),
+      );
+      return reply.code(500).send({ error: "Internal server error" });
+    }
+  });
+}); // end webhookPlugin
+
+type SigOk = { ok: true; rawBody: Buffer };
+type SigErr = { ok: false; code: number; error: string };
+
+function verifySignature(request: {
+  headers: Record<string, unknown>;
+  body: unknown;
+}): SigOk | SigErr {
+  const sig = request.headers["x-hub-signature-256"] as string | undefined;
   if (!sig) {
     console.warn("Missing X-Hub-Signature-256 header");
-    res.status(401).json({ error: "Missing signature" });
-    return;
+    return { ok: false, code: 401, error: "Missing signature" };
   }
-
-  const rawBody = req.body;
-  const body = Buffer.isBuffer(rawBody)
-    ? rawBody
-    : typeof rawBody === "string" || rawBody instanceof Uint8Array
-      ? Buffer.from(rawBody)
-      : null;
-  if (!body) {
+  const rawBody = request.body as Buffer;
+  if (!Buffer.isBuffer(rawBody)) {
     console.warn("Webhook payload is not a raw JSON buffer");
-    res.status(400).json({ error: "Invalid payload type" });
-    return;
+    return { ok: false, code: 400, error: "Invalid payload type" };
   }
-  const expected =
-    "sha256=" +
-    crypto.createHmac("sha256", WEBHOOK_SECRET).update(body).digest("hex");
-
-  // Guard against length mismatch before timingSafeEqual (throws on unequal lengths)
+  const expected = `sha256=${crypto.createHmac("sha256", WEBHOOK_SECRET).update(rawBody).digest("hex")}`;
   const sigBuf = Buffer.from(sig);
   const expBuf = Buffer.from(expected);
   if (
@@ -112,38 +137,26 @@ app.post("/webhook", async (req: Request, res: Response) => {
     !crypto.timingSafeEqual(sigBuf, expBuf)
   ) {
     console.warn("Invalid webhook signature");
-    res.status(401).json({ error: "Invalid signature" });
-    return;
+    return { ok: false, code: 401, error: "Invalid signature" };
   }
+  return { ok: true, rawBody };
+}
 
-  const event = req.headers["x-github-event"] as string | undefined;
-  let payload: Record<string, unknown>;
-
+function parsePayload(
+  rawBody: Buffer,
+):
+  | { ok: true; payload: Record<string, unknown> }
+  | { ok: false; error: string } {
   try {
-    payload = JSON.parse(body.toString());
+    return { ok: true, payload: JSON.parse(rawBody.toString()) };
   } catch (err: unknown) {
     console.error(
       "Failed to parse webhook payload:",
       err instanceof Error ? err.message : String(err),
     );
-    res.status(400).json({ error: "Invalid JSON payload" });
-    return;
+    return { ok: false, error: "Invalid JSON payload" };
   }
-
-  // Await processing before responding so GitHub retries on failure (non-2xx).
-  // Return 200 only when the event was handled successfully; 500 on error causes
-  // GitHub to re-deliver with exponential back-off.
-  try {
-    await handleEvent(event || "", payload);
-    res.status(200).json({ ok: true });
-  } catch (err: unknown) {
-    console.error(
-      "Error handling event:",
-      err instanceof Error ? err.message : String(err),
-    );
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
+}
 
 type PullRequestRef = {
   number: number;
@@ -151,13 +164,6 @@ type PullRequestRef = {
   html_url?: string;
 };
 
-/**
- * Routes an incoming GitHub webhook event to the appropriate handler.
- * Only check_suite and workflow_run completed events are acted upon.
- *
- * @param event - The X-GitHub-Event header value
- * @param payload - The parsed webhook payload
- */
 async function handleEvent(
   event: string,
   payload: Record<string, unknown>,
@@ -201,15 +207,6 @@ async function handleEvent(
   }
 }
 
-/**
- * Sends a notification for each PR in the list, respecting deduplication.
- * Dedup state is written only after successful gateway delivery.
- *
- * @param prs - Pull request refs from the webhook payload
- * @param conclusion - The check conclusion (success, failure, cancelled, etc.)
- * @param checkName - The name of the check suite or workflow
- * @param repo - The repository object from the payload
- */
 async function notifyPRs(
   prs: PullRequestRef[],
   conclusion: string,
@@ -225,11 +222,9 @@ async function notifyPRs(
     const prUrl =
       pr.html_url || `https://github.com/${repoFullName}/pull/${prNumber}`;
 
-    // Dedupe key scoped to repo+PR+commit+conclusion for per-attempt deduplication
     const dedupeKey = `${repoFullName}-pr-${prNumber}-${headSha}-${conclusion}`;
     const stateKey = `${repoFullName}-pr-${prNumber}-${headSha}`;
 
-    // Skip if we already successfully delivered this conclusion for this PR
     const lastConclusion = lastNotified.get(stateKey);
     if (lastConclusion === conclusion) {
       console.log(
@@ -239,14 +234,10 @@ async function notifyPRs(
     }
 
     const isSuccess = ["success", "neutral", "skipped"].includes(conclusion);
-    // NOTE: conclusion is scoped to this single workflow_run/check_suite, not
-    // the aggregate PR status — a passing Lint run does not mean all CI is green.
     const emoji = isSuccess ? "✅" : "🔴";
     const message = `${emoji} PR #${prNumber} — ${branch}: ${checkName} ${conclusion}\n${prUrl}`;
 
     console.log("Notify PR:", prNumber, checkName, conclusion);
-    // Only mark as sent after successful delivery — wrap per-PR so one failure
-    // doesn't block notifications for remaining PRs in this event.
     try {
       await sendGatewayMessage(message, dedupeKey);
       lastNotified.set(stateKey, conclusion);
@@ -257,19 +248,10 @@ async function notifyPRs(
         ":",
         err instanceof Error ? err.message : String(err),
       );
-      // Do not rethrow — allow remaining PRs to be notified independently
     }
   }
 }
 
-/**
- * Sends a message to the OpenClaw Gateway via the chat.send RPC method.
- * Supports both HTTP and HTTPS gateway URLs.
- * Rejects on non-2xx responses so callers can handle failures.
- *
- * @param message - The message text to deliver
- * @param idempotencyKey - Unique key to prevent duplicate delivery
- */
 async function sendGatewayMessage(
   message: string,
   idempotencyKey: string,
@@ -333,7 +315,14 @@ async function sendGatewayMessage(
   });
 }
 
-app.listen(PORT, () => {
-  console.log(`github-webhook server listening on port ${PORT}`);
-  // Intentionally omit SESSION_KEY from logs — it is sensitive routing config
-});
+async function start() {
+  try {
+    await fastify.listen({ port: PORT, host: "0.0.0.0" });
+    console.log(`github-webhook server listening on port ${PORT}`);
+  } catch (err) {
+    console.error(err);
+    process.exit(1);
+  }
+}
+
+start();
