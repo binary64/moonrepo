@@ -96,3 +96,4 @@ data:
     \ will consume it)\ntrap - EXIT\nrm -f \"$RAW_FILE\" 2>/dev/null || true\n(sleep\
     \ \"${CLEANUP_DELAY_SECS:-30}\" && rm -f \"$PADDED_FILE\") &\n\necho \"[dj-commentary]\
     \ Done \u2014 DJ $DJ_NAME commentary queued ($CLIP_ID)\"\n"
+defaultMode: 493
