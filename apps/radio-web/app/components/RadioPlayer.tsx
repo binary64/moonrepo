@@ -4,10 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 const STREAM_URL =
   process.env.NEXT_PUBLIC_STREAM_URL ?? "http://192.168.1.201:30100/stream";
-const INITIAL_RETRY_DELAY_MS = 1000;
-const RETRY_BACKOFF_MULTIPLIER = 2;
-const MAX_RETRY_DELAY_MS = 10000;
-const MAX_STALLED_TIMEOUT_MS = 15000;
+const INITIAL_RETRY_DELAY_MS = 500;
+const MAX_RETRY_DELAY_MS = 60000;
+const RETRY_BACKOFF_MULTIPLIER = 1.5;
+const MAX_STALLED_TIMEOUT_MS = 60000;
 const SKIP_TIMEOUT_MS = 15000;
 const TARGET_BUFFER_SECONDS = 30;
 const MAX_BUFFER_SECONDS = 60;
