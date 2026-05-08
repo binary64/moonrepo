@@ -689,13 +689,15 @@ wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
     }
   });
 
-  ws.on('close', (code: number, reason: Buffer) => {
-    const reasonStr = reason ? reason.toString() : '';
-    console.log(`[${ts()}] 🔚 WS closed (code: ${code}, reason: ${reasonStr || 'none'})`);
+  ws.on("close", (code: number, reason: Buffer) => {
+    const reasonStr = reason ? reason.toString() : "";
+    console.log(
+      `[${ts()}] 🔚 WS closed (code: ${code}, reason: ${reasonStr || "none"})`,
+    );
 
     // Clean close from watch ("done") — grab all buffered audio regardless of VAD state
     // (server-side VAD may be broken; client signals end-of-utterance by closing with "done")
-    if (reasonStr === 'done') {
+    if (reasonStr === "done") {
       for (const [, state] of sessionStates) {
         if (state.transcribing) continue;
         let pcmData: Buffer | undefined;
@@ -708,18 +710,12 @@ wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
           console.log(`[${ts()}] 🗑️ No usable audio on close`);
           continue;
         }
-        const durationMs = Math.round(pcmData.length / 2 / SAMPLE_RATE * 1000);
-        console.log(`[${ts()}] 📤 ${durationMs}ms audio on close → Whisper+route`);
-        state.transcribing = true;
-        const wavBuffer = buildWav(pcmData);
-        transcribeAndRoute(wavBuffer).catch((e: Error) => console.error(`[${ts()}] transcribeAndRoute error: ${e.message}`));
-      }
-      return;
-    }
-
-    // Non-clean close — old VAD-gated path
-    for (const [, state] of sessionStates) {
-      if (state.speechStarted && state.speechMs >= MIN_SPEECH_MS && !state.transcribing) {
+        const durationMs = Math.round(
+          (pcmData.length / 2 / SAMPLE_RATE) * 1000,
+        );
+        console.log(
+          `[${ts()}] 📤 ${durationMs}ms audio on close → Whisper+route`,
+        );
         state.transcribing = true;
         state.speechChunks = [pcmData];
         send({ event: "vad_end" });
@@ -1241,57 +1237,100 @@ function sendToOpenClaw(
 }
 
 // ── LLM-powered session routing ───────────────────────────────────────────────
-const ROUTING_OPTIONS: Array<{ session: string; label: string; desc: string }> = [
-  { session: 'agent:main:telegram:direct:james',         label: 'James DM',        desc: 'General questions, personal tasks, anything not clearly matching a project' },
-  { session: 'agent:main:telegram:group:-5166572823',    label: 'arthur-haiku',     desc: 'moonrepo, k8s, kubernetes, CI, PRs, infra, deployments, ArgoCD, Docker, cluster, Jupiter, NUC' },
-  { session: 'agent:main:telegram:group:-5173870517',    label: 'arthur-saas',      desc: 'SaaS business ideas, Notion, biz projects' },
-  { session: 'agent:main:telegram:group:-5297868919',    label: 'arthur-smarthome', desc: 'Home Assistant, Nest speakers, lights, Roomba, ESPHome, Zigbee, MQTT, home automation' },
-  { session: 'agent:main:telegram:group:-5175546187',    label: 'arthur-tv-portal', desc: 'TV portal, Chromecast, dashboard, Android TV, whiteboard' },
-  { session: 'agent:main:telegram:group:-5182444525',    label: 'arthur-watch',     desc: 'Watch PTT, watch app, ptt-server, watch development' },
-];
+const ROUTING_OPTIONS: Array<{ session: string; label: string; desc: string }> =
+  [
+    {
+      session: "agent:main:telegram:direct:james",
+      label: "James DM",
+      desc: "General questions, personal tasks, anything not clearly matching a project",
+    },
+    {
+      session: "agent:main:telegram:group:-5166572823",
+      label: "arthur-haiku",
+      desc: "moonrepo, k8s, kubernetes, CI, PRs, infra, deployments, ArgoCD, Docker, cluster, Jupiter, NUC",
+    },
+    {
+      session: "agent:main:telegram:group:-5173870517",
+      label: "arthur-saas",
+      desc: "SaaS business ideas, Notion, biz projects",
+    },
+    {
+      session: "agent:main:telegram:group:-5297868919",
+      label: "arthur-smarthome",
+      desc: "Home Assistant, Nest speakers, lights, Roomba, ESPHome, Zigbee, MQTT, home automation",
+    },
+    {
+      session: "agent:main:telegram:group:-5175546187",
+      label: "arthur-tv-portal",
+      desc: "TV portal, Chromecast, dashboard, Android TV, whiteboard",
+    },
+    {
+      session: "agent:main:telegram:group:-5182444525",
+      label: "arthur-watch",
+      desc: "Watch PTT, watch app, ptt-server, watch development",
+    },
+  ];
 
 async function pickSessionViaLLM(text: string): Promise<string> {
-  const optionsList = ROUTING_OPTIONS.map((o, i) => `${i + 1}. "${o.label}" — ${o.desc}`).join('\n');
+  const optionsList = ROUTING_OPTIONS.map(
+    (o, i) => `${i + 1}. "${o.label}" — ${o.desc}`,
+  ).join("\n");
   const prompt = `You are a routing assistant. Given a voice message transcription, pick the best session to route it to.\n\nSessions:\n${optionsList}\n\nTranscription: "${text}"\n\nReply with ONLY the number (1-${ROUTING_OPTIONS.length}) of the best session. No explanation.`;
 
   return new Promise<string>((resolve) => {
     const body = JSON.stringify({
-      model: 'gpt-4o-mini',
+      model: "gpt-4o-mini",
       max_tokens: 10,
-      messages: [{ role: 'user', content: prompt }]
+      messages: [{ role: "user", content: prompt }],
     });
-    const req = https.request({
-      hostname: 'api.openai.com',
-      path: '/v1/chat/completions',
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_KEY}`,
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(body)
-      }
-    }, (res) => {
-      let data = '';
-      res.on('data', (c: Buffer) => data += c);
-      res.on('end', () => {
-        try {
-          const json = JSON.parse(data);
-          const reply: string = json.choices?.[0]?.message?.content?.trim() ?? '';
-          const idx = parseInt(reply, 10) - 1;
-          if (idx >= 0 && idx < ROUTING_OPTIONS.length) {
-            console.log(`[${ts()}] 🧠 Routed "${text.slice(0, 40)}" → ${ROUTING_OPTIONS[idx].label}`);
-            resolve(ROUTING_OPTIONS[idx].session);
-          } else {
-            console.warn(`[${ts()}] ⚠️ LLM returned unexpected: "${reply}" — defaulting to James DM`);
+    const req = https.request(
+      {
+        hostname: "api.openai.com",
+        path: "/v1/chat/completions",
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${OPENAI_KEY}`,
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(body),
+        },
+      },
+      (res) => {
+        let data = "";
+        res.on("data", (c: Buffer) => {
+          data += c;
+        });
+        res.on("end", () => {
+          try {
+            const json = JSON.parse(data);
+            const reply: string =
+              json.choices?.[0]?.message?.content?.trim() ?? "";
+            const idx = parseInt(reply, 10) - 1;
+            if (idx >= 0 && idx < ROUTING_OPTIONS.length) {
+              console.log(
+                `[${ts()}] 🧠 Routed "${text.slice(0, 40)}" → ${ROUTING_OPTIONS[idx].label}`,
+              );
+              resolve(ROUTING_OPTIONS[idx].session);
+            } else {
+              console.warn(
+                `[${ts()}] ⚠️ LLM returned unexpected: "${reply}" — defaulting to James DM`,
+              );
+              resolve(ROUTING_OPTIONS[0].session);
+            }
+          } catch (e) {
+            console.error(`[${ts()}] LLM parse error: ${(e as Error).message}`);
             resolve(ROUTING_OPTIONS[0].session);
           }
-        } catch (e) {
-          console.error(`[${ts()}] LLM parse error: ${(e as Error).message}`);
-          resolve(ROUTING_OPTIONS[0].session);
-        }
-      });
+        });
+      },
+    );
+    req.on("error", (e: Error) => {
+      console.error(`[${ts()}] LLM routing error: ${e.message}`);
+      resolve(ROUTING_OPTIONS[0].session);
     });
-    req.on('error', (e: Error) => { console.error(`[${ts()}] LLM routing error: ${e.message}`); resolve(ROUTING_OPTIONS[0].session); });
-    req.setTimeout(8000, () => { req.destroy(); resolve(ROUTING_OPTIONS[0].session); });
+    req.setTimeout(8000, () => {
+      req.destroy();
+      resolve(ROUTING_OPTIONS[0].session);
+    });
     req.end(body);
   });
 }
@@ -1303,13 +1342,22 @@ async function transcribeAndRoute(wavBuffer: Buffer): Promise<void> {
   let text: string;
   try {
     const result = await transcribeAndSend(wavBuffer, MAIN_SESSION);
-    text = typeof result === 'object' ? (result as { text: string }).text : result as string;
+    text =
+      typeof result === "object"
+        ? (result as { text: string }).text
+        : (result as string);
   } catch (e) {
     console.error(`[${ts()}] ❌ Whisper failed: ${(e as Error).message}`);
     return;
   }
-  if (!text || text.length < 2) { console.log(`[${ts()}] 🚫 Empty transcription, skipping`); return; }
-  if (isHallucination(text)) { console.log(`[${ts()}] 🚫 Hallucination: "${text}"`); return; }
+  if (!text || text.length < 2) {
+    console.log(`[${ts()}] 🚫 Empty transcription, skipping`);
+    return;
+  }
+  if (isHallucination(text)) {
+    console.log(`[${ts()}] 🚫 Hallucination: "${text}"`);
+    return;
+  }
   console.log(`[${ts()}] 🗣️ "${text}"`);
 
   // 1. Echo to James's DM immediately (he sees it on Telegram)
@@ -1328,7 +1376,9 @@ async function transcribeAndRoute(wavBuffer: Buffer): Promise<void> {
   });
 }
 
-function ts(): string { return new Date().toISOString().replace('T', ' ').slice(0, -4); }
+function ts(): string {
+  return new Date().toISOString().replace("T", " ").slice(0, -4);
+}
 
 // ── Start ──
 

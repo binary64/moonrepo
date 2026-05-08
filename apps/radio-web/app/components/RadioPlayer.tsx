@@ -429,7 +429,9 @@ export default function RadioPlayer({
           >
             <svg
               className={`w-5 h-5 transition-all duration-300 ${
-                skipping ? "text-violet-400 animate-spin-slow" : "text-slate-300"
+                skipping
+                  ? "text-violet-400 animate-spin-slow"
+                  : "text-slate-300"
               }`}
               fill="currentColor"
               viewBox="0 0 24 24"
@@ -450,7 +452,9 @@ export default function RadioPlayer({
       <div className="w-full max-w-[200px]">
         <div className="flex justify-between text-[11px] text-slate-500 mb-1 font-mono">
           <span>MSE Buffer</span>
-          <span>{Math.round(bufferSeconds)}s / {MAX_BUFFER_SECONDS}s</span>
+          <span>
+            {Math.round(bufferSeconds)}s / {MAX_BUFFER_SECONDS}s
+          </span>
         </div>
         <div className="h-1 bg-slate-700/50 rounded-full overflow-hidden">
           <div
