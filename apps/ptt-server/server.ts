@@ -179,7 +179,7 @@ const BYTES_PER_SAMPLE = 2;
 const FRAME_SAMPLES = 512; // Silero VAD v6.2 only accepts 512-sample frames at 16kHz.
 const FRAME_BYTES = FRAME_SAMPLES * BYTES_PER_SAMPLE;
 const FRAME_MS = (FRAME_SAMPLES / SAMPLE_RATE) * 1000;
-const SPEECH_THRESHOLD = 0.5; // Silero default for 32ms frames (512 samples @ 16kHz)
+const SPEECH_THRESHOLD = 0.85;
 const SILENCE_AFTER_SPEECH_MS = 1600;
 const MIN_SPEECH_MS = 400;
 const MIN_SPEECH_FRAMES = Math.ceil(MIN_SPEECH_MS / FRAME_MS); // Derived from MIN_SPEECH_MS to keep speech-start and completion thresholds in sync.
@@ -666,15 +666,13 @@ wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
     }
   });
 
-  ws.on("close", (code: number, reason: Buffer) => {
-    const reasonStr = reason ? reason.toString() : "";
-    console.log(
-      `[${ts()}] 🔚 WS closed (code: ${code}, reason: ${reasonStr || "none"})`,
-    );
+  ws.on('close', (code: number, reason: Buffer) => {
+    const reasonStr = reason ? reason.toString() : '';
+    console.log(`[${ts()}] 🔚 WS closed (code: ${code}, reason: ${reasonStr || 'none'})`);
 
     // Clean close from watch ("done") — grab all buffered audio regardless of VAD state
     // (server-side VAD may be broken; client signals end-of-utterance by closing with "done")
-    if (reasonStr === "done") {
+    if (reasonStr === 'done') {
       for (const [, state] of sessionStates) {
         if (state.transcribing) continue;
         let pcmData: Buffer | undefined;
@@ -687,12 +685,18 @@ wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
           console.log(`[${ts()}] 🗑️ No usable audio on close`);
           continue;
         }
-        const durationMs = Math.round(
-          (pcmData.length / 2 / SAMPLE_RATE) * 1000,
-        );
-        console.log(
-          `[${ts()}] 📤 ${durationMs}ms audio on close → Whisper+route`,
-        );
+        const durationMs = Math.round(pcmData.length / 2 / SAMPLE_RATE * 1000);
+        console.log(`[${ts()}] 📤 ${durationMs}ms audio on close → Whisper+route`);
+        state.transcribing = true;
+        const wavBuffer = buildWav(pcmData);
+        transcribeAndRoute(wavBuffer).catch((e: Error) => console.error(`[${ts()}] transcribeAndRoute error: ${e.message}`));
+      }
+      return;
+    }
+
+    // Non-clean close — old VAD-gated path
+    for (const [, state] of sessionStates) {
+      if (state.speechStarted && state.speechMs >= MIN_SPEECH_MS && !state.transcribing) {
         state.transcribing = true;
         const wavBuffer = buildWav(pcmData);
         transcribeAndRoute(wavBuffer).catch((e: Error) =>
@@ -1130,157 +1134,58 @@ function sendToOpenClaw(
 }
 
 // ── LLM-powered session routing ───────────────────────────────────────────────
-const ROUTING_OPTIONS: Array<{ session: string; label: string; desc: string }> =
-  [
-    {
-      session: "agent:main:telegram:direct:james",
-      label: "James DM",
-      desc: "General questions, personal tasks, anything not clearly matching a project",
-    },
-    {
-      session: "agent:main:telegram:group:-5166572823",
-      label: "arthur-haiku",
-      desc: "moonrepo, k8s, kubernetes, CI, PRs, infra, deployments, ArgoCD, Docker, cluster, Jupiter, NUC",
-    },
-    {
-      session: "agent:main:telegram:group:-5173870517",
-      label: "arthur-saas",
-      desc: "SaaS business ideas, Notion, biz projects",
-    },
-    {
-      session: "agent:main:telegram:group:-5297868919",
-      label: "arthur-smarthome",
-      desc: "Home Assistant, Nest speakers, lights, Roomba, ESPHome, Zigbee, MQTT, home automation",
-    },
-    {
-      session: "agent:main:telegram:group:-5175546187",
-      label: "arthur-tv-portal",
-      desc: "TV portal, Chromecast, dashboard, Android TV, whiteboard",
-    },
-    {
-      session: "agent:main:telegram:group:-5182444525",
-      label: "arthur-watch",
-      desc: "Watch PTT, watch app, ptt-server, watch development",
-    },
-  ];
+const ROUTING_OPTIONS: Array<{ session: string; label: string; desc: string }> = [
+  { session: 'agent:main:telegram:direct:james',         label: 'James DM',        desc: 'General questions, personal tasks, anything not clearly matching a project' },
+  { session: 'agent:main:telegram:group:-5166572823',    label: 'arthur-haiku',     desc: 'moonrepo, k8s, kubernetes, CI, PRs, infra, deployments, ArgoCD, Docker, cluster, Jupiter, NUC' },
+  { session: 'agent:main:telegram:group:-5173870517',    label: 'arthur-saas',      desc: 'SaaS business ideas, Notion, biz projects' },
+  { session: 'agent:main:telegram:group:-5297868919',    label: 'arthur-smarthome', desc: 'Home Assistant, Nest speakers, lights, Roomba, ESPHome, Zigbee, MQTT, home automation' },
+  { session: 'agent:main:telegram:group:-5175546187',    label: 'arthur-tv-portal', desc: 'TV portal, Chromecast, dashboard, Android TV, whiteboard' },
+  { session: 'agent:main:telegram:group:-5182444525',    label: 'arthur-watch',     desc: 'Watch PTT, watch app, ptt-server, watch development' },
+];
 
 async function pickSessionViaLLM(text: string): Promise<string> {
-  const optionsList = ROUTING_OPTIONS.map(
-    (o, i) => `${i + 1}. "${o.label}" — ${o.desc}`,
-  ).join("\n");
+  const optionsList = ROUTING_OPTIONS.map((o, i) => `${i + 1}. "${o.label}" — ${o.desc}`).join('\n');
   const prompt = `You are a routing assistant. Given a voice message transcription, pick the best session to route it to.\n\nSessions:\n${optionsList}\n\nTranscription: "${text}"\n\nReply with ONLY the number (1-${ROUTING_OPTIONS.length}) of the best session. No explanation.`;
 
   return new Promise<string>((resolve) => {
     const body = JSON.stringify({
-      model: "gpt-4o-mini",
+      model: 'gpt-4o-mini',
       max_tokens: 10,
-      messages: [{ role: "user", content: prompt }],
+      messages: [{ role: 'user', content: prompt }]
     });
-    const req = https.request(
-      {
-        hostname: "api.openai.com",
-        path: "/v1/chat/completions",
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${OPENAI_KEY}`,
-          "Content-Type": "application/json",
-          "Content-Length": Buffer.byteLength(body),
-        },
-      },
-      (res) => {
-        let data = "";
-        res.on("data", (c: Buffer) => {
-          data += c;
-        });
-        res.on("end", () => {
-          try {
-            const json = JSON.parse(data);
-            const reply: string =
-              json.choices?.[0]?.message?.content?.trim() ?? "";
-            const idx = parseInt(reply, 10) - 1;
-            if (idx >= 0 && idx < ROUTING_OPTIONS.length) {
-              console.log(
-                `[${ts()}] 🧠 Routed "${text.slice(0, 40)}" → ${ROUTING_OPTIONS[idx].label}`,
-              );
-              resolve(ROUTING_OPTIONS[idx].session);
-            } else {
-              console.warn(
-                `[${ts()}] ⚠️ LLM returned unexpected: "${reply}" — defaulting to James DM`,
-              );
-              resolve(ROUTING_OPTIONS[0].session);
-            }
-          } catch (e) {
-            console.error(`[${ts()}] LLM parse error: ${(e as Error).message}`);
+    const req = https.request({
+      hostname: 'api.openai.com',
+      path: '/v1/chat/completions',
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_KEY}`,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body)
+      }
+    }, (res) => {
+      let data = '';
+      res.on('data', (c: Buffer) => data += c);
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          const reply: string = json.choices?.[0]?.message?.content?.trim() ?? '';
+          const idx = parseInt(reply, 10) - 1;
+          if (idx >= 0 && idx < ROUTING_OPTIONS.length) {
+            console.log(`[${ts()}] 🧠 Routed "${text.slice(0, 40)}" → ${ROUTING_OPTIONS[idx].label}`);
+            resolve(ROUTING_OPTIONS[idx].session);
+          } else {
+            console.warn(`[${ts()}] ⚠️ LLM returned unexpected: "${reply}" — defaulting to James DM`);
             resolve(ROUTING_OPTIONS[0].session);
           }
-        });
-      },
-    );
-    req.on("error", (e: Error) => {
-      console.error(`[${ts()}] LLM routing error: ${e.message}`);
-      resolve(ROUTING_OPTIONS[0].session);
+        } catch (e) {
+          console.error(`[${ts()}] LLM parse error: ${(e as Error).message}`);
+          resolve(ROUTING_OPTIONS[0].session);
+        }
+      });
     });
-    req.setTimeout(8000, () => {
-      req.destroy();
-      resolve(ROUTING_OPTIONS[0].session);
-    });
+    req.on('error', (e: Error) => { console.error(`[${ts()}] LLM routing error: ${e.message}`); resolve(ROUTING_OPTIONS[0].session); });
+    req.setTimeout(8000, () => { req.destroy(); resolve(ROUTING_OPTIONS[0].session); });
     req.end(body);
-  });
-}
-
-// Transcribe-only: calls Whisper and returns raw text without sending anywhere
-function transcribeOnly(wavBuffer: Buffer): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const boundary = `----WatchPTT${Date.now()}`;
-    const prompt =
-      "Arthur, radio on, lights off, TV on, skip track, what's the weather [BRITISH]";
-
-    const pre = Buffer.from(
-      `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="audio.wav"\r\nContent-Type: audio/wav\r\n\r\n`,
-    );
-    const post = Buffer.from(
-      `\r\n--${boundary}\r\nContent-Disposition: form-data; name="model"\r\n\r\nwhisper-1\r\n` +
-        `--${boundary}\r\nContent-Disposition: form-data; name="language"\r\n\r\nen\r\n` +
-        `--${boundary}\r\nContent-Disposition: form-data; name="response_format"\r\n\r\ntext\r\n` +
-        `--${boundary}\r\nContent-Disposition: form-data; name="prompt"\r\n\r\n${prompt}\r\n` +
-        `--${boundary}--\r\n`,
-    );
-    const body = Buffer.concat([pre, wavBuffer, post]);
-
-    const apiReq = https.request(
-      {
-        hostname: "api.openai.com",
-        path: "/v1/audio/transcriptions",
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${OPENAI_KEY}`,
-          "Content-Type": `multipart/form-data; boundary=${boundary}`,
-          "Content-Length": body.length,
-        },
-      },
-      (apiRes) => {
-        let data = "";
-        apiRes.on("data", (c: string) => {
-          data += c;
-        });
-        apiRes.on("end", () => {
-          clearTimeout(whisperTimeout);
-          if (apiRes.statusCode !== 200)
-            return reject(new Error(`Whisper ${apiRes.statusCode}: ${data}`));
-          resolve(data.trim());
-        });
-      },
-    );
-
-    const whisperTimeout = setTimeout(() => {
-      apiReq.destroy(new Error("Whisper API timeout after 30s"));
-    }, 30000);
-
-    apiReq.on("error", (err: Error) => {
-      clearTimeout(whisperTimeout);
-      reject(err);
-    });
-    apiReq.end(body);
   });
 }
 
@@ -1288,24 +1193,18 @@ function transcribeOnly(wavBuffer: Buffer): Promise<string> {
 async function transcribeAndRoute(wavBuffer: Buffer): Promise<void> {
   let text: string;
   try {
-    text = await transcribeOnly(wavBuffer);
+    const result = await transcribeAndSend(wavBuffer, MAIN_SESSION);
+    text = typeof result === 'object' ? (result as { text: string }).text : result as string;
   } catch (e) {
     console.error(`[${ts()}] ❌ Whisper failed: ${(e as Error).message}`);
     return;
   }
-  if (!text || text.length < 2) {
-    console.log(`[${ts()}] 🚫 Empty transcription, skipping`);
-    return;
-  }
-  if (isHallucination(text)) {
-    console.log(`[${ts()}] 🚫 Hallucination: "${text}"`);
-    return;
-  }
+  if (!text || text.length < 2) { console.log(`[${ts()}] 🚫 Empty transcription, skipping`); return; }
+  if (isHallucination(text)) { console.log(`[${ts()}] 🚫 Hallucination: "${text}"`); return; }
   console.log(`[${ts()}] 🗣️ "${text}"`);
 
   // 1. Echo to James's DM immediately (he sees it on Telegram)
-  const echoSession = "agent:main:telegram:direct:james";
-  sendViaGateway(`⌚ ${text}`, echoSession, (err) => {
+  sendViaGateway(`⌚ ${text}`, 'agent:main:telegram:direct:james', (err) => {
     if (err) console.error(`[${ts()}] Echo failed: ${err.message}`);
     else console.log(`[${ts()}] 📱 Echoed to James DM`);
   });
@@ -1313,20 +1212,14 @@ async function transcribeAndRoute(wavBuffer: Buffer): Promise<void> {
   // 2. LLM picks best session
   const routedSession = await pickSessionViaLLM(text);
 
-  // 3. Post ⌚ turn to routed session — skip if same as echo to avoid double-post
-  if (routedSession !== echoSession) {
-    sendViaGateway(`⌚ ${text}`, routedSession, (err) => {
-      if (err) console.error(`[${ts()}] Turn failed: ${err.message}`);
-      else console.log(`[${ts()}] ✅ Turn sent to ${routedSession}`);
-    });
-  } else {
-    console.log(`[${ts()}] ✅ Routed to James DM (already echoed)`);
-  }
+  // 3. Post ⌚ turn to routed session — triggers agent reply
+  sendViaGateway(`⌚ ${text}`, routedSession, (err) => {
+    if (err) console.error(`[${ts()}] Turn failed: ${err.message}`);
+    else console.log(`[${ts()}] ✅ Turn sent to ${routedSession}`);
+  });
 }
 
-function ts(): string {
-  return new Date().toISOString().replace("T", " ").slice(0, -4);
-}
+function ts(): string { return new Date().toISOString().replace('T', ' ').slice(0, -4); }
 
 // ── Start ──
 

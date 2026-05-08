@@ -1,0 +1,134 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dj-watcher-script
+  namespace: radio-dj
+data:
+  dj-watcher.sh: "#!/bin/bash\n# dj-watcher.sh \u2014 watches /state/new-track-event\
+    \ and triggers DJ commentary\n# Polls every 5 seconds. When a new track event\
+    \ is detected (different path\n# than last processed), runs commentary logic in\
+    \ the background.\n\nset -e\n\nEVENT_FILE=\"/state/new-track-event\"\nLAST_TRACK=\"\
+    \"\n\necho \"[dj-watcher] Started. Polling ${EVENT_FILE} every 5s...\"\n\n\n#\
+    \ Start Python API server in background\nif [ -f /server/server.py ]; then\n \
+    \   echo \"[dj-watcher] Starting Python API server...\"\n    python3 /server/server.py\
+    \ &\n    sleep 1\nelse\n    echo \"[dj-watcher] WARNING: /server/server.py not\
+    \ found \u2014 API endpoint unavailable\" >&2\nfi\n\nwhile true; do\n    if [\
+    \ -f \"$EVENT_FILE\" ]; then\n        TRACK_PATH=$(jq -r '.path // empty' \"$EVENT_FILE\"\
+    \ 2>/dev/null || echo \"\")\n        PRETTY_NAME=$(jq -r '.name // empty' \"$EVENT_FILE\"\
+    \ 2>/dev/null || echo \"\")\n\n        if [ -n \"$TRACK_PATH\" ] && [ \"$TRACK_PATH\"\
+    \ != \"$LAST_TRACK\" ]; then\n            LAST_TRACK=\"$TRACK_PATH\"\n       \
+    \     echo \"[dj-watcher] New track detected: $PRETTY_NAME\"\n\n            #\
+    \ Run commentary in background \u2014 non-blocking\n            (\n          \
+    \      # 75% chance of commentary (25% skip)\n                ROLL=$((RANDOM %\
+    \ 100))\n                if [ \"$ROLL\" -ge 75 ]; then\n                    echo\
+    \ \"[dj-watcher] Skipping DJ commentary (roll=$ROLL)\" >&2\n                 \
+    \   exit 0\n                fi\n\n                # Determine which DJ is on based\
+    \ on day/time and schedule\n                CURRENT_HOUR=$(date +%-H)\n      \
+    \          DAY_OF_WEEK=$(date +%u)  # 1=Monday ... 7=Sunday\n\n              \
+    \  # Default: Arthur weekday daytime (8-18), Cara evenings/weekends\n        \
+    \        DJ_NAME=\"cara\"\n                if [ \"$DAY_OF_WEEK\" -le 5 ] && [\
+    \ \"$CURRENT_HOUR\" -ge 8 ] && [ \"$CURRENT_HOUR\" -lt 18 ]; then\n          \
+    \          DJ_NAME=\"arthur\"\n                fi\n\n                # Check schedule.json\
+    \ for Abi's work status\n                if [ -f /config/schedule.json ]; then\n\
+    \                    TODAY=$(date +%Y-%m-%d)\n                    ABI_STATUS=$(jq\
+    \ -r --arg d \"$TODAY\" '\n                        if (.schedule? | type) == \"\
+    array\" then\n                            ([.schedule[] | select(.date == $d)\
+    \ | .abi][0] // \"working\") | if type == \"object\" then .status // \"working\"\
+    \ else . end\n                        else\n                            (.abi[$d]\
+    \ // .[$d].abi // \"working\") | if type == \"object\" then .status // \"working\"\
+    \ else . end\n                        end\n                    ' /config/schedule.json\
+    \ 2>/dev/null || echo \"working\")\n                    if [ \"$ABI_STATUS\" =\
+    \ \"not-working\" ] && [ \"$DJ_NAME\" = \"arthur\" ]; then\n                 \
+    \       DJ_NAME=\"cara\"\n                    fi\n                fi\n\n     \
+    \           # Check for manual DJ override\n                if [ -f /data/music/dj-override.json\
+    \ ]; then\n                    OVERRIDE_DJ=$(jq -r '.dj // empty' /data/music/dj-override.json\
+    \ 2>/dev/null || true)\n                    if [ -n \"$OVERRIDE_DJ\" ]; then\n\
+    \                        DJ_NAME=\"$OVERRIDE_DJ\"\n                    fi\n  \
+    \              fi\n\n                # Generate DJ line via LLM (OpenAI API, gpt-4o-mini)\n\
+    \                OPENAI_API_KEY=\"${OPENAI_API_KEY:-}\"\n                if [\
+    \ -z \"$OPENAI_API_KEY\" ]; then\n                    echo \"[dj-watcher] No OPENAI_API_KEY,\
+    \ skipping DJ commentary\" >&2\n                    exit 0\n                fi\n\
+    \n                CURRENT_TIME=$(date +\"%H:%M\")\n                DJ_DISPLAY_NAME=$(echo\
+    \ \"$DJ_NAME\" | sed 's/^./\\U&/')  # Capitalize first letter\n\n            \
+    \    SYSTEM_PROMPT=\"You are DJ ${DJ_DISPLAY_NAME} on Arthur Radio. Currently\
+    \ playing: ${PRETTY_NAME}. Time: ${CURRENT_TIME}. 1-2 sentences, natural radio\
+    \ DJ style. Reply with ONLY the line.\"\n\n                LLM_RESPONSE=$(curl\
+    \ -sf --max-time 15 \\\n                    -X POST \\\n                    -H\
+    \ \"Content-Type: application/json\" \\\n                    -H \"Authorization:\
+    \ Bearer ${OPENAI_API_KEY}\" \\\n                    -d \"$(jq -n \\\n       \
+    \                 --arg sys \"$SYSTEM_PROMPT\" \\\n                        '{\n\
+    \                            model: \"gpt-4o-mini\",\n                       \
+    \     max_tokens: 100,\n                            temperature: 0.9,\n      \
+    \                      messages: [\n                                {role: \"\
+    system\", content: $sys},\n                                {role: \"user\", content:\
+    \ \"Say something about this track.\"}\n                            ]\n      \
+    \                  }')\" \\\n                    \"https://api.openai.com/v1/chat/completions\"\
+    \ 2>/dev/null) || {\n                    echo \"[dj-watcher] LLM call failed,\
+    \ skipping commentary\" >&2\n                    exit 0\n                }\n\n\
+    \                DJ_LINE=$(echo \"$LLM_RESPONSE\" | jq -r '.choices[0].message.content\
+    \ // empty' 2>/dev/null)\n                if [ -z \"$DJ_LINE\" ]; then\n     \
+    \               echo \"[dj-watcher] Empty LLM response, skipping commentary\"\
+    \ >&2\n                    exit 0\n                fi\n\n                echo\
+    \ \"[dj-watcher] DJ $DJ_DISPLAY_NAME says: $DJ_LINE\"\n\n                # Re-check\
+    \ track hasn't changed while LLM was generating\n                CURRENT_TRACK=$(jq\
+    \ -r '.path // empty' \"$EVENT_FILE\" 2>/dev/null || echo \"\")\n            \
+    \    if [ \"$CURRENT_TRACK\" = \"$TRACK_PATH\" ]; then\n                    /radio/dj-commentary.sh\
+    \ \"$DJ_NAME\" \"$PRETTY_NAME\" \"$DJ_LINE\" || {\n                        echo\
+    \ \"[dj-watcher] TTS commentary failed, continuing\" >&2\n                   \
+    \ }\n                else\n                    echo \"[dj-watcher] Track changed,\
+    \ skipping stale commentary\" >&2\n                fi\n            ) &\n     \
+    \   fi\n    fi\n\n    sleep 5\ndone\n"
+  dj-commentary.sh: "#!/bin/bash\n# dj-commentary.sh \u2014 Generate TTS commentary\
+    \ and inject into Liquidsoap queue\n# Usage: dj-commentary.sh <dj_name> <track_name>\
+    \ <text>\n#\n# Calls the tts-server to generate speech, pads with 300ms silence\
+    \ for\n# smooth ducking lead-in, then pushes to the appropriate Liquidsoap queue.\n\
+    \nset -euo pipefail\n\nDJ_NAME=\"${1:?Usage: dj-commentary.sh <dj_name> <track_name>\
+    \ <text>}\"\nTRACK_NAME=\"${2:?Usage: dj-commentary.sh <dj_name> <track_name>\
+    \ <text>}\"\nTEXT=\"${3:?Usage: dj-commentary.sh <dj_name> <track_name> <text>}\"\
+    \n\n# TTS server URL \u2014 plain HTTP is intentional: the cluster runs on a single\
+    \ node\n# (vmi3137202) so dj-brain \u2192 tts-server traffic stays on localhost/pod\
+    \ network.\n# TLS termination is handled by Istio at the ingress layer for external\
+    \ access.\n# If the TTS server moves off-node, switch this to HTTPS.\nTTS_SERVER_URL=\"\
+    ${TTS_SERVER_URL:-http://tts-server.tts-server.svc.cluster.local:3090}\"\nTTS_AUTH_TOKEN=\"\
+    ${TTS_AUTH_TOKEN:-}\"\nLIQUIDSOAP_HOST=\"${LIQUIDSOAP_HOST:-liquidsoap.radio-dj.svc.cluster.local}\"\
+    \nLIQUIDSOAP_PORT=\"${LIQUIDSOAP_PORT:-1234}\"\n\n# Voice IDs\nARTHUR_VOICE_ID=\"\
+    b4e39673-3fec-446a-a965-6517b5e0ea52\"\nCARA_VOICE_ID=\"7c45223a-60a8-45e5-9c74-0339f354ca81\"\
+    \n\n# Determine voice ID and queue name from DJ name\ncase \"${DJ_NAME,,}\" in\n\
+    \    arthur)\n        VOICE_ID=\"$ARTHUR_VOICE_ID\"\n        QUEUE_NAME=\"queue_arthur\"\
+    \n        ;;\n    cara)\n        VOICE_ID=\"$CARA_VOICE_ID\"\n        QUEUE_NAME=\"\
+    queue_cara\"\n        ;;\n    *)\n        echo \"[dj-commentary] Unknown DJ: $DJ_NAME\"\
+    \ >&2\n        exit 1\n        ;;\nesac\n\n# Generate unique filename\nCLIP_ID=\"\
+    dj-$(date +%s)-$$\"\nRAW_FILE=\"/state/${CLIP_ID}-raw.mp3\"\nPADDED_FILE=\"/state/${CLIP_ID}.mp3\"\
+    \n\ncleanup() {\n    rm -f \"$RAW_FILE\" \"$PADDED_FILE\" 2>/dev/null || true\n\
+    }\ntrap cleanup EXIT\n\n# Build auth header\nAUTH_HEADER=\"\"\nif [ -n \"$TTS_AUTH_TOKEN\"\
+    \ ]; then\n    AUTH_HEADER=\"Authorization: Bearer ${TTS_AUTH_TOKEN}\"\nfi\n\n\
+    # Step 1: Call /prepare to generate TTS\necho \"[dj-commentary] Generating TTS\
+    \ for DJ $DJ_NAME: ${TEXT:0:60}...\"\nPREPARE_RESPONSE=$(curl -sf \\\n    --max-time\
+    \ 30 \\\n    -X POST \\\n    -H \"Content-Type: application/json\" \\\n    ${AUTH_HEADER:+-H\
+    \ \"$AUTH_HEADER\"} \\\n    -d \"$(jq -n \\\n        --arg text \"$TEXT\" \\\n\
+    \        --arg voice_id \"$VOICE_ID\" \\\n        '{utterances: [{text: $text,\
+    \ voice: {id: $voice_id}}], format: {type: \"mp3\"}}')\" \\\n    \"${TTS_SERVER_URL}/prepare\"\
+    ) || {\n    echo \"[dj-commentary] ERROR: TTS /prepare failed\" >&2\n    exit\
+    \ 1\n}\n\n# Extract download URL from response\nDOWNLOAD_URL=$(echo \"$PREPARE_RESPONSE\"\
+    \ | jq -r '.url // empty')\nif [ -z \"$DOWNLOAD_URL\" ]; then\n    echo \"[dj-commentary]\
+    \ ERROR: No URL in TTS response: $PREPARE_RESPONSE\" >&2\n    exit 1\nfi\n\n#\
+    \ Step 2: Download the MP3\necho \"[dj-commentary] Downloading TTS clip from $DOWNLOAD_URL...\"\
+    \ncurl -sf --max-time 30 \\\n    ${AUTH_HEADER:+-H \"$AUTH_HEADER\"} \\\n    -o\
+    \ \"$RAW_FILE\" \\\n    \"$DOWNLOAD_URL\" || {\n    echo \"[dj-commentary] ERROR:\
+    \ Failed to download TTS clip\" >&2\n    exit 1\n}\n\n# Verify we got a valid\
+    \ file\nif [ ! -s \"$RAW_FILE\" ]; then\n    echo \"[dj-commentary] ERROR: Downloaded\
+    \ file is empty\" >&2\n    exit 1\nfi\n\n# Step 3: Pad 300ms silence at start\
+    \ for smooth ducking lead-in\necho \"[dj-commentary] Padding 300ms silence...\"\
+    \nffmpeg -y -loglevel error \\\n    -f lavfi -i \"anullsrc=r=44100:cl=stereo\"\
+    \ \\\n    -i \"$RAW_FILE\" \\\n    -filter_complex \"[0]atrim=0:0.3[silence];[silence][1:a]concat=n=2:v=0:a=1\"\
+    \ \\\n    \"$PADDED_FILE\" || {\n    echo \"[dj-commentary] WARN: ffmpeg padding\
+    \ failed, using raw file\" >&2\n    cp \"$RAW_FILE\" \"$PADDED_FILE\"\n}\n\n#\
+    \ Step 4: Push to Liquidsoap queue via telnet\necho \"[dj-commentary] Pushing\
+    \ to ${QUEUE_NAME} via ${LIQUIDSOAP_HOST}:${LIQUIDSOAP_PORT}...\"\nPUSH_RESPONSE=$(echo\
+    \ \"${QUEUE_NAME}.push ${PADDED_FILE}\" | nc -w2 \"$LIQUIDSOAP_HOST\" \"$LIQUIDSOAP_PORT\"\
+    \ 2>&1) || true\n    echo \"[dj-commentary] WARNING: Push to Liquidsoap failed,\
+    \ continuing anyway\" >&2\n}\n\n# On success, disable the EXIT trap for PADDED_FILE\
+    \ \u2014 schedule delayed cleanup\n# instead so Liquidsoap has time to read the\
+    \ file before it's removed.\ntrap - EXIT\nrm -f \"$RAW_FILE\" 2>/dev/null || true\n\
+    (sleep \"${CLEANUP_DELAY_SECS:-30}\" && rm -f \"$PADDED_FILE\") &\n\necho \"[dj-commentary]\
+    \ Done \u2014 DJ $DJ_NAME commentary queued ($CLIP_ID)\"\n"

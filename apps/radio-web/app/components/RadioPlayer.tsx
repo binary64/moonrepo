@@ -4,11 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 const STREAM_URL =
   process.env.NEXT_PUBLIC_STREAM_URL ?? "http://192.168.1.201:30100/stream";
-// Aggressive retry settings for weak signal areas
-const INITIAL_RETRY_DELAY_MS = 500; // Start fast
-const MAX_RETRY_DELAY_MS = 60000; // Allow up to 60s between retries
-const RETRY_BACKOFF_MULTIPLIER = 1.5; // Gradual increase (was 2)
-const MAX_STALLED_TIMEOUT_MS = 60000; // Wait up to 60s for stalled recovery
+const RETRY_CAP_MS = 10000;
 const SKIP_TIMEOUT_MS = 15000;
 const TARGET_BUFFER_SECONDS = 30; // How many seconds to buffer before playback starts
 const MAX_BUFFER_SECONDS = 60; // Hard cap — prevents unbounded memory growth

@@ -16,43 +16,76 @@ spec:
         app: dj-brain
     spec:
       containers:
-      - command:
-        - /bin/bash
-        - /data/radio-dj-script/dj-watcher.sh
+      - name: dj-brain
+        image: ghcr.io/binary64/dj-brain:latest
+        imagePullPolicy: Always
         env:
-        - name: LITELLM_MASTER_KEY
+        - name: OPENAI_API_KEY
           valueFrom:
             secretKeyRef:
-              key: LITELLM_MASTER_KEY
-              name: litellm-gateway-key
+              name: dj-brain-secret
+              key: openai-api-key
+        - name: TTS_SERVER_URL
+          value: http://tts-server.tts-server.svc.cluster.local:3090
         - name: TTS_AUTH_TOKEN
           valueFrom:
             secretKeyRef:
-              name: tts-auth-token
-              key: auth-token
-        image: ghcr.io/binary64/dj-brain:latest
-        imagePullPolicy: Always
-        name: dj-brain
+              name: dj-brain-secret
+              key: tts-auth-token
+        - name: HUME_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: dj-brain-secret
+              key: hume-api-key
+              optional: true
+        - name: ZAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: dj-brain-secret
+              key: zai-api-key
+              optional: true
+        - name: LIQUIDSOAP_PORT
+          value: '1234'
+        - name: TZ
+          value: Europe/London
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
         volumeMounts:
-        - mountPath: /state
-          name: state
-        - mountPath: /data/music/dj-override.json
-          name: dj-override
-        - mountPath: /config/schedule.json
-          name: schedule
-        - mountPath: /data/radio-dj-script
-          name: dj-watcher-script
-      imagePullSecrets:
-      - name: ghcr-auth
+        - name: state
+          mountPath: /state
+        - name: dj-watcher-script
+          mountPath: /data/radio-dj-script
+          readOnly: true
+        - name: dj-api-server
+          mountPath: /server
+          readOnly: true
+        - name: dj-override
+          mountPath: /data/music/dj-override.json
+          readOnly: true
+        - name: schedule
+          mountPath: /config/schedule.json
+          readOnly: true
       volumes:
-      - emptyDir: {}
-        name: state
-      - configMap:
-          name: dj-override
-        name: dj-override
-      - configMap:
-          name: schedule
-        name: schedule
-      - configMap:
+      - name: state
+        emptyDir: {}
+      - name: dj-watcher-script
+        configMap:
           name: dj-watcher-script
-        name: dj-watcher-script
+      - name: dj-api-server
+        configMap:
+          name: dj-api-server
+      - name: dj-override
+        hostPath:
+          path: /mnt/arthur/clawd/data/music/dj-override.json
+          type: FileOrCreate
+      - name: schedule
+        hostPath:
+          path: /mnt/arthur/clawd/memory/schedule.json
+          type: FileOrCreate
+      nodeSelector:
+        kubernetes.io/hostname: vmi3137202
