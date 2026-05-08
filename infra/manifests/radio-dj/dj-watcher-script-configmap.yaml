@@ -1,0 +1,100 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dj-watcher-script
+  namespace: radio-dj
+data:
+  dj-watcher.sh: "#!/bin/bash\nset -e\nEVENT_FILE=\"/state/new-track-event\"\nLAST_TRACK=\"\
+    \"\necho \"[dj-watcher] Started. Polling ${EVENT_FILE} every 5s...\"\n\n\n# Start\
+    \ Python API server in background\nif [ -f /server/server.py ]; then\n    echo\
+    \ \"[dj-watcher] Starting Python API server...\"\n    python3 -B /server/server.py\
+    \ &\n    sleep 1\nelse\n    echo \"[dj-watcher] WARNING: /server/server.py not\
+    \ found \u2014 API endpoint unavailable\" >&2\nfi\n\nwhile true; do\n    if [\
+    \ -f \"$EVENT_FILE\" ]; then\n        TRACK_PATH=$(cat \"$EVENT_FILE\")\n    \
+    \    if [ -n \"$TRACK_PATH\" ] && [ \"$TRACK_PATH\" != \"$LAST_TRACK\" ]; then\n\
+    \            LAST_TRACK=\"$TRACK_PATH\"\n            ARTIST=\"$(basename \"$(dirname\
+    \ \"$TRACK_PATH\")\")\"\n            TITLE=\"$(basename \"$TRACK_PATH\" .mp3)\"\
+    \n            TITLE=\"$(basename \"$TITLE\")\"\n            echo \"[dj-watcher]\
+    \ New track: $ARTIST - $TITLE\"\n            export ARTIST TITLE\n           \
+    \ COMMENTARY=$(python3 - <<PY\nimport json, os, datetime\nARTIST = os.environ.get(\"\
+    ARTIST\", \"Unknown Artist\")\nTITLE = os.environ.get(\"TITLE\", \"Unknown Title\"\
+    )\ncontext = \"Arthur DJ Context \\u2014 James & Abi\\n\\nJames: Technical, direct,\
+    \ loves details (PRs, k8s, infra, crypto, money).\\nAbi: Practical, health-conscious,\
+    \ values clarity. PoTS 12 years, hypermobile, bereavement recovery (2y). \\nCurrently\
+    \ 61.3kg, maintenance/strength phase. Carb rotation monthly (rice). Blood work\
+    \ good (Jan). \\nMilo digestive: rice-sensitive, on tripe-only + sweet potato\
+    \ trial. Wales trip 30 May-1 Jun.\\nTravel: Abi packs/logistics; James's readiness\
+    \ bottleneck. Service stops: Burger King/coffee for James + secure dog area for\
+    \ Milo.\\nGarden: Sunny border complete (peony + 45 bulbs + 5 perennials). Broad\
+    \ beans planted. 11 weeks to early July.\\nGoal: wellbeing, FI (new house+pool,\
+    \ 2 cars, 7 holidays/yr), longevity.\"\nprompt = f\"\"\"You are Cara, Arthur's\
+    \ radio DJ \u2014 warm, witty, genuinely passionate about music.\n\nContext:\n\
+    {context}\n\nNow: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}\nTrack:\
+    \ {ARTIST} \u2014 \"{TITLE}\"\n\nGenerate 1-2 sentence radio intro/outro that:\n\
+    - Feels spontaneous & personalised to James & Abi\n- References something relevant\
+    \ (garden, health, travel) if apt\n- Matches Cara: upbeat, slightly cheeky, always\
+    \ welcoming\n- NO generic 'here's a song' \u2014 talk to friends.\"\"\"\nimport\
+    \ urllib.request\nLITELLM_KEY = os.environ.get(\"LITELLM_MASTER_KEY\", \"\")\n\
+    if not LITELLM_KEY:\n    print(\"[[skip]]\")\n    exit(0)\npayload = json.dumps({\n\
+    \    \"model\": \"gemini-3-flash-preview\",\n    \"messages\": [{\"role\": \"\
+    user\", \"content\": prompt}],\n    \"max_tokens\": 150, \"temperature\": 0.8\n\
+    }).encode()\nreq = urllib.request.Request(\n    \"http://litellm.litellm.svc.cluster.local:4000/v1/chat/completions\"\
+    ,\n    data=payload,\n    headers={\n        \"Authorization\": f\"Bearer {LITELLM_KEY}\"\
+    ,\n        \"Content-Type\": \"application/json\"\n    },\n    method=\"POST\"\
+    \n)\ntry:\n    with urllib.request.urlopen(req, timeout=10) as resp:\n       \
+    \ result = json.loads(resp.read().decode())\n        text = result[\"choices\"\
+    ][0][\"message\"][\"content\"].strip()\n        text = text.replace('\\n', ' ').strip()\n\
+    \        if text.startswith('\"') and text.endswith('\"'):\n            text =\
+    \ text[1:-1]\n        print(text)\nexcept Exception as e:\n    print(f\"[[error:{e}]]\"\
+    )\nPY\n)\n            if [ -n \"$COMMENTARY\" ] && [[ ! \"$COMMENTARY\" == *\"\
+    [[skip]]\"* ]] && [[ ! \"$COMMENTARY\" == *\"[[error:\"* ]]; then\n          \
+    \      /radio/dj-commentary.sh \"$ARTIST\" \"$TITLE\" \"$COMMENTARY\"\n      \
+    \      fi\n        fi\n    fi\n    sleep 5\ndone\n"
+  dj-commentary.sh: "#!/bin/bash\nset -euo pipefail\n\n# Environment (with defaults)\n\
+    DJ_NAME=\"${1:-arthur}\"\nCLIP_TYPE=\"${2:-api-call}\"\nTEXT=\"${3:-}\"\nTTS_SERVER_URL=\"\
+    ${TTS_SERVER_URL:-http://tts-server.tts-server.svc.cluster.local:3090}\"\nTTS_AUTH_TOKEN=\"\
+    ${TTS_AUTH_TOKEN:-}\"\nLIQUIDSOAP_HOST=\"${LIQUIDSOAP_HOST:-liquidsoap.radio-dj.svc.cluster.local}\"\
+    \nLIQUIDSOAP_PORT=\"${LIQUIDSOAP_PORT:-1234}\"\n\n# Voice IDs\nARTHUR_VOICE_ID=\"\
+    b4e39673-3fec-446a-a965-6517b5e0ea52\"\nCARA_VOICE_ID=\"7c45223a-60a8-45e5-9c74-0339f354ca81\"\
+    \n\n# Determine voice ID and queue name from DJ name\ncase \"${DJ_NAME,,}\" in\n\
+    \    arthur) VOICE_ID=\"$ARTHUR_VOICE_ID\"; QUEUE_NAME=\"queue_arthur\" ;;\n \
+    \   cara)   VOICE_ID=\"$CARA_VOICE_ID\";   QUEUE_NAME=\"queue_cara\"   ;;\n  \
+    \  *)      echo \"[dj-commentary] ERROR: Unknown DJ '$DJ_NAME'\" >&2; exit 1 ;;\n\
+    esac\n\nCLIP_ID=\"dj-$(date +%s)-$$\"\nRAW_FILE=\"/state/${CLIP_ID}-raw.mp3\"\n\
+    PADDED_FILE=\"/state/${CLIP_ID}.mp3\"\n\ncleanup() {\n    rm -f \"$RAW_FILE\"\
+    \ \"$PADDED_FILE\" 2>/dev/null || true\n}\ntrap cleanup EXIT\n\n# Build auth header\n\
+    if [ -n \"$TTS_AUTH_TOKEN\" ]; then\n    AUTH_HEADER=\"Authorization: Bearer $TTS_AUTH_TOKEN\"\
+    \nfi\n\n# Step 1: Call /prepare to generate TTS\necho \"[dj-commentary] Generating\
+    \ TTS for DJ $DJ_NAME: ${TEXT:0:60}...\"\nPREPARE_RESPONSE=$(curl -sf \\\n   \
+    \ --max-time 30 \\\n    -X POST \\\n    -H \"Content-Type: application/json\"\
+    \ \\\n    ${AUTH_HEADER:+-H \"$AUTH_HEADER\"} \\\n    -d \"$(jq -n \\\n      \
+    \  --arg text \"$TEXT\" \\\n        --arg voice_id \"$VOICE_ID\" \\\n        '{utterances:\
+    \ [{text: $text, voice: {id: $voice_id}}], format: {type: \"mp3\"}}')\" \\\n \
+    \   \"${TTS_SERVER_URL}/prepare\") || {\n    echo \"[dj-commentary] ERROR: TTS\
+    \ /prepare failed\" >&2\n    exit 1\n}\n\nDOWNLOAD_URL=$(echo \"$PREPARE_RESPONSE\"\
+    \ | jq -r '.url // empty')\nif [ -z \"$DOWNLOAD_URL\" ]; then\n    echo \"[dj-commentary]\
+    \ ERROR: No URL in TTS response: $PREPARE_RESPONSE\" >&2\n    exit 1\nfi\n\n#\
+    \ Step 2: Download the MP3\necho \"[dj-commentary] Downloading TTS clip from $DOWNLOAD_URL...\"\
+    \ncurl -sf --max-time 30 \\\n    ${AUTH_HEADER:+-H \"$AUTH_HEADER\"} \\\n    -o\
+    \ \"$RAW_FILE\" \\\n    \"$DOWNLOAD_URL\" || {\n    echo \"[dj-commentary] ERROR:\
+    \ Failed to download TTS clip\" >&2\n    exit 1\n}\n\n# Verify file size\nFILE_SIZE=$(stat\
+    \ -c%s \"$RAW_FILE\" 2>/dev/null || echo 0)\nif [ \"$FILE_SIZE\" -lt 1000 ]; then\n\
+    \    echo \"[dj-commentary] ERROR: TTS file too small (${FILE_SIZE} bytes)\" >&2\n\
+    \    exit 1\nfi\n\n# Step 3: Pad 300ms silence for smooth ducking\necho \"[dj-commentary]\
+    \ Padding 300ms silence...\"\nif command -v ffmpeg &>/dev/null; then\n    ffmpeg\
+    \ -y -loglevel error \\\n        -f lavfi -i \"anullsrc=r=44100:cl=stereo\" \\\
+    \n        -i \"$RAW_FILE\" \\\n        -filter_complex \"[0]atrim=0:0.3[silence];[silence][1:a]concat=n=2:v=0:a=1\"\
+    \ \\\n        \"$PADDED_FILE\" 2>/dev/null || {\n        echo \"[dj-commentary]\
+    \ WARN: ffmpeg padding failed, using raw file\" >&2\n        cp \"$RAW_FILE\"\
+    \ \"$PADDED_FILE\"\n    }\nelse\n    cp \"$RAW_FILE\" \"$PADDED_FILE\"\nfi\n\n\
+    # Step 4: Push to Liquidsoap queue via telnet\necho \"[dj-commentary] Pushing\
+    \ to ${QUEUE_NAME} via ${LIQUIDSOAP_HOST}:${LIQUIDSOAP_PORT}...\"\nPUSH_RESPONSE=$(echo\
+    \ \"${QUEUE_NAME}.push ${PADDED_FILE}\" | nc -w2 \"$LIQUIDSOAP_HOST\" \"$LIQUIDSOAP_PORT\"\
+    \ 2>&1) || true\nif echo \"$PUSH_RESPONSE\" | grep -qi 'error\\|failed\\|unknown';\
+    \ then\n    echo \"[dj-commentary] WARNING: Push to Liquidsoap had issues: $PUSH_RESPONSE\"\
+    \ >&2\nfi\n\n# Success \u2014 disable EXIT trap cleanup for PADDED_FILE (Liquidsoap\
+    \ will consume it)\ntrap - EXIT\nrm -f \"$RAW_FILE\" 2>/dev/null || true\n(sleep\
+    \ \"${CLEANUP_DELAY_SECS:-30}\" && rm -f \"$PADDED_FILE\") >/dev/null 2>&1 &\n\
+    \necho \"[dj-commentary] Done \u2014 DJ $DJ_NAME commentary queued ($CLIP_ID)\"\
+    \n"
+defaultMode: 493
