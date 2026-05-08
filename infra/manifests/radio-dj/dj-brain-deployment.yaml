@@ -58,9 +58,6 @@ spec:
         volumeMounts:
         - name: state
           mountPath: /state
-        - name: dj-watcher-script
-          mountPath: /data/radio-dj-script
-          readOnly: true
         - name: dj-api-server
           mountPath: /server
           readOnly: true
@@ -69,6 +66,14 @@ spec:
           readOnly: true
         - name: schedule
           mountPath: /config/schedule.json
+          readOnly: true
+        - name: dj-watcher-script
+          mountPath: /radio/dj-watcher.sh
+          subPath: dj-watcher.sh
+          readOnly: true
+        - name: dj-watcher-script
+          mountPath: /radio/dj-commentary.sh
+          subPath: dj-commentary.sh
           readOnly: true
       volumes:
       - name: state
