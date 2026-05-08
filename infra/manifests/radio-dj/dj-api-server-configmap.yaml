@@ -6,7 +6,8 @@ metadata:
 data:
   server.py: "#!/usr/bin/env python3\nimport http.server\nimport socketserver\nimport\
     \ json\nimport os\nimport subprocess\nimport urllib.request\nimport urllib.error\n\
-    \nPORT = int(os.environ.get('API_PORT', '8080'))\nSTATE_DIR = '/state'\nLIQUIDSOAP_HOST\
+    \nimport sys; sys.dont_write_bytecode = True  # Disable .pyc on read-only ConfigMap\n\
+    PORT = int(os.environ.get('API_PORT', '8080'))\nSTATE_DIR = '/state'\nLIQUIDSOAP_HOST\
     \ = os.environ.get('LIQUIDSOAP_HOST', 'liquidsoap.radio-dj.svc.cluster.local')\n\
     LIQUIDSOAP_PORT = os.environ.get('LIQUIDSOAP_PORT', '1234')\nTTS_SERVER_URL =\
     \ os.environ.get('TTS_SERVER_URL', 'http://tts-server.tts-server.svc.cluster.local:3090')\n\
@@ -48,5 +49,6 @@ data:
     \ self.end_headers()\n                self.wfile.write(stderr or b'Error')\n \
     \       else:\n            self.send_response(404)\n            self.end_headers()\n\
     \            self.wfile.write(b'Not found')\n\nif __name__ == '__main__':\n  \
-    \  with socketserver.TCPServer(('', PORT), DJHandler) as httpd:\n        print(f'DJ\
-    \ Brain API listening on :{PORT}')\n        httpd.serve_forever()\n"
+    \  socketserver.TCPServer.allow_reuse_address = True\n    with socketserver.TCPServer(('',\
+    \ PORT), DJHandler) as httpd:\n        print(f'DJ Brain API listening on :{PORT}')\n\
+    \        httpd.serve_forever()\n"
