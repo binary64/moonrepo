@@ -69,8 +69,8 @@ data:
     \ --max-time 30 \\\n    -X POST \\\n    -H \"Content-Type: application/json\"\
     \ \\\n    ${AUTH_HEADER:+-H \"$AUTH_HEADER\"} \\\n    -d \"$(jq -n \\\n      \
     \  --arg text \"$TEXT\" \\\n        --arg voice_id \"$VOICE_ID\" \\\n        '{utterances:\
-    \ [{text: $text, voice: {id: $voice_id}}], format: {type: \\\"mp3\\\"}}')\" \\\
-    \n    \"${TTS_SERVER_URL}/prepare\") || {\n    echo \"[dj-commentary] ERROR: TTS\
+    \ [{text: $text, voice: {id: $voice_id}}], format: {type: \"mp3\"}}')\" \\\n \
+    \   \"${TTS_SERVER_URL}/prepare\") || {\n    echo \"[dj-commentary] ERROR: TTS\
     \ /prepare failed\" >&2\n    exit 1\n}\n\nDOWNLOAD_URL=$(echo \"$PREPARE_RESPONSE\"\
     \ | jq -r '.url // empty')\nif [ -z \"$DOWNLOAD_URL\" ]; then\n    echo \"[dj-commentary]\
     \ ERROR: No URL in TTS response: $PREPARE_RESPONSE\" >&2\n    exit 1\nfi\n\n#\

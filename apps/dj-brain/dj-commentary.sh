@@ -45,7 +45,7 @@ PREPARE_RESPONSE=$(curl -sf \
     -d "$(jq -n \
         --arg text "$TEXT" \
         --arg voice_id "$VOICE_ID" \
-        '{utterances: [{text: $text, voice: {id: $voice_id}}], format: {type: \"mp3\"}}')" \
+        '{utterances: [{text: $text, voice: {id: $voice_id}}], format: {type: "mp3"}}')" \
     "${TTS_SERVER_URL}/prepare") || {
     echo "[dj-commentary] ERROR: TTS /prepare failed" >&2
     exit 1
