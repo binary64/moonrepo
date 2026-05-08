@@ -20,6 +20,9 @@ ARG NEXT_PUBLIC_HASURA_WS_URL
 ENV NEXT_PUBLIC_HASURA_HTTP_URL=${NEXT_PUBLIC_HASURA_HTTP_URL}
 ENV NEXT_PUBLIC_HASURA_WS_URL=${NEXT_PUBLIC_HASURA_WS_URL}
 
+# Clean any stale Next.js build cache to ensure fresh compilation
+RUN rm -rf .next
+
 RUN npm run build
 
 FROM node:22-alpine AS runner
