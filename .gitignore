@@ -14,3 +14,15 @@ apps/pawpicks-stock-checker/products.json
 # Local config
 .envrc.local
 kubeconfig.yaml
+
+# Build artifacts
+dist/
+build/
+
+# Secrets and keys
+*.pem
+*.key
+
+# OS / editor noise
+.DS_Store
+*.log
