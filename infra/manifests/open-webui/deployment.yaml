@@ -5,8 +5,6 @@ metadata:
   namespace: open-webui
   labels:
     app: open-webui
-  annotations:
-    argocd.argoproj.io/sync-wave: "1"
 spec:
   replicas: 1
   selector:
