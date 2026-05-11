@@ -1189,7 +1189,9 @@ async function pickSessionViaLLM(text: string): Promise<string> {
       },
       (res) => {
         let data = "";
-        res.on("data", (c: Buffer) => (data += c));
+        res.on("data", (c: Buffer) => {
+          data += c;
+        });
         res.on("end", () => {
           try {
             const json = JSON.parse(data);
