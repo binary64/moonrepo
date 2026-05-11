@@ -16,7 +16,7 @@ fi
 
 while true; do
     if [ -f "$EVENT_FILE" ]; then
-        TRACK_PATH=$(cat "$EVENT_FILE")
+        TRACK_PATH=$(jq -r '.path' "$EVENT_FILE")
         if [ -n "$TRACK_PATH" ] && [ "$TRACK_PATH" != "$LAST_TRACK" ]; then
             LAST_TRACK="$TRACK_PATH"
             ARTIST="$(basename "$(dirname "$TRACK_PATH")")"
