@@ -44,6 +44,11 @@ spec:
               name: dj-brain-secret
               key: zai-api-key
               optional: true
+        - name: LITELLM_MASTER_KEY
+          valueFrom:
+            secretKeyRef:
+              name: litellm-gateway-key
+              key: LITELLM_MASTER_KEY
         - name: LIQUIDSOAP_PORT
           value: '1234'
         - name: TZ

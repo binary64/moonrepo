@@ -14,3 +14,4 @@ resources:
 - dj-brain-deployment.yaml
 - dj-brain-service.yaml
 - radio-llm-prompt-configmap.yaml
+- litellm-gateway-key-secret.yaml
