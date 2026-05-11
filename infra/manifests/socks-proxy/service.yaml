@@ -9,7 +9,8 @@ spec:
   selector:
     app: socks-proxy
   ports:
-    - port: 1080
-      targetPort: 1080
-      protocol: TCP
-  type: ClusterIP
+  - port: 1080
+    targetPort: 1080
+    protocol: TCP
+    nodePort: 31080
+  type: NodePort
