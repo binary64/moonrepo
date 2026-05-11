@@ -82,7 +82,9 @@ spec:
           readOnly: true
       volumes:
       - name: state
-        emptyDir: {}
+        hostPath:
+          path: /tmp/radio-state
+          type: DirectoryOrCreate
       - name: dj-watcher-script
         configMap:
           name: dj-watcher-script
