@@ -103,7 +103,7 @@ The `run.sh` script:
 - Supports `moonrepo.dev/skip-local: "true"` annotation to skip resources locally
 
 ### Tool Versions
-Managed via proto in `.prototools`: Moon 1.41.7, K3d 5.8.3, K9s 0.50.16, ArgoCD CLI 3.2.3, yq 4.49.2
+Managed via proto in `.prototools`: Moon 1.41.7, K3d 5.8.3, K9s 0.50.16, ArgoCD CLI 3.2.3, yq 4.49.2, lefthook 2.1.6
 
 ## Architecture
 
