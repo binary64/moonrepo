@@ -277,7 +277,7 @@ export default function Home() {
             </div>
           ) : (
             displayHistory.map((track, i) => (
-              <div key={`${track.timestamp}-${i}`} className="fade-in-up">
+              <div key={track.timestamp} className="fade-in-up">
                 <HistoryTrack
                   track={track}
                   index={displayHistory.length - 1 - i}
