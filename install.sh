@@ -49,7 +49,7 @@ fi
 sudo mkdir -p /etc/rancher/rke2
 
 cat <<EOF | sudo tee /etc/rancher/rke2/config.yaml >/dev/null
-write-kubeconfig-mode: "0644"
+write-kubeconfig-mode: "0600"
 tls-san:
   - $(hostname -f)
 cni: canal
