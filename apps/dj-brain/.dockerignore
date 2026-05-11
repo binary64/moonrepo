@@ -1,5 +1,3 @@
-node_modules
-.next
 .env*
 *.log
 .git
@@ -8,6 +6,4 @@ Dockerfile
 .dockerignore
 README.md
 .moon
-biome.json
 moon.yml
-tsconfig.tsbuildinfo
