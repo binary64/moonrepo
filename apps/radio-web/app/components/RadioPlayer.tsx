@@ -4,10 +4,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 const STREAM_URL =
   process.env.NEXT_PUBLIC_STREAM_URL ?? "http://192.168.1.201:30100/stream";
-const RETRY_CAP_MS = 10000;
+const INITIAL_RETRY_DELAY_MS = 1000;
+const RETRY_BACKOFF_MULTIPLIER = 2;
+const MAX_RETRY_DELAY_MS = 10000;
+const MAX_STALLED_TIMEOUT_MS = 15000;
 const SKIP_TIMEOUT_MS = 15000;
-const TARGET_BUFFER_SECONDS = 30; // How many seconds to buffer before playback starts
-const MAX_BUFFER_SECONDS = 60; // Hard cap — prevents unbounded memory growth
+const TARGET_BUFFER_SECONDS = 30;
+const MAX_BUFFER_SECONDS = 60;
 
 const MAX_RETRIES = 0; // 0 = unlimited retries for weak signal resilience
 
@@ -429,7 +432,9 @@ export default function RadioPlayer({
           >
             <svg
               className={`w-5 h-5 transition-all duration-300 ${
-                skipping ? "text-violet-400 animate-spin-slow" : "text-slate-300"
+                skipping
+                  ? "text-violet-400 animate-spin-slow"
+                  : "text-slate-300"
               }`}
               fill="currentColor"
               viewBox="0 0 24 24"
@@ -450,7 +455,9 @@ export default function RadioPlayer({
       <div className="w-full max-w-[200px]">
         <div className="flex justify-between text-[11px] text-slate-500 mb-1 font-mono">
           <span>MSE Buffer</span>
-          <span>{Math.round(bufferSeconds)}s / {MAX_BUFFER_SECONDS}s</span>
+          <span>
+            {Math.round(bufferSeconds)}s / {MAX_BUFFER_SECONDS}s
+          </span>
         </div>
         <div className="h-1 bg-slate-700/50 rounded-full overflow-hidden">
           <div
