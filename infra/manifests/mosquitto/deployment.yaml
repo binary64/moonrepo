@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: mosquitto
-          image: "eclipse-mosquitto:1.6.12"
+          image: "eclipse-mosquitto:2.0.21"
           imagePullPolicy: IfNotPresent
           ports:
             - name: mqtt
@@ -40,6 +40,13 @@ spec:
           readinessProbe:
             tcpSocket:
               port: 1883
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
           volumeMounts:
             - name: config-volume
               mountPath: /mosquitto/config
