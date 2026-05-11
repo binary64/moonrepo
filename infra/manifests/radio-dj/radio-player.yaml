@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: radio-player
+  namespace: radio-dj
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: radio-player
+  template:
+    metadata:
+      labels:
+        app: radio-player
+    spec:
+      containers:
+      - name: player
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: player-content
+          mountPath: /usr/share/nginx/html
+      volumes:
+      - name: player-content
+        hostPath:
+          path: /mnt/arthur/clawd/data
+          type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: radio-player
+  namespace: radio-dj
+spec:
+  selector:
+    app: radio-player
+  ports:
+  - port: 80
+    targetPort: 80
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: radio-player
+  namespace: radio-dj
+spec:
+  hosts:
+  - "player.stream.brandwhisper.cloud"
+  gateways:
+  - istio-system/gateway
+  http:
+  - route:
+    - destination:
+        host: radio-player.radio-dj.svc.cluster.local
+        port:
+          number: 80
