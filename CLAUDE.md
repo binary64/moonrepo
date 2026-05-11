@@ -29,6 +29,10 @@ If the branch doesn't exist yet:
 git -C /mnt/arthur/clawd/moonrepo worktree add $WT -b $BRANCH origin/master
 ```
 
+## ⚠️ Git Workflow Rule (MANDATORY)
+
+**Never push directly to master.** All changes must go through a pull request. Commit on a feature branch, push the branch, and open a PR with `gh pr create`. Only push to master if explicitly told to.
+
 ## Project Overview
 
 This is a monorepo combining a Next.js web application with Kubernetes infrastructure-as-code. It uses Moon as the task runner and Bun as the package manager. Infrastructure is deployed via GitOps (ArgoCD) with automated Pulumi stack execution via the Pulumi Kubernetes Operator.
