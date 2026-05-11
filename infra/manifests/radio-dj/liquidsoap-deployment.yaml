@@ -21,6 +21,13 @@ spec:
         kubernetes.io/hostname: vmi3137202
       securityContext:
         fsGroup: 999
+      initContainers:
+        - name: fix-state-perms
+          image: busybox:1.37
+          command: ["sh", "-c", "chmod 777 /state"]
+          volumeMounts:
+            - name: state
+              mountPath: /state
       containers:
         - name: liquidsoap
           image: ghcr.io/binary64/liquidsoap:latest
