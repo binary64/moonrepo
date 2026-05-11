@@ -71,6 +71,14 @@ spec:
                 secretKeyRef:
                   name: gha-runner-secret
                   key: access-token
+          livenessProbe:
+            exec:
+              command:
+                - pgrep
+                - -f
+                - Runner.Listener
+            initialDelaySeconds: 30
+            periodSeconds: 60
           volumeMounts:
             - name: docker-sock
               mountPath: /var/run/docker.sock
