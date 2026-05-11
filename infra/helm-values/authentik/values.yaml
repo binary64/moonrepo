@@ -1,5 +1,5 @@
 authentik:
-  secret_key: "CHANGE_ME_USE_SEALED_SECRET"
+  secret_key: "" # Override via AUTHENTIK_SECRET_KEY env from authentik-secret-key Secret
   postgresql:
     host: "authentik-pg-rw"
     port: 5432
@@ -10,6 +10,11 @@ server:
   nodeSelector:
     kubernetes.io/hostname: vmi3137202
   env:
+    - name: AUTHENTIK_SECRET_KEY
+      valueFrom:
+        secretKeyRef:
+          name: authentik-secret-key
+          key: secret-key
     - name: AUTHENTIK_POSTGRESQL__PASSWORD
       valueFrom:
         secretKeyRef:
@@ -29,6 +34,11 @@ worker:
   nodeSelector:
     kubernetes.io/hostname: vmi3137202
   env:
+    - name: AUTHENTIK_SECRET_KEY
+      valueFrom:
+        secretKeyRef:
+          name: authentik-secret-key
+          key: secret-key
     - name: AUTHENTIK_POSTGRESQL__PASSWORD
       valueFrom:
         secretKeyRef:

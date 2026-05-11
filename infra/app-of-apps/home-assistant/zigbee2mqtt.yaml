@@ -26,35 +26,19 @@ spec:
       values: |
         zigbee2mqtt:
           frontend:
-            auth_token: KGabURkzkattsvLD5u3iDefsBELCGQ5uduqKWYMJ
+            auth_token: CHANGE_ME_VIA_SEALED_SECRET
 
           mqtt:
             server: 'mqtt://mosquitto:1883'
             username: mqtt
-            password: mqtt
+            password: CHANGE_ME_VIA_SEALED_SECRET
 
           serial:
             adapter: ember
             port: /dev/ttyUSB0
 
           advanced:
-            network_key:
-              - 231
-              - 8
-              - 97
-              - 166
-              - 138
-              - 38
-              - 9
-              - 36
-              - 36
-              - 155
-              - 111
-              - 51
-              - 190
-              - 211
-              - 211
-              - 14
+            network_key: GENERATE_AND_SEAL
             pan_id: 31237
             channel: 25
             log_level: info

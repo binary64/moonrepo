@@ -24,7 +24,7 @@ spec:
         mariadb-subchart:
           enabled: true
           auth:
-            rootPassword: "frappe-hrms-root-2026"
+            rootPassword: "CHANGE_ME_VIA_SEALED_SECRET"
             database: frappe_hrms
           primary:
             nodeSelector:
@@ -105,7 +105,7 @@ spec:
           createSite:
             enabled: true
             siteName: "hrms.brandwhisper.cloud"
-            adminPassword: "fjd890sfjeionreiojfreiolkrnekrjelk"
+            adminPassword: "CHANGE_ME_VIA_SEALED_SECRET"
             installApps:
               - erpnext
               - hrms
