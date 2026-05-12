@@ -22,176 +22,170 @@ spec:
       securityContext:
         fsGroup: 999
       initContainers:
-        - name: chown-state
-          image: busybox:1.35
-          command: ["sh", "-c", "chown -R 999:999 /state"]
-          securityContext:
-            runAsUser: 0
-          volumeMounts:
-            - name: state
-              mountPath: /state
-        - name: init-fifo
-          image: alpine:latest
-          command: ["sh", "-c", "mkdir -p /stream-fifo && mkfifo -m 666 /stream-fifo/audio.pipe"]
-          volumeMounts:
-            - name: stream-fifo
-              mountPath: /stream-fifo
+      - name: chown-state
+        image: busybox:1.35
+        command:
+        - sh
+        - -c
+        - chown -R 999:999 /state
+        securityContext:
+          runAsUser: 0
+        volumeMounts:
+        - name: state
+          mountPath: /state
+      - name: init-fifo
+        image: alpine:latest
+        command:
+        - sh
+        - -c
+        - mkdir -p /stream-fifo && mkfifo -m 666 /stream-fifo/audio.pipe
+        volumeMounts:
+        - name: stream-fifo
+          mountPath: /stream-fifo
       - name: init-fonts
         image: alpine:latest
-        command: ["sh", "-c", "apk add --no-cache liberation-fonts && cp /usr/share/fonts/ttf/LiberationSans-Regular.ttf /fonts/"]
+        command:
+        - sh
+        - -c
+        - apk add --no-cache liberation-fonts && cp /usr/share/fonts/ttf/LiberationSans-Regular.ttf
+          /fonts/
         volumeMounts:
-          - name: fonts
-            mountPath: /fonts
-      containers:
-        - name: liquidsoap
-          image: ghcr.io/binary64/liquidsoap:latest
-          ports:
-            - containerPort: 1234
-              protocol: TCP
-            - containerPort: 8000
-              protocol: TCP
-          resources:
-            limits:
-              cpu: 500m
-              memory: 1Gi
-            requests:
-              cpu: 100m
-              memory: 256Mi
-          env:
-            - name: ICECAST_HOST
-              value: icecast.radio-dj.svc.cluster.local
-            - name: ICECAST_SOURCE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: liquidsoap-secret
-                  key: icecast-source-password
-            - name: ICECAST_SOURCE_PASSWORD_URL
-              valueFrom:
-                secretKeyRef:
-                  name: liquidsoap-secret
-                  key: icecast-source-password-url
-            - name: OPENAI_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: liquidsoap-secret
-                  key: openai-api-key
-                  optional: true
-            - name: TZ
-              value: Europe/London
-          volumeMounts:
-            - name: music
-              mountPath: /data/music
-              readOnly: true
-            - name: music-index
-              mountPath: /data/music-index
-              readOnly: true
-            - name: track-graph
-              mountPath: /data/radio-track-graph.json
-              readOnly: true
-            - name: play-history
-              mountPath: /data/music/play-history.log
-            - name: track-tiers
-              mountPath: /data/music/track-tiers.json
-              readOnly: true
-            - name: dj-override
-              mountPath: /data/music/dj-override.json
-              readOnly: true
-            - name: schedule
-              mountPath: /config/schedule.json
-              readOnly: true
-            - name: llm-prompt
-              mountPath: /config/llm-prompt
-              readOnly: true
-            - name: state
-              mountPath: /state
-            - name: radio-dj-config
-              mountPath: /radio/radio-dj.liq
-              subPath: radio-dj.liq
-            - name: stream-fifo
-              mountPath: /stream-fifo
-        - name: video-streamer
-          image: jrottenberg/ffmpeg:alpine
-          command:
-            - sh
-            - -c
-            - >-
-              ffmpeg -hide_banner -loglevel info
-              -f mp3 -i /stream-fifo/audio.pipe
-              -f lavfi -i color=c=#111111:s=1280x720:r=25
-              -vf "drawtext=fontfile=/fonts/LiberationSans-Regular.ttf:textfile=/state/current-track-display.txt:reload=1:fontsize=72:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2,format=yuv420p"
-              -c:v mpeg1video -b:v 1000k
-              -c:a copy
-              -f mpegts -flush_packets 0
-              "icecast://source:${ICECAST_SOURCE_PASSWORD_URL}@icecast.radio-dj.svc.cluster.local:8100/stream-video"
-          env:
-            - name: ICECAST_SOURCE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: liquidsoap-secret
-                  key: icecast-source-password
-            - name: ICECAST_SOURCE_PASSWORD_URL
-              valueFrom:
-                secretKeyRef:
-                  name: liquidsoap-secret
-                  key: icecast-source-password-url
-            - name: ICECAST_SOURCE_PASSWORD_URL
-              valueFrom:
-                secretKeyRef:
-                  name: liquidsoap-secret
-                  key: icecast-source-password-url
-          resources:
-            requests:
-              cpu: 200m
-              memory: 128Mi
-            limits:
-              cpu: 500m
-              memory: 256Mi
-          volumeMounts:
-            - name: stream-fifo
-              mountPath: /stream-fifo
-            - name: state
-              mountPath: /state
-            - name: fonts
-              mountPath: /fonts
-      volumes:
-        - name: music
-          hostPath:
-            path: /mnt/arthur/clawd/data/music
-            type: Directory
-        - name: music-index
-          hostPath:
-            path: /mnt/arthur/clawd/data/music-index
-            type: Directory
-        - name: track-graph
-          hostPath:
-            path: /mnt/arthur/clawd/data/radio-track-graph.json
-            type: File
-        - name: play-history
-          hostPath:
-            path: /mnt/arthur/clawd/data/music/play-history.log
-            type: FileOrCreate
-        - name: track-tiers
-          hostPath:
-            path: /mnt/arthur/clawd/data/music/track-tiers.json
-            type: File
-        - name: dj-override
-          hostPath:
-            path: /mnt/arthur/clawd/data/music/dj-override.json
-            type: File
-        - name: schedule
-          configMap:
-            name: schedule
-        - name: state
-          hostPath:
-            path: /tmp/radio-state
-            type: DirectoryOrCreate
-        - name: llm-prompt
-          configMap:
-            name: radio-llm-prompt
-        - name: radio-dj-config
-          configMap:
-            name: radio-dj-config
-        - name: stream-fifo
-          emptyDir: {}
         - name: fonts
-          emptyDir: {}
+          mountPath: /fonts
+      containers:
+      - name: liquidsoap
+        image: ghcr.io/binary64/liquidsoap:latest
+        ports:
+        - containerPort: 1234
+          protocol: TCP
+        - containerPort: 8000
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 500m
+            memory: 1Gi
+          requests:
+            cpu: 100m
+            memory: 256Mi
+        env:
+        - name: ICECAST_HOST
+          value: icecast.radio-dj.svc.cluster.local
+        - name: ICECAST_SOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: liquidsoap-secret
+              key: icecast-source-password
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: liquidsoap-secret
+              key: openai-api-key
+              optional: true
+        - name: TZ
+          value: Europe/London
+        volumeMounts:
+        - name: music
+          mountPath: /data/music
+          readOnly: true
+        - name: music-index
+          mountPath: /data/music-index
+          readOnly: true
+        - name: track-graph
+          mountPath: /data/radio-track-graph.json
+          readOnly: true
+        - name: play-history
+          mountPath: /data/music/play-history.log
+        - name: track-tiers
+          mountPath: /data/music/track-tiers.json
+          readOnly: true
+        - name: dj-override
+          mountPath: /data/music/dj-override.json
+          readOnly: true
+        - name: schedule
+          mountPath: /config/schedule.json
+          readOnly: true
+        - name: llm-prompt
+          mountPath: /config/llm-prompt
+          readOnly: true
+        - name: state
+          mountPath: /state
+        - name: radio-dj-config
+          mountPath: /radio/radio-dj.liq
+          subPath: radio-dj.liq
+        - name: stream-fifo
+          mountPath: /stream-fifo
+      - name: video-streamer
+        image: jrottenberg/ffmpeg:alpine
+        command:
+        - sh
+        - -c
+        - ffmpeg -hide_banner -loglevel info -f mp3 -i /stream-fifo/audio.pipe -f
+          lavfi -i color=c=#111111:s=1280x720:r=25 -vf "drawtext=fontfile=/fonts/LiberationSans-Regular.ttf:textfile=/state/current-track-display.txt:reload=1:fontsize=72:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2,format=yuv420p"
+          -c:v mpeg1video -b:v 1000k -c:a copy -f mpegts -flush_packets 0 "icecast://source:${ICECAST_SOURCE_PASSWORD_URL}@icecast.radio-dj.svc.cluster.local:8100/stream-video"
+        env:
+        - name: ICECAST_SOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: liquidsoap-secret
+              key: icecast-source-password
+        - name: ICECAST_SOURCE_PASSWORD_URL
+          valueFrom:
+            secretKeyRef:
+              name: liquidsoap-secret
+              key: icecast-source-password-url
+        resources:
+          requests:
+            cpu: 200m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+        volumeMounts:
+        - name: stream-fifo
+          mountPath: /stream-fifo
+        - name: state
+          mountPath: /state
+        - name: fonts
+          mountPath: /fonts
+      volumes:
+      - name: music
+        hostPath:
+          path: /mnt/arthur/clawd/data/music
+          type: Directory
+      - name: music-index
+        hostPath:
+          path: /mnt/arthur/clawd/data/music-index
+          type: Directory
+      - name: track-graph
+        hostPath:
+          path: /mnt/arthur/clawd/data/radio-track-graph.json
+          type: File
+      - name: play-history
+        hostPath:
+          path: /mnt/arthur/clawd/data/music/play-history.log
+          type: FileOrCreate
+      - name: track-tiers
+        hostPath:
+          path: /mnt/arthur/clawd/data/music/track-tiers.json
+          type: File
+      - name: dj-override
+        hostPath:
+          path: /mnt/arthur/clawd/data/music/dj-override.json
+          type: File
+      - name: schedule
+        configMap:
+          name: schedule
+      - name: state
+        hostPath:
+          path: /tmp/radio-state
+          type: DirectoryOrCreate
+      - name: llm-prompt
+        configMap:
+          name: radio-llm-prompt
+      - name: radio-dj-config
+        configMap:
+          name: radio-dj-config
+      - name: stream-fifo
+        emptyDir: {}
+      - name: fonts
+        emptyDir: {}
