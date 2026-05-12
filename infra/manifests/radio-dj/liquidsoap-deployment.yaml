@@ -156,9 +156,8 @@ spec:
             path: /mnt/arthur/clawd/data/music/dj-override.json
             type: File
         - name: schedule
-          hostPath:
-            path: /mnt/arthur/memory/schedule.json
-            type: File
+          configMap:
+            name: schedule-configmap
         - name: state
           hostPath:
             path: /tmp/radio-state
