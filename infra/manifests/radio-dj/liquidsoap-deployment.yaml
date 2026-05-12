@@ -106,12 +106,12 @@ spec:
             - >-
               ffmpeg -hide_banner -loglevel info
               -f mp3 -i /stream-fifo/audio.pipe
-              -loop 1 -f lavfi -i color=c=#111111:s=1280x720:r=25
+              -f lavfi -i color=c=#111111:s=1280x720:r=25
               -vf "drawtext=textfile=/state/current-track-display.txt:reload=1:fontsize=72:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2,format=yuv420p"
               -c:v mpeg1video -b:v 1000k
               -c:a copy
               -f mpegts -flush_packets 0
-              "icecast://source:${ICECAST_SOURCE_PASSWORD}@icecast.radio-dj.svc.cluster.local:8100/stream-video?mount=/stream-video"
+              "icecast://source:${ICECAST_SOURCE_PASSWORD}@icecast.radio-dj.svc.cluster.local:8100/stream-video"
           env:
             - name: ICECAST_SOURCE_PASSWORD
               valueFrom:
