@@ -42,16 +42,6 @@ spec:
         volumeMounts:
         - name: stream-fifo
           mountPath: /stream-fifo
-      - name: init-fonts
-        image: alpine:latest
-        command:
-        - sh
-        - -c
-        - apk add --no-cache liberation-fonts && cp /usr/share/fonts/ttf/LiberationSans-Regular.ttf
-          /fonts/
-        volumeMounts:
-        - name: fonts
-          mountPath: /fonts
       containers:
       - name: liquidsoap
         image: ghcr.io/binary64/liquidsoap:latest
@@ -188,4 +178,5 @@ spec:
       - name: stream-fifo
         emptyDir: {}
       - name: fonts
-        emptyDir: {}
+        configMap:
+          name: video-font
