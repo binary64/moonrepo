@@ -157,7 +157,7 @@ spec:
             type: File
         - name: schedule
           configMap:
-            name: schedule-configmap
+            name: schedule
         - name: state
           hostPath:
             path: /tmp/radio-state
