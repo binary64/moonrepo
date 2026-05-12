@@ -111,13 +111,18 @@ spec:
               -c:v mpeg1video -b:v 1000k
               -c:a copy
               -f mpegts -flush_packets 0
-              "icecast://source:${ICECAST_SOURCE_PASSWORD}@icecast.radio-dj.svc.cluster.local:8100/stream-video"
+              "icecast://source:${ICECAST_SOURCE_PASSWORD_URL}@icecast.radio-dj.svc.cluster.local:8100/stream-video"
           env:
             - name: ICECAST_SOURCE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: liquidsoap-secret
                   key: icecast-source-password
+            - name: ICECAST_SOURCE_PASSWORD_URL
+              valueFrom:
+                secretKeyRef:
+                  name: liquidsoap-secret
+                  key: icecast-source-password-url
           resources:
             requests:
               cpu: 200m
