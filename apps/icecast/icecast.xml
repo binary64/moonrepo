@@ -32,6 +32,13 @@
         <fallback-override>1</fallback-override>
     </mount>
 
+    <mount>
+        <mount-name>/stream-video</mount-name>
+        <type>video/mp2t</type>
+        <fallback-mount>/silence</fallback-mount>
+        <fallback-override>1</fallback-override>
+    </mount>
+
     <fileserve>1</fileserve>
 
     <paths>

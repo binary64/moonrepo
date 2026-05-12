@@ -21,11 +21,19 @@ spec:
         volumeMounts:
         - name: player-content
           mountPath: /usr/share/nginx/html
+        - name: nginx-config
+          mountPath: /etc/nginx/conf.d
       volumes:
       - name: player-content
         hostPath:
           path: /mnt/arthur/clawd/data
           type: DirectoryOrCreate
+      - name: nginx-config
+        configMap:
+          name: radio-player-nginx-config
+          items:
+          - key: default.conf
+            path: default.conf
 ---
 apiVersion: v1
 kind: Service
@@ -33,11 +41,14 @@ metadata:
   name: radio-player
   namespace: radio-dj
 spec:
+  type: NodePort
   selector:
     app: radio-player
   ports:
-  - port: 80
+  - name: http
+    port: 80
     targetPort: 80
+    nodePort: 30000
 ---
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService

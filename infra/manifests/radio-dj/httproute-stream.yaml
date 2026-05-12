@@ -15,6 +15,6 @@ spec:
     - backendRefs:
         - group: ""
           kind: Service
-          name: icecast
-          port: 8100
+          name: radio-player
+          port: 80
           weight: 1

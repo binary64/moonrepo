@@ -63,7 +63,10 @@ music = source.on_metadata(music, fun (m) -> begin
   if display != "" then
     log("META UPDATE: #{display}")
     current_song := display
+    # Write display text for video overlay (read by ffmpeg drawtext)
+    file.write(data=display, "/state/current-track-display.txt")
   end
+
 end)
 
 # ─── Beat-Aware Crossfade (no silence gaps) ───
@@ -150,6 +153,14 @@ server.register("request.song", usage="request.song <path>", description="Reques
   "OK: Requesting #{path}"
 end)
 
+
+# Write mixed audio to FIFO for video sidecar (raw MP3)
+output.file(
+  %mp3(bitrate=192),
+  "/stream-fifo/audio.pipe",
+  radio
+)
+
 # Output to Icecast
 output.icecast(
   %mp3(bitrate=192),
@@ -162,5 +173,15 @@ output.icecast(
   genre="Mixed",
   fallible=true,
   encoding="UTF-8",
+  radio
+)
+
+# Also serve via HTTP for Cast compatibility (HEAD/range support)
+output.http(
+  %mp3(bitrate=192),
+  host="0.0.0.0",
+  port=8000,
+  path="/stream",
+  name="Arthur Radio HTTP",
   radio
 )
