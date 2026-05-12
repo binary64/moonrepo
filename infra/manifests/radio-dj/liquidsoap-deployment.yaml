@@ -32,7 +32,7 @@ spec:
               mountPath: /state
         - name: init-fifo
           image: alpine:latest
-          command: ["sh", "-c", "mkdir -p /stream-fifo && mkfifo /stream-fifo/audio.pipe"]
+          command: ["sh", "-c", "mkdir -p /stream-fifo && mkfifo -m 666 /stream-fifo/audio.pipe"]
           volumeMounts:
             - name: stream-fifo
               mountPath: /stream-fifo
