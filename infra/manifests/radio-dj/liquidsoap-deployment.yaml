@@ -21,6 +21,15 @@ spec:
         kubernetes.io/hostname: vmi3137202
       securityContext:
         fsGroup: 999
+      initContainers:
+        - name: chown-state
+          image: busybox:1.35
+          command: ["sh", "-c", "chown -R 999:999 /state"]
+          volumeMounts:
+            - name: state
+              mountPath: /state
+          securityContext:
+            runAsUser: 0
       containers:
         - name: liquidsoap
           image: ghcr.io/binary64/liquidsoap:latest
