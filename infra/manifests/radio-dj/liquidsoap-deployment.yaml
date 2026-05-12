@@ -107,11 +107,16 @@ spec:
       - name: video-streamer
         image: jrottenberg/ffmpeg:alpine
         command:
-        - sh
-        - -c
-        - ffmpeg -hide_banner -loglevel info -f mp3 -i /stream-fifo/audio.pipe -f
-          lavfi -i color=c=#111111:s=1280x720:r=25 -vf "drawtext=fontfile=/fonts/LiberationSans-Regular.ttf:textfile=/state/current-track-display.txt:reload=1:fontsize=72:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2,format=yuv420p"
-          -c:v mpeg1video -b:v 1000k -c:a copy -f mpegts -flush_packets 0 "icecast://source:${ICECAST_SOURCE_PASSWORD_URL}@icecast.radio-dj.svc.cluster.local:8100/stream-video"
+          - sh
+          - -c
+          - >-
+            apk add --no-cache liberation-fonts && ffmpeg -hide_banner -loglevel info
+            -f mp3 -i /stream-fifo/audio.pipe
+            -f lavfi -i color=c=#111111:s=1280x720:r=25
+            -vf "drawtext=fontfile=/usr/share/fonts/ttf/LiberationSans-Regular.ttf:textfile=/state/current-track-display.txt:reload=1:fontsize=72:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2,format=yuv420p"
+            -c:v mpeg1video -b:v 1000k -c:a copy
+            -f mpegts -flush_packets 0
+            "icecast://source:${ICECAST_SOURCE_PASSWORD_URL}@icecast.radio-dj.svc.cluster.local:8100/stream-video"
         env:
         - name: ICECAST_SOURCE_PASSWORD
           valueFrom:
@@ -135,8 +140,6 @@ spec:
           mountPath: /stream-fifo
         - name: state
           mountPath: /state
-        - name: fonts
-          mountPath: /fonts
       volumes:
       - name: music
         hostPath:
@@ -177,6 +180,3 @@ spec:
           name: radio-dj-config
       - name: stream-fifo
         emptyDir: {}
-      - name: fonts
-        configMap:
-          name: video-font
