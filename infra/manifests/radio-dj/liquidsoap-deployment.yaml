@@ -104,7 +104,7 @@ spec:
             - sh
             - -c
             - >-
-              ffmpeg -hide_banner -loglevel warning
+              ffmpeg -hide_banner -loglevel info
               -f mp3 -i /stream-fifo/audio.pipe
               -loop 1 -f lavfi -i color=c=#111111:s=1280x720:r=25
               -vf "drawtext=textfile=/state/current-track-display.txt:reload=1:fontsize=72:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2,format=yuv420p"
