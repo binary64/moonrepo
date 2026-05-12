@@ -20,6 +20,10 @@ spec:
   affinity:
     nodeSelector:
       kubernetes.io/hostname: vmi3137202
+    tolerations:
+      - key: node.kubernetes.io/disk-pressure
+        operator: Exists
+        effect: NoSchedule
 
   postgresql:
     pg_hba:

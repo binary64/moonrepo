@@ -7,8 +7,10 @@ authentik:
     user: "authentik"
 
 server:
-  nodeSelector:
-    kubernetes.io/hostname: vmi3137202
+  tolerations:
+    - key: node.kubernetes.io/disk-pressure
+      operator: Exists
+      effect: NoSchedule
   env:
     - name: AUTHENTIK_SECRET_KEY
       valueFrom:
@@ -31,8 +33,10 @@ server:
       readOnly: true
 
 worker:
-  nodeSelector:
-    kubernetes.io/hostname: vmi3137202
+  tolerations:
+    - key: node.kubernetes.io/disk-pressure
+      operator: Exists
+      effect: NoSchedule
   env:
     - name: AUTHENTIK_SECRET_KEY
       valueFrom:

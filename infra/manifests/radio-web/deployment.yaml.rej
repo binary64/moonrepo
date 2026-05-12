@@ -1,0 +1,11 @@
+--- deployment.yaml
++++ deployment.yaml
+@@ -20,7 +20,7 @@
+         - name: RADIO-WEB
+           value: "1"
+       containers:
+-      - image: ghcr.io/binary64/radio-web:37bcf03
++      - image: ghcr.io/binary64/radio-web:a0fc54c
+         imagePullPolicy: Always
+         name: radio-web
+         ports:
