@@ -36,6 +36,12 @@ spec:
           volumeMounts:
             - name: stream-fifo
               mountPath: /stream-fifo
+        - name: init-fonts
+          image: curlimages/curl:latest
+          command: ["sh", "-c", "curl -L -o /fonts/LiberationSans-Regular.ttf https://github.com/liberationfonts/liberation-fonts/raw/main/ttf/LiberationSans-Regular.ttf"]
+          volumeMounts:
+            - name: fonts
+              mountPath: /fonts
       containers:
         - name: liquidsoap
           image: ghcr.io/binary64/liquidsoap:latest
