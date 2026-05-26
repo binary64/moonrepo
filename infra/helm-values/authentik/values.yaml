@@ -33,6 +33,13 @@ server:
       readOnly: true
 
 worker:
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: 512Mi
+      cpu: 500m
   tolerations:
     - key: node.kubernetes.io/disk-pressure
       operator: Exists
