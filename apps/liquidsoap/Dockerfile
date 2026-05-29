@@ -19,6 +19,7 @@ WORKDIR /radio
 
 COPY radio-dj.liq /radio/radio-dj.liq
 COPY next_track.py /radio/next_track.py
+COPY track-filter.sh /radio/track-filter.sh
 COPY announce-track.sh /radio/announce-track.sh
 COPY dj-outro-event.sh /radio/dj-outro-event.sh
 COPY entrypoint.sh /radio/entrypoint.sh

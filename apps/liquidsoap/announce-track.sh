@@ -1,41 +1,27 @@
 #!/bin/bash
-# Track change hook — logs play history, writes now-playing, updates Icecast
-# metadata, and writes a new-track-event for dj-brain to consume.
+# Track change hook (track START) — logs play history, writes now-playing, logs
+# to Hasura, and updates Icecast stream metadata.
 # Replaces the old radio-listener-monitor service for track logging.
 #
-# Reads track info from state files written by Liquidsoap:
+# DJ commentary is NOT triggered here. It is triggered separately at the track
+# OUTRO by dj-outro-event.sh (invoked from radio-dj.liq via source.on_end), so
+# the rendered TTS clip lands over the outro/crossfade instead of mid-song.
+#
+# Reads track info from state files written by Liquidsoap (via track-filter.sh):
 #   /state/current-track-path  — full path to the track
 #   /state/current-track-bpm   — detected BPM
 
 set -e
 
-TRACK_PATH=$(cat /state/current-track-path 2>/dev/null || echo "")
-if [ -z "$TRACK_PATH" ]; then
-    exit 0
-fi
-TRACK_BPM=$(cat /state/current-track-bpm 2>/dev/null || echo "")
+# Load track state + apply the shared loop guard. Sourcing means a non-library
+# or DJ-clip track causes track-filter.sh to `exit 0`, skipping this script.
+# Provides: TRACK_PATH, TRACK_BPM, TRACK_FILE, TRACK_NAME, TIMESTAMP.
+# shellcheck source=apps/liquidsoap/track-filter.sh
+. /radio/track-filter.sh
 
-# Guard: nothing to do if we have no track path
-if [ -z "$TRACK_PATH" ]; then
-    exit 0
-fi
-
-TRACK_FILE=$(basename "$TRACK_PATH" 2>/dev/null || echo "unknown")
 HISTORY_LOG="/data/music/play-history.log"
 
-# Skip TTS clips / DJ injections / non-library files (avoid event loops!)
-if [[ "$TRACK_PATH" == /tmp/* ]] || [[ "$TRACK_PATH" == /state/* ]] || \
-   [[ "$TRACK_FILE" == *"radio-norm"* ]] || [[ "$TRACK_FILE" == *"dj-"* ]] || \
-   [[ "$TRACK_FILE" == *"cara-"* ]] || [[ "$TRACK_FILE" == *"shoutout"* ]] || \
-   [[ "$TRACK_FILE" == *"transition"* ]] || [[ "$TRACK_FILE" == *"track-announce"* ]] || \
-   [[ "$TRACK_FILE" == *"greeting"* ]] || [[ "$TRACK_FILE" == *"voice-"* ]] || \
-   [[ "$TRACK_FILE" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12} ]]; then
-    exit 0
-fi
-
 # ─── Always: log play history + write now-playing ───
-TRACK_NAME=$(echo "$TRACK_FILE" | sed 's/^[0-9]*-//; s/\.mp3$//; s/\.m4a$//; s/-/ /g; s/_/ /g')
-TIMESTAMP=$(date -Iseconds)
 mkdir -p "$(dirname "$HISTORY_LOG")"
 echo "$TIMESTAMP  $TRACK_NAME  ($TRACK_FILE)" >> "$HISTORY_LOG"
 
@@ -75,11 +61,5 @@ HASURA_SECRET="${HASURA_ADMIN_SECRET:-}"
 
 # Update Icecast stream metadata via Liquidsoap telnet (local — same container)
 echo "meta.update $PRETTY_NAME" | nc -w1 127.0.0.1 1234 >/dev/null 2>&1 || true
-
-# NOTE: DJ commentary is triggered separately at the track OUTRO by
-# dj-outro-event.sh (invoked from radio-dj.liq source.on_end), NOT here at
-# track start. This keeps the rendered TTS clip aligned to the outro/crossfade
-# instead of landing blindly mid-song. This script only handles history,
-# now-playing, Hasura logging, and Icecast metadata.
 
 exit 0
