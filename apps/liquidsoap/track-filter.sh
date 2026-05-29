@@ -1,4 +1,8 @@
+#!/bin/bash
 # shellcheck shell=bash
+# NOTE: this file is sourced (never executed directly); the shebang is here so
+# static analysers detect bash and don't flag bash-only syntax (e.g. [[ ]] with
+# ==) as non-portable sh.
 # track-filter.sh — shared track-state loader + loop guard for the radio-dj
 # container. Sourced by announce-track.sh (track start) and dj-outro-event.sh
 # (track outro) so the filtering logic lives in ONE place and cannot drift.
