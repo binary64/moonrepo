@@ -11,6 +11,9 @@
 # At the outro the "current" track is still the ENDING track (the next one
 # hasn't started), which is exactly what we want to back-announce.
 
+# TRACK_PATH/TRACK_BPM/TRACK_NAME/TIMESTAMP are assigned by the sourced
+# track-filter.sh below; shellcheck can't follow the source at analysis time.
+# shellcheck disable=SC2154
 set -e
 
 # Load track state + apply the shared loop guard (identical to announce-track.sh

@@ -11,6 +11,9 @@
 #   /state/current-track-path  — full path to the track
 #   /state/current-track-bpm   — detected BPM
 
+# TRACK_FILE/TRACK_NAME/TIMESTAMP are assigned by the sourced track-filter.sh
+# below; shellcheck can't follow the source at analysis time.
+# shellcheck disable=SC2154
 set -e
 
 # Load track state + apply the shared loop guard. Sourcing means a non-library
