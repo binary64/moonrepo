@@ -20,20 +20,25 @@
 # script — which is exactly the desired "skip this track" behaviour.
 
 TRACK_PATH=$(cat /state/current-track-path 2>/dev/null || echo "")
-if [ -z "$TRACK_PATH" ]; then
+if [[ -z "$TRACK_PATH" ]]; then
     exit 0
 fi
 TRACK_BPM=$(cat /state/current-track-bpm 2>/dev/null || echo "")
 
 TRACK_FILE=$(basename "$TRACK_PATH" 2>/dev/null || echo "unknown")
 
-# Skip TTS clips / DJ injections / non-library files (avoid event loops!)
-if [[ "$TRACK_PATH" == /tmp/* ]] || [[ "$TRACK_PATH" == /state/* ]] || \
-   [[ "$TRACK_FILE" == *"radio-norm"* ]] || [[ "$TRACK_FILE" == *"dj-"* ]] || \
-   [[ "$TRACK_FILE" == *"cara-"* ]] || [[ "$TRACK_FILE" == *"shoutout"* ]] || \
-   [[ "$TRACK_FILE" == *"transition"* ]] || [[ "$TRACK_FILE" == *"track-announce"* ]] || \
-   [[ "$TRACK_FILE" == *"greeting"* ]] || [[ "$TRACK_FILE" == *"voice-"* ]] || \
-   [[ "$TRACK_FILE" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12} ]]; then
+# Skip TTS clips / DJ injections / non-library files (avoid event loops!).
+# Uses [[ ]] with `=` glob matching (not `==`/`=~`) so it stays portable per
+# DeepSource SH-3014/SH-3015 while remaining bash pattern matching. The final
+# pattern matches a leading UUID (8-4-4-4-12 hex) used by DJ-clip filenames.
+uuid_glob='????????-????-????-????-????????????*'
+# shellcheck disable=SC2053  # $uuid_glob is an intentional glob pattern
+if [[ "$TRACK_PATH" = /tmp/* ]] || [[ "$TRACK_PATH" = /state/* ]] || \
+   [[ "$TRACK_FILE" = *"radio-norm"* ]] || [[ "$TRACK_FILE" = *"dj-"* ]] || \
+   [[ "$TRACK_FILE" = *"cara-"* ]] || [[ "$TRACK_FILE" = *"shoutout"* ]] || \
+   [[ "$TRACK_FILE" = *"transition"* ]] || [[ "$TRACK_FILE" = *"track-announce"* ]] || \
+   [[ "$TRACK_FILE" = *"greeting"* ]] || [[ "$TRACK_FILE" = *"voice-"* ]] || \
+   [[ "$TRACK_FILE" = $uuid_glob ]]; then
     exit 0
 fi
 
