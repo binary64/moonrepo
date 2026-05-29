@@ -20,6 +20,7 @@ WORKDIR /radio
 COPY radio-dj.liq /radio/radio-dj.liq
 COPY next_track.py /radio/next_track.py
 COPY announce-track.sh /radio/announce-track.sh
+COPY dj-outro-event.sh /radio/dj-outro-event.sh
 COPY entrypoint.sh /radio/entrypoint.sh
 
 RUN chmod +x /radio/*.sh /radio/*.py

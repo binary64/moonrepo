@@ -49,6 +49,10 @@ music = source.on_metadata(music, fun (m) -> begin
     log("TRACK: #{fn} (BPM: #{actual_bpm})")
     file.write(data=fn, "/state/current-track-path")
     file.write(data=actual_bpm, "/state/current-track-bpm")
+    # announce-track.sh logs play-history + Icecast metadata at track START.
+    # DJ commentary is NO LONGER triggered here — it's triggered at the OUTRO
+    # via source.on_end below, so the rendered TTS clip lands over the
+    # outro/crossfade instead of blindly mid-song. See dj-outro-event.sh.
     ignore(process.run("/radio/announce-track.sh &"))
   end
 
@@ -67,6 +71,21 @@ music = source.on_metadata(music, fun (m) -> begin
     file.write(data=display, "/state/current-track-display.txt")
   end
 
+end)
+
+# ─── Outro-aligned DJ commentary trigger ───
+# Fires when OUTRO_LEAD seconds remain on the current track. This is the only
+# place that knows the playhead position, so it's the correct authority for
+# timing. dj-outro-event.sh writes /state/new-track-event, which dj-watcher.sh
+# consumes to render TTS — by the time the LLM+TTS finish (~10-20s), the clip
+# lands over the OUTRO and carries across the crossfade into the next track,
+# like a real radio back-announce. Default 35s headroom is tunable via the
+# OUTRO_LEAD env var (clamped sane). The hook only writes a file — it never
+# touches the audio graph, so it cannot break the live stream.
+outro_lead = float_of_string(default=35., environment.get(default="35", "OUTRO_LEAD"))
+music = source.on_end(music, delay=outro_lead, fun (_, _) -> begin
+  log("DJ: outro reached (#{outro_lead}s remaining) — triggering commentary")
+  ignore(process.run("/radio/dj-outro-event.sh &"))
 end)
 
 # ─── Beat-Aware Crossfade (no silence gaps) ───

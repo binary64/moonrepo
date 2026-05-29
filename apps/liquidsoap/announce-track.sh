@@ -76,14 +76,10 @@ HASURA_SECRET="${HASURA_ADMIN_SECRET:-}"
 # Update Icecast stream metadata via Liquidsoap telnet (local — same container)
 echo "meta.update $PRETTY_NAME" | nc -w1 127.0.0.1 1234 >/dev/null 2>&1 || true
 
-# ─── Write new-track-event for dj-brain to consume ───
-TMP_EVENT="/state/new-track-event.tmp.$$"
-jq -n \
-    --arg path "$TRACK_PATH" \
-    --arg bpm "$TRACK_BPM" \
-    --arg name "$PRETTY_NAME" \
-    --arg timestamp "$TIMESTAMP" \
-    '{path: $path, bpm: $bpm, name: $name, timestamp: $timestamp}' > "$TMP_EVENT"
-mv "$TMP_EVENT" /state/new-track-event
+# NOTE: DJ commentary is triggered separately at the track OUTRO by
+# dj-outro-event.sh (invoked from radio-dj.liq source.on_end), NOT here at
+# track start. This keeps the rendered TTS clip aligned to the outro/crossfade
+# instead of landing blindly mid-song. This script only handles history,
+# now-playing, Hasura logging, and Icecast metadata.
 
 exit 0
