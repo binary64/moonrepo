@@ -15,6 +15,7 @@ import glob
 import os
 import sys
 import random
+import subprocess
 import time
 import re
 import urllib.request
@@ -648,8 +649,40 @@ def check_request():
     return None
 
 
+def fire_pending_dj_clip():
+    """Air a DJ clip queued by the agentic radio-tick (speak --timing end).
+
+    The tick writes {dj,text,ts} to PENDING_END_FILE. next_track.py is invoked
+    by Liquidsoap when the current track ends, so this is the natural
+    'end of song' moment to air it. Best-effort: never block track selection.
+    """
+    pending = "/state/dj-pending-end-of-song.json"
+    try:
+        if not os.path.exists(pending):
+            return
+        with open(pending) as f:
+            rec = json.load(f)
+        os.remove(pending)  # consume exactly once
+        dj = (rec.get("dj") or "arthur").lower()
+        text = (rec.get("text") or "").strip()
+        if not text or dj not in ("arthur", "cara"):
+            return
+        # Stale guard: skip clips older than 30 min (listener likely gone/changed)
+        if rec.get("ts") and (time.time() - rec["ts"]) > 1800:
+            print(f"DJ clip stale, skipping ({int(time.time()-rec['ts'])}s old)", file=sys.stderr)
+            return
+        print(f"Airing pending {dj} end-of-song clip ({len(text)} chars)", file=sys.stderr)
+        subprocess.Popen(["/radio/dj-commentary.sh", dj, "api-call", text],
+                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception as e:
+        print(f"fire_pending_dj_clip error (ignored): {e}", file=sys.stderr)
+
+
 def main():
     graph = load_graph()
+
+    # Air any DJ clip the agentic tick queued for end-of-song (best-effort).
+    fire_pending_dj_clip()
 
     if not graph:
         # Fallback: random from music dir
