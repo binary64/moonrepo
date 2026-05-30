@@ -14,7 +14,7 @@ The LLM (hermes -z, radio-tick skill) calls `speak` and `queue` as its tools.
 import argparse
 import json
 import os
-import subprocess
+import subprocess  # nosec B404 - kubectl/curl orchestration; all calls use shell=False with fixed argv
 import sys
 import time
 from datetime import datetime
@@ -35,7 +35,7 @@ CARA_VOICE = "7c45223a-60a8-45e5-9c74-0339f354ca81"
 
 def sh(args, timeout=20, check=False, stdin_bytes=None):
     """Run a command WITHOUT a shell. `args` is a list of argv tokens."""
-    r = subprocess.run(args, shell=False, capture_output=True,
+    r = subprocess.run(args, shell=False, capture_output=True,  # nosec B603 - fixed argv, no shell, no untrusted input
                        input=stdin_bytes, timeout=timeout, check=False)
     out = r.stdout.decode(errors="replace") if isinstance(r.stdout, bytes) else (r.stdout or "")
     err = r.stderr.decode(errors="replace") if isinstance(r.stderr, bytes) else (r.stderr or "")
@@ -83,13 +83,13 @@ def icecast_listeners():
         srcs = src if isinstance(src, list) else [src]
         return sum(int(s.get("listeners", 0) or 0)
                    for s in srcs if "/stream" in str(s.get("listenurl", "")))
-    except Exception:
+    except (ValueError, KeyError, TypeError):
         return 0
 
 
 def load_graph():
     """Load the pre-computed track graph (tracks, follow edges, path index)."""
-    with open(GRAPH_HOST) as f:
+    with open(GRAPH_HOST, encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -112,7 +112,7 @@ def read_pod_json(path, pod=None, container="liquidsoap"):
             "cat", path], timeout=15)
     try:
         return json.loads(r.stdout)
-    except Exception:
+    except (ValueError, TypeError):
         return None
 
 
@@ -152,7 +152,7 @@ def _audience():
     """Schedule-aware presence — mirrors next_track.py get_audience().
     James assumed home; Abi by schedule/time. Returns {abi_home, james_home}."""
     try:
-        with open(SCHEDULE_FILE) as f:
+        with open(SCHEDULE_FILE, encoding="utf-8") as f:
             schedule = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         schedule = {}
@@ -192,23 +192,23 @@ def budget():
     r = sh(["curl", "-sf", "--max-time", "5", BUDGET_URL], timeout=8)
     try:
         return json.loads(r.stdout)
-    except Exception:
+    except (ValueError, TypeError):
         return {}
 
 
 def tick_state():
     """Load persisted tick state (last spoke timestamp, spoke count)."""
     try:
-        with open(TICK_STATE) as f:
+        with open(TICK_STATE, encoding="utf-8") as f:
             return json.load(f)
-    except Exception:
+    except (OSError, ValueError):
         return {"last_spoke_ts": 0, "spoke_count": 0}
 
 
 def save_tick_state(st):
     """Persist tick state to disk."""
     os.makedirs(os.path.dirname(TICK_STATE), exist_ok=True)
-    with open(TICK_STATE, "w") as f:
+    with open(TICK_STATE, "w", encoding="utf-8") as f:
         json.dump(st, f)
 
 
@@ -358,7 +358,7 @@ def cmd_speak(args):
     if args.text:
         text = args.text
     elif args.file:
-        with open(args.file) as f:
+        with open(args.file, encoding="utf-8") as f:
             payload = json.load(f)
         if isinstance(payload, dict) and "utterances" in payload:
             text = " ".join(u.get("text", "") for u in payload["utterances"])
