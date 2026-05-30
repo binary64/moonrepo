@@ -14,8 +14,9 @@ Exit codes:
   0  all good (all speakers playing) OR recast issued OR intentionally skipped
   1  radio is off / paused — nothing to do
 """
-import subprocess
+import subprocess  # nosec B404 - controlled argv, shell=False, no untrusted input
 import json
+import os
 import sys
 import time
 
@@ -28,15 +29,15 @@ GROUP_ENTITY = "media_player.all_speakers"
 MEMBER_ENTITIES = ["media_player.nest_audio", "media_player.office_speaker"]
 RADIO_NS = "radio-dj"
 LIQ_LABEL = "app=liquidsoap"
-PAUSE_FILE = "/tmp/radio-paused"
+PAUSE_FILE = "/tmp/radio-paused"  # nosec B108 - shared flag with radio.sh, intentional
 
 
 def kx(args, ns=HA_NS, pod=HA_POD, timeout=20):
     """Run a command inside a k8s pod, return stdout (empty on failure)."""
     try:
-        r = subprocess.run(
+        r = subprocess.run(  # nosec B603 B607 - fixed kubectl argv, no shell
             ["kubectl", "exec", "-n", ns, pod, "--", *args],
-            capture_output=True, text=True, timeout=timeout,
+            capture_output=True, text=True, timeout=timeout, check=False,
         )
         return r.stdout
     except (subprocess.SubprocessError, OSError):
@@ -46,8 +47,9 @@ def kx(args, ns=HA_NS, pod=HA_POD, timeout=20):
 def kubectl(args, timeout=20):
     """Run a plain kubectl command, return stdout (empty on failure)."""
     try:
-        r = subprocess.run(
-            ["kubectl", *args], capture_output=True, text=True, timeout=timeout,
+        r = subprocess.run(  # nosec B603 B607 - fixed kubectl argv, no shell
+            ["kubectl", *args], capture_output=True, text=True,
+            timeout=timeout, check=False,
         )
         return r.stdout.strip()
     except (subprocess.SubprocessError, OSError):
@@ -119,8 +121,8 @@ def radio_is_on():
 
 
 def main():
+    """Check each speaker; re-cast the group if any has dropped out of sync."""
     # Respect intentional pause.
-    import os
     if os.path.exists(PAUSE_FILE):
         print("paused — skipping")
         return 1
@@ -137,7 +139,7 @@ def main():
     bad = []
     for ent in MEMBER_ENTITIES:
         state, cid = ha_get_state(token, ent)
-        ours = STREAM_URL.split("//")[-1] in (cid or "")
+        ours = STREAM_URL.rsplit("//", maxsplit=1)[-1] in (cid or "")
         if state != "playing" or not ours:
             bad.append((ent, state, ours))
 
@@ -145,7 +147,7 @@ def main():
         print("OK: all speakers playing the radio")
         return 0
 
-    names = ", ".join(f"{e.split('.')[-1]}({s})" for e, s, _ in bad)
+    names = ", ".join(f"{e.rsplit('.', maxsplit=1)[-1]}({s})" for e, s, _ in bad)
     print(f"RECAST: {len(bad)} speaker(s) not in sync -> {names}")
     ha_cast_group(token)
     time.sleep(10)
@@ -154,9 +156,9 @@ def main():
     still_bad = []
     for ent in MEMBER_ENTITIES:
         state, cid = ha_get_state(token, ent)
-        ours = STREAM_URL.split("//")[-1] in (cid or "")
+        ours = STREAM_URL.rsplit("//", maxsplit=1)[-1] in (cid or "")
         if state not in ("playing", "buffering") or not ours:
-            still_bad.append(ent.split(".")[-1])
+            still_bad.append(ent.rsplit(".", maxsplit=1)[-1])
     if still_bad:
         print(f"WARN: still not playing after recast: {', '.join(still_bad)}")
     else:

@@ -20,7 +20,7 @@ playing our stream.
 
 | File | Deployed to (VPS) | Purpose |
 |------|-------------------|---------|
-| `speaker-sync-watchdog.py` | `~/.hermes/scripts/radio/speaker-sync-watchdog.py` | Per-speaker state check + group recast |
+| `speaker_sync_watchdog.py` | `~/.hermes/scripts/radio/speaker_sync_watchdog.py` | Per-speaker state check + group recast |
 
 ## How it works
 
@@ -40,7 +40,7 @@ playing our stream.
 
 ```
 hermes cron create --name radio-speaker-sync --schedule "every 2m" \
-  --no-agent --deliver local --script radio/speaker-sync-watchdog.py
+  --no-agent --deliver local --script radio/speaker_sync_watchdog.py
 ```
 
 ## Config knobs (top of the script)
