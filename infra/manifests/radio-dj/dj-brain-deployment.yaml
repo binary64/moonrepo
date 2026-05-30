@@ -49,6 +49,12 @@ spec:
             secretKeyRef:
               name: litellm-gateway-key
               key: LITELLM_MASTER_KEY
+        - name: HA_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: dj-brain-secret
+              key: ha-token
+              optional: true
         - name: LIQUIDSOAP_PORT
           value: '1234'
         - name: TZ
@@ -80,6 +86,9 @@ spec:
           mountPath: /radio/dj-commentary.sh
           subPath: dj-commentary.sh
           readOnly: true
+        - name: track-graph
+          mountPath: /data
+          readOnly: true
       volumes:
       - name: state
         hostPath:
@@ -100,5 +109,9 @@ spec:
         hostPath:
           path: /mnt/arthur/clawd/memory/schedule.json
           type: FileOrCreate
+      - name: track-graph
+        hostPath:
+          path: /mnt/arthur/clawd/data
+          type: Directory
       nodeSelector:
         kubernetes.io/hostname: vmi3137202
