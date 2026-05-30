@@ -211,6 +211,17 @@ data:
                 echo "[dj-watcher] New track: $ARTIST - $TITLE"
                 export ARTIST TITLE
 
+                # Reactive commentary is SUPERSEDED by the agentic radio-tick loop
+                # (Hermes cron → radio_tick.py). When REACTIVE_COMMENTARY != "true"
+                # the watcher still runs (keeps the API server + history file alive)
+                # but does NOT trigger its own commentary — the tick owns the mic.
+                # This prevents double-speak. Set REACTIVE_COMMENTARY=true to roll back.
+                if [ "${REACTIVE_COMMENTARY:-false}" != "true" ]; then
+                    echo "[dj-watcher] Reactive commentary disabled (agentic tick owns the mic) — track noted, no TTS trigger"
+                    sleep 5
+                    continue
+                fi
+
                 # Determine DJ based on schedule + time of day
                 HOUR=$(date +%H)
                 TODAY=$(date +%Y-%m-%d)
