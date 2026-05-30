@@ -427,26 +427,31 @@ def cmd_queue(args):
             seed = int(tid)
             break
 
-    valid, prev = [], seed
+    # Accept any track IDs that exist in the graph. We do NOT enforce strict
+    # follow-chaining here: next_track.py handles transitions, and the candidate
+    # list in the tick context is already affinity/follow-ranked. Strict chaining
+    # was dropping valid picks and leaving the lookahead too thin. We DO surface
+    # how many picks would have chained, as a soft quality signal.
+    valid, chained, prev = [], 0, seed
     for tid in want:
         if str(tid) not in tracks:
             continue
-        # If we have a previous track with follow info, only accept chaining tracks.
-        if prev is not None and follow.get(str(prev)) and tid not in follow[str(prev)]:
-            continue
+        if prev is not None and follow.get(str(prev)) and tid in follow[str(prev)]:
+            chained += 1
         valid.append(tid)
         prev = tid
 
     valid = valid[:LOOKAHEAD_N]
     if not valid:
-        print(json.dumps({"written": False, "reason": "no valid chaining tracks",
+        print(json.dumps({"written": False, "reason": "no valid track IDs",
                           "hint": "pick from the candidate list in context"}))
         return
 
     pod = liquidsoap_pod()
     kubectl_write(QUEUE_FILE, json.dumps(valid), pod, container="liquidsoap")
     named = [f"{tid}: {tracks[str(tid)]['n']}" for tid in valid]
-    print(json.dumps({"written": True, "count": len(valid), "tracks": named}))
+    print(json.dumps({"written": True, "count": len(valid),
+                      "chained_from_current": chained, "tracks": named}))
 
 
 def main():
