@@ -33,32 +33,47 @@ ARTHUR_VOICE = "b4e39673-3fec-446a-a965-6517b5e0ea52"
 CARA_VOICE = "7c45223a-60a8-45e5-9c74-0339f354ca81"
 
 
-def sh(cmd, timeout=20, check=False):
-    r = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=timeout)
+def sh(args, timeout=20, check=False, stdin_bytes=None):
+    """Run a command WITHOUT a shell. `args` is a list of argv tokens."""
+    r = subprocess.run(args, shell=False, capture_output=True,
+                       input=stdin_bytes, timeout=timeout, check=False)
+    out = r.stdout.decode(errors="replace") if isinstance(r.stdout, bytes) else (r.stdout or "")
+    err = r.stderr.decode(errors="replace") if isinstance(r.stderr, bytes) else (r.stderr or "")
     if check and r.returncode != 0:
-        sys.stderr.write(f"[radio_tick] cmd failed ({r.returncode}): {cmd}\n{r.stderr}\n")
+        sys.stderr.write(f"[radio_tick] cmd failed ({r.returncode}): {' '.join(args)}\n{err}\n")
+    r.stdout, r.stderr = out, err
     return r
 
 
+def kubectl_write(path, data, pod, container=None):
+    """Write `data` (str) to `path` inside a pod by piping bytes via stdin —
+    no shell, no base64, no quoting games."""
+    cmd = ["kubectl", "exec", "-i", "-n", NS, pod]
+    if container:
+        cmd += ["-c", container]
+    cmd += ["--", "sh", "-c", f"cat > {path}"]
+    return sh(cmd, timeout=20, check=True, stdin_bytes=data.encode())
+
+
 def liquidsoap_pod():
-    r = sh(f"kubectl get pod -n {NS} -l app=liquidsoap "
-           "-o jsonpath='{.items[0].metadata.name}'")
+    r = sh(["kubectl", "get", "pod", "-n", NS, "-l", "app=liquidsoap",
+            "-o", "jsonpath={.items[0].metadata.name}"])
     return r.stdout.strip()
 
 
 def djbrain_pod():
-    r = sh(f"kubectl get pod -n {NS} -l app=dj-brain "
-           "-o jsonpath='{.items[0].metadata.name}'")
+    r = sh(["kubectl", "get", "pod", "-n", NS, "-l", "app=dj-brain",
+            "-o", "jsonpath={.items[0].metadata.name}"])
     return r.stdout.strip()
 
 
 def icecast_listeners():
-    pod = sh(f"kubectl get pod -n {NS} -l app=icecast "
-             "-o jsonpath='{.items[0].metadata.name}'").stdout.strip()
+    pod = sh(["kubectl", "get", "pod", "-n", NS, "-l", "app=icecast",
+              "-o", "jsonpath={.items[0].metadata.name}"]).stdout.strip()
     if not pod:
         return 0
-    r = sh(f"kubectl exec -n {NS} {pod} -- curl -s "
-           "http://localhost:8100/status-json.xsl", timeout=15)
+    r = sh(["kubectl", "exec", "-n", NS, pod, "--", "curl", "-s",
+            "http://localhost:8100/status-json.xsl"], timeout=15)
     try:
         data = json.loads(r.stdout)
         src = data["icestats"]["source"]
@@ -78,8 +93,8 @@ def now_playing():
     pod = liquidsoap_pod()
     if not pod:
         return ""
-    r = sh(f"kubectl exec -n {NS} {pod} -c liquidsoap -- "
-           "cat /state/current-track-display.txt", timeout=15)
+    r = sh(["kubectl", "exec", "-n", NS, pod, "-c", "liquidsoap", "--",
+            "cat", "/state/current-track-display.txt"], timeout=15)
     return r.stdout.strip()
 
 
@@ -87,7 +102,8 @@ def read_pod_json(path, pod=None, container="liquidsoap"):
     pod = pod or liquidsoap_pod()
     if not pod:
         return None
-    r = sh(f"kubectl exec -n {NS} {pod} -c {container} -- cat {path}", timeout=15)
+    r = sh(["kubectl", "exec", "-n", NS, pod, "-c", container, "--",
+            "cat", path], timeout=15)
     try:
         return json.loads(r.stdout)
     except Exception:
@@ -165,7 +181,7 @@ def current_dj():
 
 
 def budget():
-    r = sh(f"curl -sf --max-time 5 {BUDGET_URL}", timeout=8)
+    r = sh(["curl", "-sf", "--max-time", "5", BUDGET_URL], timeout=8)
     try:
         return json.loads(r.stdout)
     except Exception:
@@ -188,69 +204,71 @@ def save_tick_state(st):
 
 # ─────────────────────────── candidate tracks ───────────────────────────
 
+def _find_seed(tracks, np):
+    """Resolve the current track's ID from its now-playing display name."""
+    if not np:
+        return None
+    target = np.strip()
+    for tid, t in tracks.items():
+        if t.get("n", "").strip() == target:
+            return tid
+    for tid, t in tracks.items():  # loose match fallback
+        name = t.get("n", "")
+        if target in name or name in target:
+            return tid
+    return None
+
+
+def _affinity_key(audience):
+    if "abi" in audience and "james" in audience:
+        return "both"
+    if "abi" in audience:
+        return "abi"
+    if "james" in audience:
+        return "james"
+    return "both"
+
+
+def _bfs_followers(follow, tracks, seed, cap=250):
+    """Track IDs reachable within 3 follow-hops from seed."""
+    ids, frontier, seen = [], [seed], {seed}
+    for _hop in range(3):
+        nxt = []
+        for tid in frontier:
+            for fid in follow.get(str(tid), []):
+                fs = str(fid)
+                if fs not in seen and fs in tracks:
+                    seen.add(fs)
+                    nxt.append(fs)
+                    ids.append(fs)
+        frontier = nxt
+        if len(ids) > cap:
+            break
+    return ids
+
+
 def candidate_tracks(graph, audience, limit=40):
-    """BFS from current track via follow-graph, ranked by affinity for who's home.
+    """Valid next-track picks: BFS from the current track via the follow-graph,
+    ranked by affinity for who's home. These are the ONLY valid lookahead picks
+    (they chain from the current track)."""
+    tracks, follow = graph["tracks"], graph["follow"]
+    seed = _find_seed(tracks, now_playing())
+    afk = _affinity_key(audience)
 
-    Returns list of dicts: {id, n, g, bpm, e, af_score}. These are the ONLY
-    valid next-5 picks (they chain from the current track)."""
-    tracks = graph["tracks"]
-    follow = graph["follow"]
-    path_index = graph.get("pathIndex", {})
-
-    # Find current track id from now-playing display name
-    np = now_playing()
-    seed = None
-    if np:
-        for tid, t in tracks.items():
-            if t.get("n", "").strip() == np.strip():
-                seed = tid
-                break
-        if not seed:
-            # match by display "Artist - Title" loosely
-            for tid, t in tracks.items():
-                if np.strip() in t.get("n", "") or t.get("n", "") in np:
-                    seed = tid
-                    break
-
-    # affinity key
-    if "james" in audience and "abi" in audience:
-        afk = "both"
-    elif "abi" in audience:
-        afk = "abi"
-    elif "james" in audience:
-        afk = "james"
-    else:
-        afk = "both"
-
-    ids = []
-    if seed:
-        frontier = [seed]
-        seen = {seed}
-        for _hop in range(3):
-            nxt = []
-            for tid in frontier:
-                for fid in follow.get(str(tid), []):
-                    fs = str(fid)
-                    if fs not in seen and fs in tracks:
-                        seen.add(fs)
-                        nxt.append(fs)
-                        ids.append(fs)
-            frontier = nxt
-            if len(ids) > 250:
-                break
+    ids = _bfs_followers(follow, tracks, seed) if seed else []
     if not ids:
         ids = list(tracks.keys())[:250]
 
     out = []
     for tid in ids:
         t = tracks[tid]
-        af = (t.get("af") or {}).get(afk, 0.0)
         out.append({
             "id": int(tid), "n": t.get("n", ""), "g": t.get("g", ""),
-            "bpm": t.get("bpm"), "e": t.get("e"), "af": af,
+            "bpm": t.get("bpm"), "e": t.get("e"),
+            "af": (t.get("af") or {}).get(afk, 0.0),
         })
     out.sort(key=lambda x: x["af"], reverse=True)
-    return out[:limit], seed
+    return out[:limit]
 
 
 # ─────────────────────────── subcommands ───────────────────────────
@@ -269,7 +287,7 @@ def cmd_context(_args):
     q = read_pod_json(QUEUE_FILE) or []
     hist = recent_history(50)
     b = budget()
-    cands, seed = candidate_tracks(graph, audience)
+    cands = candidate_tracks(graph, audience)
     st = tick_state()
     since_spoke = int(time.time()) - st.get("last_spoke_ts", 0)
 
@@ -291,7 +309,10 @@ def cmd_context(_args):
                      "Speak with impact, not constantly.")
         lines.append("")
     lines.append(f"### Current lookahead queue ({len(q)} tracks)")
-    lines.extend(f"- {x}" for x in q_named) if q_named else lines.append("- (empty — engine will auto-pick)")
+    if q_named:
+        lines.extend(f"- {x}" for x in q_named)
+    else:
+        lines.append("- (empty — engine will auto-pick)")
     lines.append("")
     lines.append(f"### Recent commentary — last {len(hist)} (DO NOT repeat these themes/jokes/track-teases)")
     for h in hist[-25:]:
@@ -300,7 +321,7 @@ def cmd_context(_args):
     if not hist:
         lines.append("- (no history yet)")
     lines.append("")
-    lines.append(f"### Candidate next tracks (valid follow-ons, ranked by affinity for who's home)")
+    lines.append("### Candidate next tracks (valid follow-ons, ranked by affinity for who's home)")
     lines.append("Pick exactly 5 IDs from THIS list for the lookahead. They chain from the current track.")
     for c in cands:
         lines.append(f"- {c['id']}: {c['n']} | {c['g']} | {c['bpm']}bpm | energy {c['e']} | affinity {c['af']}")
@@ -349,19 +370,15 @@ def cmd_speak(args):
     if args.timing == "end":
         # Write pending file; next_track.py airs it on the next track change.
         rec = json.dumps({"dj": dj, "text": text, "ts": int(time.time())})
-        b64 = subprocess.run(f"printf %s {json_quote(rec)} | base64 -w0",
-                             shell=True, capture_output=True, text=True).stdout.strip()
-        sh(f"kubectl exec -n {NS} {pod} -- sh -c "
-           f"\"echo {b64} | base64 -d > {PENDING_END_FILE}\"", timeout=20, check=True)
+        kubectl_write(PENDING_END_FILE, rec, pod)
         _mark_spoke(text, dj)
         print(json.dumps({"aired": "queued-end-of-song", "dj": dj, "chars": len(text)}))
         return
 
-    # asap: duck + speak now via the proven dj-commentary.sh path inside the pod
-    text_b64 = subprocess.run(f"printf %s {json_quote(text)} | base64 -w0",
-                              shell=True, capture_output=True, text=True).stdout.strip()
-    r = sh(f"kubectl exec -n {NS} {pod} -- sh -c "
-           f"'/radio/dj-commentary.sh {dj} api-call \"$(echo {text_b64} | base64 -d)\"'",
+    # asap: duck + speak now via the proven dj-commentary.sh path inside the pod.
+    # Pass text as a positional argv (no shell interpolation / quoting games).
+    r = sh(["kubectl", "exec", "-n", NS, pod, "--",
+            "/radio/dj-commentary.sh", dj, "api-call", text],
            timeout=90, check=True)
     ok = "Done" in r.stdout or r.returncode == 0
     _mark_spoke(text, dj)
@@ -386,16 +403,8 @@ def _mark_spoke(text, dj="arthur"):
             existing = []
         existing.append(rec)
         existing = existing[-100:]  # persist 100
-        payload = json.dumps(existing)
-        b64 = subprocess.run(f"printf %s {json_quote(payload)} | base64 -w0",
-                             shell=True, capture_output=True, text=True).stdout.strip()
-        sh(f"kubectl exec -n {NS} {pod} -c liquidsoap -- sh -c "
-           f"\"echo {b64} | base64 -d > /state/dj-recent-history.json\"", timeout=20)
-
-
-def json_quote(s):
-    import shlex
-    return shlex.quote(s)
+        kubectl_write("/state/dj-recent-history.json", json.dumps(existing),
+                      pod, container="liquidsoap")
 
 
 def cmd_queue(args):
@@ -420,14 +429,11 @@ def cmd_queue(args):
 
     valid, prev = [], seed
     for tid in want:
-        ts = str(tid)
-        if ts not in tracks:
+        if str(tid) not in tracks:
             continue
-        if prev is not None:
-            if tid not in follow.get(str(prev), []):
-                # allow if no follow info, else skip non-chaining
-                if follow.get(str(prev)):
-                    continue
+        # If we have a previous track with follow info, only accept chaining tracks.
+        if prev is not None and follow.get(str(prev)) and tid not in follow[str(prev)]:
+            continue
         valid.append(tid)
         prev = tid
 
@@ -438,11 +444,7 @@ def cmd_queue(args):
         return
 
     pod = liquidsoap_pod()
-    payload = json.dumps(valid)
-    b64 = subprocess.run(f"printf %s {json_quote(payload)} | base64 -w0",
-                         shell=True, capture_output=True, text=True).stdout.strip()
-    sh(f"kubectl exec -n {NS} {pod} -c liquidsoap -- sh -c "
-       f"\"echo {b64} | base64 -d > {QUEUE_FILE}\"", timeout=20, check=True)
+    kubectl_write(QUEUE_FILE, json.dumps(valid), pod, container="liquidsoap")
     named = [f"{tid}: {tracks[str(tid)]['n']}" for tid in valid]
     print(json.dumps({"written": True, "count": len(valid), "tracks": named}))
 
