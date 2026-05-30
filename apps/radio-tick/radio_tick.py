@@ -56,18 +56,21 @@ def kubectl_write(path, data, pod, container=None):
 
 
 def liquidsoap_pod():
+    """Return the running liquidsoap pod name in the radio-dj namespace."""
     r = sh(["kubectl", "get", "pod", "-n", NS, "-l", "app=liquidsoap",
             "-o", "jsonpath={.items[0].metadata.name}"])
     return r.stdout.strip()
 
 
 def djbrain_pod():
+    """Return the running dj-brain pod name in the radio-dj namespace."""
     r = sh(["kubectl", "get", "pod", "-n", NS, "-l", "app=dj-brain",
             "-o", "jsonpath={.items[0].metadata.name}"])
     return r.stdout.strip()
 
 
 def icecast_listeners():
+    """Return the current /stream listener count from Icecast (0 on any error)."""
     pod = sh(["kubectl", "get", "pod", "-n", NS, "-l", "app=icecast",
               "-o", "jsonpath={.items[0].metadata.name}"]).stdout.strip()
     if not pod:
@@ -85,11 +88,13 @@ def icecast_listeners():
 
 
 def load_graph():
+    """Load the pre-computed track graph (tracks, follow edges, path index)."""
     with open(GRAPH_HOST) as f:
         return json.load(f)
 
 
 def now_playing():
+    """Return the current track display string ('Artist - Title') from the pod."""
     pod = liquidsoap_pod()
     if not pod:
         return ""
@@ -99,6 +104,7 @@ def now_playing():
 
 
 def read_pod_json(path, pod=None, container="liquidsoap"):
+    """Read and parse a JSON file from inside a pod; None if missing/invalid."""
     pod = pod or liquidsoap_pod()
     if not pod:
         return None
@@ -166,6 +172,7 @@ def _audience():
 
 
 def who_home():
+    """Return the list of people currently home (schedule-derived audience)."""
     a = _audience()
     home = []
     if a["james_home"]:
@@ -181,6 +188,7 @@ def current_dj():
 
 
 def budget():
+    """Return the TTS budget status dict from the brain server (empty on error)."""
     r = sh(["curl", "-sf", "--max-time", "5", BUDGET_URL], timeout=8)
     try:
         return json.loads(r.stdout)
@@ -189,6 +197,7 @@ def budget():
 
 
 def tick_state():
+    """Load persisted tick state (last spoke timestamp, spoke count)."""
     try:
         with open(TICK_STATE) as f:
             return json.load(f)
@@ -197,6 +206,7 @@ def tick_state():
 
 
 def save_tick_state(st):
+    """Persist tick state to disk."""
     os.makedirs(os.path.dirname(TICK_STATE), exist_ok=True)
     with open(TICK_STATE, "w") as f:
         json.dump(st, f)
@@ -220,6 +230,7 @@ def _find_seed(tracks, np):
 
 
 def _affinity_key(audience):
+    """Map the present audience to a track-affinity key (james/abi/both)."""
     if "abi" in audience and "james" in audience:
         return "both"
     if "abi" in audience:
@@ -274,12 +285,14 @@ def candidate_tracks(graph, audience, limit=40):
 # ─────────────────────────── subcommands ───────────────────────────
 
 def cmd_gate(_args):
+    """Listener gate: exit 0 if anyone is tuned in, else exit 1 (no LLM)."""
     n = icecast_listeners()
     sys.stderr.write(f"[radio_tick] listeners={n}\n")
     sys.exit(0 if n > 0 else 1)
 
 
 def cmd_context(_args):
+    """Print the full markdown context block consumed by the tick LLM prompt."""
     graph = load_graph()
     audience = who_home()
     dj = current_dj()
@@ -387,6 +400,7 @@ def cmd_speak(args):
 
 
 def _mark_spoke(text, dj="arthur"):
+    """Record that the DJ spoke: update tick state + append a clean history record."""
     st = tick_state()
     st["last_spoke_ts"] = int(time.time())
     st["spoke_count"] = st.get("spoke_count", 0) + 1
@@ -408,6 +422,7 @@ def _mark_spoke(text, dj="arthur"):
 
 
 def cmd_queue(args):
+    """Re-assert the next-N track lookahead from LLM-picked IDs (validated)."""
     graph = load_graph()
     tracks = graph["tracks"]
     follow = graph["follow"]
@@ -455,6 +470,7 @@ def cmd_queue(args):
 
 
 def main():
+    """Dispatch the requested subcommand (gate/context/speak/queue)."""
     p = argparse.ArgumentParser()
     sub = p.add_subparsers(dest="cmd", required=True)
     sub.add_parser("gate")
