@@ -201,6 +201,25 @@ data:
     fi
 
     while true; do
+        # ── Agentic tick: air any end-of-song DJ clip queued by radio_tick.py ──
+        # The tick writes {dj,text,ts} to this file via `speak --timing end`.
+        # We air it here (dj-brain pod has dj-commentary.sh + TTS token). Fired on
+        # the next 5s poll after it's queued — effectively the end-of-song break.
+        PENDING_CLIP="/state/dj-pending-end-of-song.json"
+        if [ -f "$PENDING_CLIP" ]; then
+            P_DJ=$(python3 -c "import json;print(json.load(open('$PENDING_CLIP')).get('dj','arthur'))" 2>/dev/null)
+            P_TEXT=$(python3 -c "import json;print(json.load(open('$PENDING_CLIP')).get('text',''))" 2>/dev/null)
+            P_TS=$(python3 -c "import json;print(json.load(open('$PENDING_CLIP')).get('ts',0))" 2>/dev/null)
+            rm -f "$PENDING_CLIP"
+            NOW_TS=$(date +%s)
+            if [ -n "$P_TEXT" ] && { [ "$P_TS" = "0" ] || [ $((NOW_TS - P_TS)) -lt 1800 ]; }; then
+                echo "[dj-watcher] Airing agentic ${P_DJ} end-of-song clip (${#P_TEXT} chars)"
+                /radio/dj-commentary.sh "$P_DJ" api-call "$P_TEXT" || echo "[dj-watcher] WARN: pending clip air failed" >&2
+            else
+                echo "[dj-watcher] Pending clip stale/empty — skipped"
+            fi
+        fi
+
         if [ -f "$EVENT_FILE" ]; then
             TRACK_PATH=$(cat "$EVENT_FILE")
             if [ -n "$TRACK_PATH" ] && [ "$TRACK_PATH" != "$LAST_TRACK" ]; then
@@ -210,6 +229,17 @@ data:
                 TITLE="$(basename "$TITLE")"
                 echo "[dj-watcher] New track: $ARTIST - $TITLE"
                 export ARTIST TITLE
+
+                # Reactive commentary is SUPERSEDED by the agentic radio-tick loop
+                # (Hermes cron → radio_tick.py). When REACTIVE_COMMENTARY != "true"
+                # the watcher still runs (keeps the API server + history file alive)
+                # but does NOT trigger its own commentary — the tick owns the mic.
+                # This prevents double-speak. Set REACTIVE_COMMENTARY=true to roll back.
+                if [ "${REACTIVE_COMMENTARY:-false}" != "true" ]; then
+                    echo "[dj-watcher] Reactive commentary disabled (agentic tick owns the mic) — track noted, no TTS trigger"
+                    sleep 5
+                    continue
+                fi
 
                 # Determine DJ based on schedule + time of day
                 HOUR=$(date +%H)
