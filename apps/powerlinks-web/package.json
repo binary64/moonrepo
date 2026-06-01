@@ -1,0 +1,12 @@
+{
+  "name": "powerlinks-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Powerlinks Motorcycles website (static, Workshop Editorial concept). Built in CI to Vercel Build Output API v3 and shipped prebuilt.",
+  "scripts": {
+    "build": "node build.mjs",
+    "serve": "node build.mjs && npx -y serve .vercel/output/static -l 8899",
+    "clean": "rm -rf .vercel/output"
+  }
+}
