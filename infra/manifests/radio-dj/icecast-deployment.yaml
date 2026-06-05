@@ -25,7 +25,7 @@ spec:
         kubernetes.io/hostname: vmi3137202
       containers:
         - name: icecast
-          image: ghcr.io/binary64/icecast@sha256:03006a86fe005bace521e5b6080400123d05a0b829308c9d8d9e627a85d0d2cb
+          image: ghcr.io/binary64/icecast@sha256:4a213891de448e664f84a18f756d4d742e1369b04af55fbb8a08d3087ba85a74
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8100
