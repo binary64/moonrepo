@@ -44,25 +44,15 @@ proxy_config:
     max_tokens: 36384
     callbacks: hooks.proxy_handler_instance
   model_list:
-  - model_name: claude-opus-4-6
+  - model_name: claude-opus-4-8
     litellm_params:
-      model: anthropic/claude-opus-4-6
+      model: anthropic/claude-opus-4-8
   - model_name: claude-sonnet-4-6
     litellm_params:
       model: anthropic/claude-sonnet-4-6
   - model_name: claude-haiku-4-5
     litellm_params:
       model: anthropic/claude-haiku-4-5
-  - model_name: claude-opus-4-7
-    litellm_params:
-      model: anthropic/claude-opus-4-7
-      thinking:
-        type: adaptive
-        output_config:
-          effort: high
-      model_info:
-        mode: chat
-        supports_reasoning: true
   - model_name: gemini-3-flash-preview
     litellm_params:
       model: gemini/gemini-3-flash-preview
