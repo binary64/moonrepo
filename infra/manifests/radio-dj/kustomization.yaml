@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
 - namespace.yaml
 - icecast-secret.yaml
+- icecast-configmap.yaml
 - icecast-deployment.yaml
 - icecast-service.yaml
 - liquidsoap-secret.yaml
