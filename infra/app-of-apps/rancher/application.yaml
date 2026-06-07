@@ -19,7 +19,10 @@ spec:
       values: |
         hostname: rancher.brandwhisper.cloud
         # bootstrapPassword omitted - Rancher will generate a secure random password
-        replicas: 1
+        # Scaled to 0: dashboard not in active use; its apiserver watches
+        # (ext.cattle.io) contributed to control-plane lease churn. Flip back
+        # to 1 to re-enable the Rancher UI. Webhook deployment unaffected.
+        replicas: 0
         ingress:
           # Disabled — no nginx-ingress-controller in this cluster.
           # Traffic routes via Istio Gateway + HTTPRoute (see httproute.yaml)
