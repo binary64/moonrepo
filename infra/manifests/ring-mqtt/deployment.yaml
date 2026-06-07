@@ -36,6 +36,19 @@ spec:
               value: "mosquitto.home-assistant.svc"
             - name: MQTTPORT
               value: "1883"
+            # Broker auth — Mosquitto runs allow_anonymous=false, so creds
+            # are required or it loops on "Connection refused: Not authorized".
+            # Same user as zigbee2mqtt; sealed in sealedsecret.yaml.
+            - name: MQTTUSER
+              valueFrom:
+                secretKeyRef:
+                  name: ring-mqtt-mqtt
+                  key: username
+            - name: MQTTPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ring-mqtt-mqtt
+                  key: password
             # Web UI for initial Ring auth (port 55123)
             - name: ENABLECAMERAS
               value: "true"
