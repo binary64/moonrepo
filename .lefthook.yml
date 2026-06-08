@@ -23,3 +23,8 @@ pre-push:
           echo "Your branch is $BEHIND commit(s) behind origin/master. Rebase first."
           exit 1
         fi
+
+commit-msg:
+  commands:
+    commitlint:
+      run: npx commitlint --edit {1}
