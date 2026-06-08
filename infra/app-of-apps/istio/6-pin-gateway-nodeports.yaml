@@ -5,12 +5,20 @@
 #      Our ISP router NAT forwards 80/443 to fixed NodePorts on the NUC, so they must
 #      be stable across rebuilds.
 #
-# Pinned NodePorts:
-#   - 30080 → port 80   (HTTP, redirects to HTTPS)
-#   - 30443 → port 443  (HTTPS)
+# Pinned NodePorts (MUST match the ISP router's port-forward targets):
+#   - 32600 → port 80   (HTTP, redirects to HTTPS)
+#   - 31280 → port 443  (HTTPS)
 #   - status-port (15021) and headscale-grpc (50443) left dynamic — not externally exposed.
 #
-# Router NAT update required after this lands: see PR description.
+# NOTE: These values are deliberately set to the router's EXISTING forward targets
+#       (verified live 2026-06-08: router NAT 80→32600, 443→31280) so no router change
+#       is needed and external access never blips. The router admin UI is not remotely
+#       reachable (SOCKS/VXLAN limitation), so the hook conforms to the router, not vice
+#       versa. If the router forwards ever change, update these two values to match.
+#
+# Image: rancher/kubectl (distroless, no shell) — so this Job invokes kubectl directly
+#        via argv rather than a shell script. PostSync runs only after the sync is
+#        healthy, so gateway-istio already exists; no wait-loop needed.
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -72,7 +80,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: pin
-          image: bitnami/kubectl:1.35.3
+          image: rancher/kubectl:v1.32.0
           securityContext:
             runAsNonRoot: true
             runAsUser: 1001
@@ -81,6 +89,11 @@ spec:
             capabilities:
               drop:
                 - ALL
+          env:
+            # rancher/kubectl is distroless with a read-only root fs; give kubectl a
+            # writable HOME for its cache so it doesn't fail trying to write to /.
+            - name: HOME
+              value: /tmp
           resources:
             requests:
               cpu: 10m
@@ -88,41 +101,27 @@ spec:
             limits:
               cpu: 100m
               memory: 64Mi
+          # Strategic merge patch: only updates the named ports, leaves others untouched.
           command:
-            - /bin/sh
-            - -c
+            - kubectl
+          args:
+            - patch
+            - svc
+            - -n
+            - istio-system
+            - gateway-istio
+            - --type=strategic
+            - --patch
             - |
-              set -eu
-              # Wait up to 60s for the Service to exist (in case Istio is still reconciling)
-              SERVICE_FOUND=false
-              for i in $(seq 1 30); do
-                if kubectl get svc -n istio-system gateway-istio >/dev/null 2>&1; then
-                  SERVICE_FOUND=true
-                  break
-                fi
-                echo "Waiting for gateway-istio service... ($i/30)"
-                sleep 2
-              done
-
-              if [ "$SERVICE_FOUND" = "false" ]; then
-                echo "ERROR: gateway-istio service not found after 60s — aborting" >&2
-                exit 1
-              fi
-
-              # Strategic merge patch: only updates the named ports, leaves others untouched.
-              kubectl patch svc -n istio-system gateway-istio --type=strategic --patch '
               spec:
                 ports:
                   - name: default
                     port: 80
                     targetPort: 80
                     protocol: TCP
-                    nodePort: 30080
+                    nodePort: 32600
                   - name: https
                     port: 443
                     targetPort: 443
                     protocol: TCP
-                    nodePort: 30443
-              '
-              echo "gateway-istio NodePorts pinned: 80→30080, 443→30443"
-              kubectl get svc -n istio-system gateway-istio -o jsonpath='{range .spec.ports[*]}{.name}={.nodePort} {end}{"\n"}'
+                    nodePort: 31280
