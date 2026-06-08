@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rke2-config
+  namespace: default
+  annotations:
+    moonrepo.dev/skip-local: "true"
+  labels:
+    app.kubernetes.io/name: rke2-config
+    app.kubernetes.io/part-of: infrastructure
+data:
+  config.yaml: |
+    # RKE2 server configuration for the NUC (home lab master node).
+    #
+    # This ConfigMap is the single source of truth for the NUC's RKE2 config.
+    # The `apply-rke2-config.sh` script (in the same directory) syncs this
+    # to /etc/rancher/rke2/config.yaml on the NUC and restarts RKE2.
+    #
+    # WAN IP changes are handled automatically by the wan-ip-monitor CronJob:
+    # it patches this ConfigMap with the current public IP.
+    #
+    # DO NOT EDIT MANUALLY — let the WAN IP monitor manage these values.
+    write-kubeconfig-to: /etc/rancher/rke2/rke2.yaml
+    tls-san:
+      - REPLACE_WITH_WAN_IP
+      - 192.168.1.201
+    node-external-ip: REPLACE_WITH_WAN_IP
+    advertise-address: REPLACE_WITH_WAN_IP
