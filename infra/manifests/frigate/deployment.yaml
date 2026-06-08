@@ -60,6 +60,21 @@ spec:
         - name: frigate
           image: ghcr.io/blakeblackshear/frigate:0.14.1@sha256:656301bd28c08f15a778f1fe37b8332e0ae8189c6311e0fcc58b1e7a8f8ab310
           imagePullPolicy: IfNotPresent
+          env:
+            # Mosquitto requires auth (allow_anonymous false). Same 'mqtt' user as
+            # ring-mqtt/zigbee2mqtt. Referenced in config.yml via {FRIGATE_MQTT_USER}
+            # / {FRIGATE_MQTT_PASSWORD}. Without this Frigate logs "MQTT Not authorized"
+            # and the camera enable/disable toggle (frigate/<cam>/enabled/set) is dead.
+            - name: FRIGATE_MQTT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: frigate-mqtt
+                  key: username
+            - name: FRIGATE_MQTT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: frigate-mqtt
+                  key: password
           ports:
             - containerPort: 5000
               protocol: TCP

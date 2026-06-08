@@ -13,6 +13,9 @@ data:
     mqtt:
       host: mosquitto.home-assistant.svc
       port: 1883
+      # Mosquitto has allow_anonymous false; creds injected via env (see deployment).
+      user: "{FRIGATE_MQTT_USER}"
+      password: "{FRIGATE_MQTT_PASSWORD}"
 
     go2rtc:
       streams:
