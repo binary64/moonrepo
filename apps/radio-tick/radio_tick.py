@@ -411,6 +411,23 @@ def cmd_context(_args):
     print("\n".join(lines))
 
 
+def _resolve_speak_text(args):
+    """Resolve the spoken text from --text or --file. Returns the text, or exits(2)
+    if neither is given. Extracted from cmd_speak to keep its complexity down."""
+    if args.text:
+        return args.text
+    if not args.file:
+        sys.stderr.write("speak: need --text or --file\n")
+        sys.exit(2)
+    with open(args.file, encoding="utf-8") as f:
+        payload = json.load(f)
+    if isinstance(payload, dict) and "utterances" in payload:
+        return " ".join(u.get("text", "") for u in payload["utterances"])
+    if isinstance(payload, list):
+        return " ".join(u.get("text", "") for u in payload)
+    return str(payload)
+
+
 def cmd_speak(args):
     """Air a clip. timing: asap (duck+now) | end (queued for next track change)."""
     dj = args.dj.lower()
@@ -424,22 +441,7 @@ def cmd_speak(args):
         print(json.dumps({"aired": False, "reason": "budget exhausted (>=95%)"}))
         return
 
-    if args.text:
-        text = args.text
-    elif args.file:
-        with open(args.file, encoding="utf-8") as f:
-            payload = json.load(f)
-        if isinstance(payload, dict) and "utterances" in payload:
-            text = " ".join(u.get("text", "") for u in payload["utterances"])
-        elif isinstance(payload, list):
-            text = " ".join(u.get("text", "") for u in payload)
-        else:
-            text = str(payload)
-    else:
-        sys.stderr.write("speak: need --text or --file\n")
-        sys.exit(2)
-
-    text = text.strip()
+    text = _resolve_speak_text(args).strip()
     if not text:
         print(json.dumps({"aired": False, "reason": "empty text"}))
         return
