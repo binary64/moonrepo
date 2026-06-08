@@ -1,0 +1,19 @@
+# https://moonrepo.dev/docs/config/project
+$schema: "https://moonrepo.dev/schemas/project.json"
+
+language: 'node'
+layer: 'application'
+
+tasks:
+  build:
+    command: 'node build.mjs'
+    inputs:
+      - 'src/**/*'
+      - 'build.mjs'
+      - 'package.json'
+    outputs:
+      - '.vercel/output'
+  clean:
+    command: 'rm -rf .vercel/output'
+    options:
+      cache: false

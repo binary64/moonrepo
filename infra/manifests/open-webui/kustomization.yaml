@@ -6,6 +6,7 @@ resources:
   - pvc.yaml
   - postgres-cluster.yaml
   - secret.yaml
+  - litellm-gateway-key-secret.yaml
   - deployment.yaml
   - service.yaml
   - route.yaml

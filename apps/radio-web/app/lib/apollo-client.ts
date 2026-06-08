@@ -11,17 +11,12 @@ const HASURA_WS =
   process.env.NEXT_PUBLIC_HASURA_WS_URL ||
   "wss://hasura.brandwhisper.cloud/v1/graphql";
 
-const ADMIN_SECRET = process.env.HASURA_ADMIN_SECRET ?? "";
-
 const httpLink = new HttpLink({
   uri: HASURA_HTTP,
-  headers: ADMIN_SECRET ? { "x-hasura-admin-secret": ADMIN_SECRET } : {},
 });
 
-// Only create WS link on the client side
 function makeClient() {
   if (typeof window === "undefined") {
-    // Server-side: HTTP only
     return new ApolloClient({
       link: httpLink,
       cache: new InMemoryCache(),
@@ -29,9 +24,6 @@ function makeClient() {
     });
   }
 
-  // Never send the admin secret from the browser — it would be visible in
-  // client-side bundles and DevTools. Public/anonymous WebSocket connections
-  // only; server-side HTTP requests carry the secret via httpLink above.
   const wsLink = new GraphQLWsLink(
     createClient({
       url: HASURA_WS,

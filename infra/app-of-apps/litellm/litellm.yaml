@@ -4,11 +4,9 @@ metadata:
   name: litellm
   namespace: argocd
   finalizers:
-    - resources-finalizer.argocd.argoproj.io
+  - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-
-  # Multi-source: chart from upstream git + our values from git + raw manifests (CNPG cluster)
   sources:
     # 1. LiteLLM Helm chart pulled directly from BerriAI's git repo.
     #    The published Helm repo (berriai.github.io/litellm) has a broken index —
@@ -50,7 +48,6 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: litellm
-
   syncPolicy:
     automated:
       prune: true

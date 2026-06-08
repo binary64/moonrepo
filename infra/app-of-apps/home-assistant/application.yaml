@@ -44,7 +44,7 @@ spec:
               broker: mosquitto.home-assistant.svc.cluster.local
               port: 1883
               username: mqtt
-              password: mqtt
+              password: CHANGE_ME_VIA_SEALED_SECRET
               discovery: true
               discovery_prefix: homeassistant
               birth_message:

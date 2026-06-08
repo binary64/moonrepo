@@ -1,74 +1,63 @@
 module.exports = async function(eleventyConfig) {
-  // ── Stock status data ──────────────────────────────────────────────────────
-  // Fetches latest stock status per ASIN from Hasura at build time.
-  // Requires HASURA_ENDPOINT and HASURA_ADMIN_SECRET env vars (set in Vercel).
-  // Falls back to an empty object so builds don't fail when Hasura is unreachable.
-  //
-  // TODO: Replace HASURA_ADMIN_SECRET with a read-only Hasura role for Vercel builds.
+  // Fetches latest stock status per ASIN from Hasura at build time using the
+  // read-only "public" role (no admin secret needed — unauthenticated requests
+  // default to the public role when HASURA_GRAPHQL_UNAUTHORIZED_ROLE is set).
   const hasuraEndpoint = process.env.HASURA_ENDPOINT || 'https://hasura.brandwhisper.cloud';
-  const hasuraAdminSecret = process.env.HASURA_ADMIN_SECRET;
 
   /** @type {Record<string, { status: string, price: number|null, checkedAt: string }>} */
   let stockStatus = {};
 
-  if (hasuraAdminSecret) {
-    try {
-      const query = `
-        query LatestStockStatus {
-          pawpicks_products {
-            asin
-            name
-            slug
-            stock_checks(order_by: { checked_at: desc }, limit: 1) {
-              status
-              price
-              checked_at
-            }
+  try {
+    const query = `
+      query LatestStockStatus {
+        pawpicks_products {
+          asin
+          name
+          slug
+          stock_checks(order_by: { checked_at: desc }, limit: 1) {
+            status
+            price
+            checked_at
           }
         }
-      `;
-      const hasuraController = new AbortController();
-      const hasuraTimeoutId = setTimeout(() => hasuraController.abort(), 8_000);
-      const response = await fetch(`${hasuraEndpoint}/v1/graphql`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-hasura-admin-secret': hasuraAdminSecret,
-        },
-        body: JSON.stringify({ query }),
-        signal: hasuraController.signal,
-      });
-      clearTimeout(hasuraTimeoutId);
-
-      if (!response.ok) {
-        throw new Error(`Hasura HTTP error: ${response.status} ${response.statusText}`);
       }
+    `;
+    const hasuraController = new AbortController();
+    const hasuraTimeoutId = setTimeout(() => hasuraController.abort(), 8_000);
+    const response = await fetch(`${hasuraEndpoint}/v1/graphql`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query }),
+      signal: hasuraController.signal,
+    });
+    clearTimeout(hasuraTimeoutId);
 
-      const json = await response.json();
-
-      if (json.errors && json.errors.length > 0) {
-        const messages = json.errors.map((e) => e.message).join('; ');
-        throw new Error(`Hasura GraphQL error: ${messages}`);
-      }
-
-      const products = json.data?.pawpicks_products ?? [];
-      for (const product of products) {
-        const latest = product.stock_checks?.[0];
-        if (latest) {
-          stockStatus[product.asin] = {
-            status: latest.status,
-            price: latest.price ?? null,
-            checkedAt: latest.checked_at,
-          };
-        }
-      }
-
-      console.log(`[pawpicks] Loaded stock status from Hasura for ${Object.keys(stockStatus).length} products`);
-    } catch (err) {
-      console.warn(`[pawpicks] Failed to fetch stock status from Hasura — stock badges will be hidden: ${err.message}`);
+    if (!response.ok) {
+      throw new Error(`Hasura HTTP error: ${response.status} ${response.statusText}`);
     }
-  } else {
-    console.warn('[pawpicks] HASURA_ADMIN_SECRET not set — stock badges will be hidden');
+
+    const json = await response.json();
+
+    if (json.errors && json.errors.length > 0) {
+      const messages = json.errors.map((e) => e.message).join('; ');
+      throw new Error(`Hasura GraphQL error: ${messages}`);
+    }
+
+    const products = json.data?.pawpicks_products ?? [];
+    for (const product of products) {
+      const latest = product.stock_checks?.[0];
+      if (latest) {
+        stockStatus[product.asin] = {
+          status: latest.status,
+          price: latest.price ?? null,
+          checkedAt: latest.checked_at,
+        };
+      }
+    }
+
+    console.log(`[pawpicks] Loaded stock status from Hasura for ${Object.keys(stockStatus).length} products`);
+  } catch (err) {
+    console.warn(`[pawpicks] Failed to fetch stock status from Hasura — stock badges will be hidden: ${err.message}`);
   }
 
   eleventyConfig.addGlobalData('stockStatus', stockStatus);

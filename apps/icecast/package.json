@@ -1,0 +1,6 @@
+{
+  "name": "icecast",
+  "version": "1.0.0",
+  "description": "Icecast streaming server for Arthur Radio (config via ConfigMap)",
+  "private": true
+}

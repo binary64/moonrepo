@@ -1,0 +1,123 @@
+apiVersion: v1
+data:
+  schedule.json: "{\n  \"2026-04-17\": {\n    \"james\": {\n      \"status\": \"working\"\
+    ,\n      \"notes\": []\n    },\n    \"abi\": {\n      \"status\": \"not-working\"\
+    ,\n      \"notes\": [\n        \"LD off (14:30\\u201315:30)\"\n      ]\n    }\n\
+    \  },\n  \"2026-04-18\": {\n    \"james\": {\n      \"status\": \"not-working\"\
+    ,\n      \"notes\": []\n    },\n    \"abi\": {\n      \"status\": \"not-working\"\
+    ,\n      \"notes\": []\n    }\n  },\n  \"2026-04-19\": {\n    \"james\": {\n \
+    \     \"status\": \"not-working\",\n      \"notes\": []\n    },\n    \"abi\":\
+    \ {\n      \"status\": \"not-working\",\n      \"notes\": [\n        \"\\ud83c\\\
+    udf3f Water plants: Peace lily, Fig, Anthurium, Spider plants; Dracaena, Bromeliads\
+    \ x3\"\n      ]\n    }\n  },\n  \"2026-04-20\": {\n    \"james\": {\n      \"\
+    status\": \"working\",\n      \"notes\": []\n    },\n    \"abi\": {\n      \"\
+    status\": \"not-working\",\n      \"notes\": [\n        \"A/L\"\n      ]\n   \
+    \ }\n  },\n  \"2026-04-21\": {\n    \"james\": {\n      \"status\": \"working\"\
+    ,\n      \"notes\": []\n    },\n    \"abi\": {\n      \"status\": \"not-working\"\
+    ,\n      \"notes\": [\n        \"A/L\"\n      ]\n    }\n  },\n  \"2026-04-22\"\
+    : {\n    \"james\": {\n      \"status\": \"working\",\n      \"notes\": []\n \
+    \   },\n    \"abi\": {\n      \"status\": \"not-working\",\n      \"notes\": [\n\
+    \        \"LD off\"\n      ]\n    }\n  },\n  \"2026-04-23\": {\n    \"james\"\
+    : {\n      \"status\": \"working\",\n      \"notes\": [\n        \"Paul Barber's\
+    \ Birthday \\ud83c\\udf82\"\n      ]\n    },\n    \"abi\": {\n      \"status\"\
+    : \"working\",\n      \"notes\": []\n    }\n  },\n  \"2026-04-24\": {\n    \"\
+    james\": {\n      \"status\": \"working\",\n      \"notes\": [\n        \"Car\
+    \ insurance renewal (Abi)\"\n      ]\n    },\n    \"abi\": {\n      \"status\"\
+    : \"working\",\n      \"notes\": [\n        \"Car insurance renewal\",\n     \
+    \   \"O/C starts 18:00\"\n      ]\n    }\n  },\n  \"2026-04-25\": {\n    \"james\"\
+    : {\n      \"status\": \"not-working\",\n      \"notes\": []\n    },\n    \"abi\"\
+    : {\n      \"status\": \"not-working\",\n      \"notes\": [\n        \"O/C (weekend\
+    \ on-call)\"\n      ]\n    }\n  },\n  \"2026-04-26\": {\n    \"james\": {\n  \
+    \    \"status\": \"not-working\",\n      \"notes\": [\n        \"\\ud83c\\udf3f\
+    \ Water plants: Peace lily, Fig, Anthurium, Spider plants\"\n      ]\n    },\n\
+    \    \"abi\": {\n      \"status\": \"not-working\",\n      \"notes\": [\n    \
+    \    \"O/C continues until Mon 08:00\"\n      ]\n    }\n  },\n  \"2026-04-27\"\
+    : {\n    \"james\": {\n      \"status\": \"working\",\n      \"notes\": []\n \
+    \   },\n    \"abi\": {\n      \"status\": \"working\",\n      \"notes\": [\n \
+    \       \"O/C ends 08:00\"\n      ]\n    }\n  },\n  \"2026-04-28\": {\n    \"\
+    james\": {\n      \"status\": \"working\",\n      \"notes\": []\n    },\n    \"\
+    abi\": {\n      \"status\": \"working\",\n      \"notes\": []\n    }\n  },\n \
+    \ \"2026-04-29\": {\n    \"james\": {\n      \"status\": \"working\",\n      \"\
+    notes\": []\n    },\n    \"abi\": {\n      \"status\": \"working\",\n      \"\
+    notes\": []\n    }\n  },\n  \"2026-04-30\": {\n    \"james\": {\n      \"status\"\
+    : \"working\",\n      \"notes\": [\n        \"Richard Bigwood's Birthday \\ud83c\\\
+    udf82 (tomorrow)\"\n      ]\n    },\n    \"abi\": {\n      \"status\": \"not-working\"\
+    ,\n      \"notes\": [\n        \"A/L\"\n      ]\n    }\n  },\n  \"2026-05-01\"\
+    : {\n    \"james\": {\n      \"status\": \"working\",\n      \"notes\": []\n \
+    \   },\n    \"abi\": {\n      \"status\": \"not-working\",\n      \"notes\": []\n\
+    \    }\n  },\n  \"2026-05-02\": {\n    \"james\": {\n      \"status\": \"not-working\"\
+    ,\n      \"notes\": []\n    },\n    \"abi\": {\n      \"status\": \"not-working\"\
+    ,\n      \"notes\": []\n    }\n  },\n  \"2026-05-03\": {\n    \"james\": {\n \
+    \     \"status\": \"not-working\",\n      \"notes\": []\n    },\n    \"abi\":\
+    \ {\n      \"status\": \"not-working\",\n      \"notes\": []\n    }\n  },\n  \"\
+    2026-05-04\": {\n    \"james\": {\n      \"status\": \"working\",\n      \"notes\"\
+    : []\n    },\n    \"abi\": {\n      \"status\": \"not-working\",\n      \"notes\"\
+    : []\n    }\n  },\n  \"2026-05-05\": {\n    \"james\": {\n      \"status\": \"\
+    working\",\n      \"notes\": []\n    },\n    \"abi\": {\n      \"status\": \"\
+    not-working\",\n      \"notes\": []\n    }\n  },\n  \"2026-05-06\": {\n    \"\
+    james\": {\n      \"status\": \"working\",\n      \"notes\": []\n    },\n    \"\
+    abi\": {\n      \"status\": \"not-working\",\n      \"notes\": []\n    }\n  },\n\
+    \  \"2026-05-07\": {\n    \"james\": {\n      \"status\": \"working\",\n     \
+    \ \"notes\": []\n    },\n    \"abi\": {\n      \"status\": \"not-working\",\n\
+    \      \"notes\": []\n    }\n  },\n  \"2026-05-08\": {\n    \"james\": {\n   \
+    \   \"status\": \"working\",\n      \"notes\": []\n    },\n    \"abi\": {\n  \
+    \    \"status\": \"not-working\",\n      \"notes\": []\n    }\n  },\n  \"2026-05-09\"\
+    : {\n    \"james\": {\n      \"status\": \"not-working\",\n      \"notes\": []\n\
+    \    },\n    \"abi\": {\n      \"status\": \"not-working\",\n      \"notes\":\
+    \ []\n    }\n  },\n  \"2026-05-10\": {\n    \"james\": {\n      \"status\": \"\
+    not-working\",\n      \"notes\": []\n    },\n    \"abi\": {\n      \"status\"\
+    : \"not-working\",\n      \"notes\": []\n    }\n  },\n  \"2026-05-11\": {\n  \
+    \  \"james\": {\n      \"status\": \"working\",\n      \"notes\": []\n    },\n\
+    \    \"abi\": {\n      \"status\": \"not-working\",\n      \"notes\": []\n   \
+    \ }\n  },\n  \"2026-05-12\": {\n    \"james\": {\n      \"status\": \"working\"\
+    ,\n      \"notes\": []\n    },\n    \"abi\": {\n      \"status\": \"not-working\"\
+    ,\n      \"notes\": []\n    }\n  },\n  \"2026-05-13\": {\n    \"james\": {\n \
+    \     \"status\": \"working\",\n      \"notes\": []\n    },\n    \"abi\": {\n\
+    \      \"status\": \"not-working\",\n      \"notes\": []\n    }\n  },\n  \"2026-05-14\"\
+    : {\n    \"james\": {\n      \"status\": \"working\",\n      \"notes\": []\n \
+    \   },\n    \"abi\": {\n      \"status\": \"not-working\",\n      \"notes\": []\n\
+    \    }\n  },\n  \"2026-05-15\": {\n    \"james\": {\n      \"status\": \"working\"\
+    ,\n      \"notes\": []\n    },\n    \"abi\": {\n      \"status\": \"not-working\"\
+    ,\n      \"notes\": []\n    }\n  },\n  \"2026-05-16\": {\n    \"james\": {\n \
+    \     \"status\": \"not-working\",\n      \"notes\": []\n    },\n    \"abi\":\
+    \ {\n      \"status\": \"not-working\",\n      \"notes\": []\n    }\n  },\n  \"\
+    2026-05-17\": {\n    \"james\": {\n      \"status\": \"not-working\",\n      \"\
+    notes\": []\n    },\n    \"abi\": {\n      \"status\": \"not-working\",\n    \
+    \  \"notes\": []\n    }\n  },\n  \"2026-05-18\": {\n    \"james\": {\n      \"\
+    status\": \"working\",\n      \"notes\": []\n    },\n    \"abi\": {\n      \"\
+    status\": \"not-working\",\n      \"notes\": []\n    }\n  },\n  \"2026-05-19\"\
+    : {\n    \"james\": {\n      \"status\": \"working\",\n      \"notes\": []\n \
+    \   },\n    \"abi\": {\n      \"status\": \"not-working\",\n      \"notes\": []\n\
+    \    }\n  },\n  \"2026-05-20\": {\n    \"james\": {\n      \"status\": \"working\"\
+    ,\n      \"notes\": []\n    },\n    \"abi\": {\n      \"status\": \"not-working\"\
+    ,\n      \"notes\": []\n    }\n  },\n  \"2026-05-21\": {\n    \"james\": {\n \
+    \     \"status\": \"working\",\n      \"notes\": []\n    },\n    \"abi\": {\n\
+    \      \"status\": \"not-working\",\n      \"notes\": []\n    }\n  },\n  \"2026-05-22\"\
+    : {\n    \"james\": {\n      \"status\": \"working\",\n      \"notes\": []\n \
+    \   },\n    \"abi\": {\n      \"status\": \"not-working\",\n      \"notes\": []\n\
+    \    }\n  },\n  \"2026-05-23\": {\n    \"james\": {\n      \"status\": \"not-working\"\
+    ,\n      \"notes\": []\n    },\n    \"abi\": {\n      \"status\": \"not-working\"\
+    ,\n      \"notes\": []\n    }\n  },\n  \"2026-05-24\": {\n    \"james\": {\n \
+    \     \"status\": \"not-working\",\n      \"notes\": []\n    },\n    \"abi\":\
+    \ {\n      \"status\": \"not-working\",\n      \"notes\": []\n    }\n  },\n  \"\
+    2026-05-25\": {\n    \"james\": {\n      \"status\": \"working\",\n      \"notes\"\
+    : []\n    },\n    \"abi\": {\n      \"status\": \"not-working\",\n      \"notes\"\
+    : []\n    }\n  },\n  \"2026-05-26\": {\n    \"james\": {\n      \"status\": \"\
+    working\",\n      \"notes\": []\n    },\n    \"abi\": {\n      \"status\": \"\
+    not-working\",\n      \"notes\": []\n    }\n  },\n  \"2026-05-27\": {\n    \"\
+    james\": {\n      \"status\": \"working\",\n      \"notes\": []\n    },\n    \"\
+    abi\": {\n      \"status\": \"not-working\",\n      \"notes\": []\n    }\n  },\n\
+    \  \"2026-05-28\": {\n    \"james\": {\n      \"status\": \"working\",\n     \
+    \ \"notes\": []\n    },\n    \"abi\": {\n      \"status\": \"not-working\",\n\
+    \      \"notes\": []\n    }\n  },\n  \"2026-05-29\": {\n    \"james\": {\n   \
+    \   \"status\": \"working\",\n      \"notes\": []\n    },\n    \"abi\": {\n  \
+    \    \"status\": \"not-working\",\n      \"notes\": []\n    }\n  },\n  \"2026-05-30\"\
+    : {\n    \"james\": {\n      \"status\": \"not-working\",\n      \"notes\": []\n\
+    \    },\n    \"abi\": {\n      \"status\": \"not-working\",\n      \"notes\":\
+    \ []\n    }\n  },\n  \"2026-05-31\": {\n    \"james\": {\n      \"status\": \"\
+    not-working\",\n      \"notes\": []\n    },\n    \"abi\": {\n      \"status\"\
+    : \"not-working\",\n      \"notes\": []\n    }\n  }\n}"
+kind: ConfigMap
+metadata:
+  name: schedule
+  namespace: radio-dj

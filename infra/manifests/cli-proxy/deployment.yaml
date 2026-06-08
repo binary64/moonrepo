@@ -30,9 +30,6 @@ spec:
         fsGroup: 1000
         seccompProfile:
           type: RuntimeDefault
-        runAsNonRoot: true
-        runAsUser: 1000
-        fsGroup: 1000
       containers:
         - name: cli-proxy
           # CLIProxyAPI: wraps CLI OAuth tokens as OpenAI/Gemini/Claude-compatible endpoints

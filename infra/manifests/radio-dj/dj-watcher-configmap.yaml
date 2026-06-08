@@ -1,0 +1,50 @@
+apiVersion: v1
+data:
+  dj-watcher.sh: "#!/bin/bash\nset -e\nEVENT_FILE=\"/state/new-track-event\"\nLAST_TRACK=\"\
+    \"\necho \"[dj-watcher] Started. Polling ${EVENT_FILE} every 5s...\"\nwhile true;\
+    \ do\n    if [ -f \"$EVENT_FILE\" ]; then\n        TRACK_PATH=$(cat \"$EVENT_FILE\"\
+    )\n        if [ -n \"$TRACK_PATH\" ] && [ \"$TRACK_PATH\" != \"$LAST_TRACK\" ];\
+    \ then\n            LAST_TRACK=\"$TRACK_PATH\"\n            ARTIST=\"$(basename\
+    \ \"$(dirname \"$TRACK_PATH\")\")\"\n            TITLE=\"$(basename \"$TRACK_PATH\"\
+    \ .mp3)\"\n            TITLE=\"$(basename \"$TITLE\")\"\n            echo \"[dj-watcher]\
+    \ New track: $ARTIST - $TITLE\"\n            export ARTIST TITLE\n           \
+    \ COMMENTARY=$(python3 - <<PY\nimport json, os, datetime\nARTIST = os.environ.get(\"\
+    ARTIST\", \"Unknown Artist\")\nTITLE = os.environ.get(\"TITLE\", \"Unknown Title\"\
+    )\ncontext = \"Arthur DJ Context \\u2014 James & Abi\\n\\nJames: Technical, direct,\
+    \ loves details (PRs, k8s, infra, crypto, money).\\nAbi: Practical, health-conscious,\
+    \ values clarity. PoTS 12 years, hypermobile, bereavement recovery (2y). \\nCurrently\
+    \ 61.3kg, maintenance/strength phase. Carb rotation monthly (rice). Blood work\
+    \ good (Jan). \\nMilo digestive: rice-sensitive, on tripe-only + sweet potato\
+    \ trial. Wales trip 30 May-1 Jun.\\nTravel: Abi packs/logistics; James's readiness\
+    \ bottleneck. Service stops: Burger King/coffee for James + secure dog area for\
+    \ Milo.\\nGarden: Sunny border complete (peony + 45 bulbs + 5 perennials). Broad\
+    \ beans planted. 11 weeks to early July.\\nGoal: wellbeing, FI (new house+pool,\
+    \ 2 cars, 7 holidays/yr), longevity.\"\nprompt = f\"\"\"You are Cara, Arthur's\
+    \ radio DJ \u2014 warm, witty, genuinely passionate about music.\n\nContext:\n\
+    {context}\n\nNow: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}\nTrack:\
+    \ {ARTIST} \u2014 \"{TITLE}\"\n\nGenerate 1-2 sentence radio intro/outro that:\n\
+    - Feels spontaneous & personalised to James & Abi\n- References something relevant\
+    \ (garden, health, travel) if apt\n- Matches Cara: upbeat, slightly cheeky, always\
+    \ welcoming\n- NO generic 'here's a song' \u2014 talk to friends.\"\"\"\nimport\
+    \ urllib.request\nLITELLM_KEY = os.environ.get(\"LITELLM_MASTER_KEY\", \"\")\n\
+    if not LITELLM_KEY:\n    print(\"[[skip]]\")\n    exit(0)\npayload = json.dumps({\n\
+    \    \"model\": \"gemini-3-flash-preview\",\n    \"messages\": [{\"role\": \"\
+    user\", \"content\": prompt}],\n    \"max_tokens\": 150, \"temperature\": 0.8\n\
+    }).encode()\nreq = urllib.request.Request(\n    \"http://litellm.litellm.svc.cluster.local:4000/v1/chat/completions\"\
+    ,\n    data=payload,\n    headers={\n        \"Authorization\": f\"Bearer {LITELLM_KEY}\"\
+    ,\n        \"Content-Type\": \"application/json\"\n    },\n    method=\"POST\"\
+    \n)\ntry:\n    with urllib.request.urlopen(req, timeout=10) as resp:\n       \
+    \ result = json.loads(resp.read().decode())\n        text = result[\"choices\"\
+    ][0][\"message\"][\"content\"].strip()\n        text = text.replace('\\n', ' ').strip()\n\
+    \        if text.startswith('\"') and text.endswith('\"'):\n            text =\
+    \ text[1:-1]\n        print(text)\nexcept Exception as e:\n    print(f\"[[error:{e}]]\"\
+    )\nPY\n)\n            if [ -n \"$COMMENTARY\" ] && [[ ! \"$COMMENTARY\" == *\"\
+    [[skip]]\"* ]] && [[ ! \"$COMMENTARY\" == *\"[[error:\"* ]]; then\n          \
+    \      /radio/dj-commentary.sh \"$ARTIST\" \"$TITLE\" \"$COMMENTARY\"\n      \
+    \      fi\n        fi\n    fi\n    sleep 5\ndone\n"
+kind: ConfigMap
+metadata:
+  labels:
+    argocd.argoproj.io/instance: radio-dj
+  name: dj-watcher-script
+  namespace: radio-dj

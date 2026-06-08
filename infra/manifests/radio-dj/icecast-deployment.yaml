@@ -16,17 +16,23 @@ spec:
     metadata:
       labels:
         app: icecast
+      annotations:
+        # Roll the pod whenever the config template changes (CM is mounted, so
+        # a CM edit alone wouldn't restart Icecast). Bump on every icecast.xml change.
+        configmap/icecast-config-revision: "2026-06-05-nest-buffers"
     spec:
       nodeSelector:
         kubernetes.io/hostname: vmi3137202
       containers:
         - name: icecast
-          image: ghcr.io/binary64/icecast@sha256:03006a86fe005bace521e5b6080400123d05a0b829308c9d8d9e627a85d0d2cb
+          image: ghcr.io/binary64/icecast@sha256:4a213891de448e664f84a18f756d4d742e1369b04af55fbb8a08d3087ba85a74
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8100
               protocol: TCP
           env:
+            - name: ICECAST_CONFIG_TEMPLATE
+              value: /config/icecast.xml
             - name: ICECAST_SOURCE_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -51,6 +57,10 @@ spec:
             limits:
               cpu: 200m
               memory: 256Mi
+          volumeMounts:
+            - name: icecast-config
+              mountPath: /config
+              readOnly: true
           livenessProbe:
             httpGet:
               path: /status-json.xsl
@@ -58,3 +68,7 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 30
             timeoutSeconds: 5
+      volumes:
+        - name: icecast-config
+          configMap:
+            name: icecast-config
