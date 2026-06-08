@@ -115,7 +115,9 @@ async def _hume_mp3(api_key: str, text: str, voice_id: str) -> bytes:
             method="POST",
         )
         try:
-            with urllib.request.urlopen(req, timeout=60) as resp:
+            # URL is a fixed https:// module constant (HUME_TTS_URL), not
+            # user-controlled, so the scheme can't be file:/ or custom. skipcq: BAN-B310
+            with urllib.request.urlopen(req, timeout=60) as resp:  # nosec B310
                 body = resp.read()
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace")[:500]
