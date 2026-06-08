@@ -143,13 +143,39 @@ cara_boosted = amplify(2.5, queue_cara)
 # Merge both voice queues
 voices = add(normalize=false, [arthur_boosted, cara_boosted])
 
-# Music ducks when DJ speaks — fast fade (0.3s) so ducking kicks in immediately
-radio = smooth_add(
-  duration=0.3,
-  normal=music_quiet,
-  special=voices,
-  p=0.15
-)
+# ─── DJ-controlled duck depth ───
+# The music duck under a voice clip is no longer a fixed depth. Each voice clip
+# carries a "duck" metadata annotation (set by dj-commentary.sh) giving the
+# desired music multiplier (1.0 = full, lower = deeper duck). We ease a running
+# `duck` ref toward `target` so transitions stay smooth, and apply it as a
+# dynamic gain on the music via amplify's float getter.
+duck = ref(1.0)    # current music multiplier (eased)
+target = ref(1.0)  # desired music multiplier (1.0 = full, lower = deeper duck)
+
+# Read the per-clip duck depth on each voice clip; restore to full on clip end.
+voices = source.on_metadata(voices, fun (m) -> target := float_of_string(default=0.15, m["duck"]))
+voices = source.on_end(voices, fun (_, _) -> target := 1.0)
+
+# Ease toward target every 0.05s. We use add_timeout (re-arming by returning the
+# next delay) rather than thread.run(every=...): add_timeout is the stable
+# recurring-timer primitive in this Liquidsoap (2.x, Ubuntu 24.04 package) and
+# the `_ease` contract (return 0.05 to re-arm) maps onto it directly.
+def _ease() =
+  cur = duck()
+  t = target()
+  duck := cur + (t - cur) * 0.2
+  0.05
+end
+ignore(add_timeout(fast=false, 0.05, _ease))
+
+# Apply the eased duck as a dynamic gain on the music (amplify takes a getter).
+# mksafe keeps the music bed infallible (it's the always-present layer) so the
+# downstream add / insert_metadata / output chain stays infallible like the
+# original smooth_add did via its `normal` input. Voices ride on top.
+music_ducked = mksafe(amplify(fun () -> duck(), music_quiet))
+
+# Music ducks when DJ speaks — depth driven per-clip by the `duck` ref above.
+radio = add(normalize=false, [music_ducked, voices])
 
 # ─── Re-inject metadata lost by cross/smooth_add ───
 radio = insert_metadata(id="Arthur_Radio_meta", radio)
