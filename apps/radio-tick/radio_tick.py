@@ -339,6 +339,24 @@ def cmd_gate(_args):
     sys.exit(0 if n > 0 else 1)
 
 
+def _next_track_lines(graph, q):
+    """Formatted context lines for the resolved next track (artist-cooldown aware).
+    Kept as a helper to keep cmd_context's local count sane."""
+    _id, name, skipped = resolve_next_track(graph, q)
+    out = []
+    if name:
+        tease = f"**NEXT TRACK (airs after this one — SAFE to tease at end-of-song):** {name}"
+        if skipped:
+            tease += f"  (queue head skipped {skipped} for artist-cooldown)"
+        out.append(tease)
+    else:
+        out.append("**NEXT TRACK:** unresolved — do NOT name a next track on-air this tick.")
+    out.append("⚠️ A live listener song-request overrides the above. Tease the next "
+               "track only with `--timing end`; for `--timing asap` react to the "
+               "CURRENT track/moment, not the next one.")
+    return out
+
+
 def cmd_context(_args):
     """Print the full markdown context block consumed by the tick LLM prompt."""
     graph = load_graph()
@@ -361,22 +379,9 @@ def cmd_context(_args):
     lines.append(f"**Active DJ:** {dj}")
     lines.append(f"**Listening now:** {', '.join(audience) if audience else 'unknown (someone is — listener gate passed)'}")
     lines.append(f"**Now playing:** {np or 'unknown'}")
-    # Deterministic next-track resolution: predict what next_track.py will ACTUALLY
-    # pop (artist-cooldown can bump queue[0] to the tail). This is what end-of-song
-    # commentary may safely tease — naming the wrong next track on-air is the
-    # "promised Parov Stelar for days" failure class.
-    nx_id_unused, nx_name, nx_skipped = resolve_next_track(graph, q)
-    del nx_id_unused
-    if nx_name:
-        tease = f"**NEXT TRACK (airs after this one — SAFE to tease at end-of-song):** {nx_name}"
-        if nx_skipped:
-            tease += f"  (queue head skipped {nx_skipped} for artist-cooldown)"
-        lines.append(tease)
-    else:
-        lines.append("**NEXT TRACK:** unresolved — do NOT name a next track on-air this tick.")
-    lines.append("⚠️ A live listener song-request overrides the above. Tease the next "
-                 "track only with `--timing end`; for `--timing asap` react to the "
-                 "CURRENT track/moment, not the next one.")
+    # Deterministic next-track resolution (see _next_track_lines): predict what
+    # next_track.py will ACTUALLY pop, since artist-cooldown can bump queue[0].
+    lines.extend(_next_track_lines(graph, q))
     lines.append(f"**Seconds since DJ last spoke:** {since_spoke if st.get('last_spoke_ts') else 'never this session'}")
     lines.append("")
     if b:
