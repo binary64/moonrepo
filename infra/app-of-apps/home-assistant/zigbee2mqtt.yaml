@@ -26,7 +26,9 @@ spec:
       values: |
         zigbee2mqtt:
           frontend:
-            auth_token: KGabURkzkattsvLD5u3iDefsBELCGQ5uduqKWYMJ
+            # Secrets resolved at runtime from the mounted secret.yaml (SealedSecret
+            # zigbee2mqtt-secrets) via z2m's !secret syntax — no plaintext in git.
+            auth_token: '!secret frontend_token'
 
           mqtt:
             server: 'mqtt://mosquitto:1883'
@@ -34,30 +36,17 @@ spec:
             # falls through to anonymous login → broker rejects (Not authorized).
             # See Koenkk/zigbee2mqtt#25607 and the chart's own values.yaml (`user:`).
             user: mqtt
-            password: mqtt
+            password: '!secret mqtt_password'
 
           serial:
             adapter: ember
             port: /dev/ttyUSB0
 
           advanced:
-            network_key:
-              - 231
-              - 8
-              - 97
-              - 166
-              - 138
-              - 38
-              - 9
-              - 36
-              - 36
-              - 155
-              - 111
-              - 51
-              - 190
-              - 211
-              - 211
-              - 14
+            # Real active Zigbee network key (== coordinator key) sealed in
+            # zigbee2mqtt-secrets. Resolving !secret yields the SAME key, so the
+            # 15 paired devices stay bonded — do NOT inline this as plaintext.
+            network_key: '!secret network_key'
             pan_id: 31237
             channel: 25
             log_level: info
@@ -67,6 +56,11 @@ spec:
           port: 8080
 
         statefulset:
+          # Mount the SealedSecret-backed Secret as /app/data/secret.yaml so the
+          # !secret references above resolve at z2m startup.
+          secrets:
+            name: zigbee2mqtt-secrets
+
           podAnnotations:
             traffic.sidecar.istio.io/excludeOutboundPorts: "1883"
 
