@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mqttui
+  namespace: iot-tools
+  labels:
+    app.kubernetes.io/name: mqttui
+    app.kubernetes.io/instance: mqttui
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mqttui
+      app.kubernetes.io/instance: mqttui
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mqttui
+        app.kubernetes.io/instance: mqttui
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: master
+      containers:
+        - name: mqttui
+          image: terdia07/mqttui:v2.0.2
+          ports:
+            - name: http
+              containerPort: 5000
+              protocol: TCP
+          env:
+            # Broker reachable in-cluster; this UI lives in iot-tools ns
+            - name: MQTT_BROKER
+              value: "mosquitto.home-assistant.svc.cluster.local"
+            - name: MQTT_PORT
+              value: "1883"
+            - name: MQTT_USERNAME
+              value: "mqtt"
+            - name: MQTT_PASSWORD
+              value: "mqtt"
+            - name: MQTT_VERSION
+              value: "3.1.1"
+            - name: MQTT_TOPICS
+              value: "#"
+            # App auth — gateway already enforces authentik in front of this,
+            # but the app requires these to boot. Kept simple; not the security boundary.
+            - name: MQTTUI_ADMIN_USER
+              value: "admin"
+            - name: MQTTUI_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mqttui-app
+                  key: admin-password
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: mqttui-app
+                  key: secret-key
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
