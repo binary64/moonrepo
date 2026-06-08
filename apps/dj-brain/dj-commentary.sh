@@ -5,6 +5,13 @@ set -euo pipefail
 DJ_NAME="${1:-arthur}"
 CLIP_TYPE="${2:-api-call}"
 TEXT="${3:-}"
+# 4th positional arg: music duck depth under this clip (1.0=full music,
+# lower=deeper duck). Validated as a number in [0.0, 1.0]; bad/empty → 0.15.
+DUCK="${4:-0.15}"
+if ! awk -v d="$DUCK" 'BEGIN{ if (d ~ /^[0-9]*\.?[0-9]+$/ && d+0>=0.0 && d+0<=1.0) exit 0; exit 1 }'; then
+    echo "[dj-commentary] WARN: invalid duck '$DUCK', defaulting to 0.15" >&2
+    DUCK="0.15"
+fi
 TTS_SERVER_URL="${TTS_SERVER_URL:-http://tts-server.tts-server.svc.cluster.local:3090}"
 TTS_AUTH_TOKEN="${TTS_AUTH_TOKEN:-}"
 LIQUIDSOAP_HOST="${LIQUIDSOAP_HOST:-liquidsoap.radio-dj.svc.cluster.local}"
@@ -91,7 +98,7 @@ fi
 
 # Step 4: Push to Liquidsoap queue via telnet
 echo "[dj-commentary] Pushing to ${QUEUE_NAME} via ${LIQUIDSOAP_HOST}:${LIQUIDSOAP_PORT}..."
-PUSH_RESPONSE=$(echo "${QUEUE_NAME}.push ${PADDED_FILE}" | nc -w2 "$LIQUIDSOAP_HOST" "$LIQUIDSOAP_PORT" 2>&1) || true
+PUSH_RESPONSE=$(echo "${QUEUE_NAME}.push annotate:duck=\"${DUCK}\":${PADDED_FILE}" | nc -w2 "$LIQUIDSOAP_HOST" "$LIQUIDSOAP_PORT" 2>&1) || true
 if echo "$PUSH_RESPONSE" | grep -qi 'error\|failed\|unknown'; then
     echo "[dj-commentary] WARNING: Push to Liquidsoap had issues: $PUSH_RESPONSE" >&2
 fi

@@ -5,7 +5,7 @@ radio_tick.py — unified tool for the agentic Arthur Radio tick loop.
 Subcommands:
   gate              exit 0 if Icecast has >0 listeners, else exit 1 (NO LLM if fails)
   context           print full markdown context for the tick LLM prompt
-  speak  ...        air a DJ commentary clip (timing: asap | end)
+  speak  ...        air a DJ commentary clip (timing: asap | start | end | seam)
   queue  --ids ...  re-assert the next-N track lookahead (validated via follow graph)
 
 Runs ON THE VPS. Reaches the k8s cluster via kubectl exec.
@@ -23,7 +23,19 @@ NS = "radio-dj"
 GRAPH_HOST = "/mnt/arthur/clawd/data/radio-track-graph.json"
 QUEUE_FILE = "/state/radio-llm-queue.json"            # in-pod path
 HISTORY_HOST = "/mnt/arthur/clawd/data/dj-recent-history.json"  # mirror; pod /state is canonical
-PENDING_END_FILE = "/state/dj-pending-end-of-song.json"  # in-pod: aired on next on_track
+# ─── Pending DJ-clip insertion points (kept together) ───────────────────────
+# next_track.py airs these at the corresponding moment of the next track change.
+#   end   — over the outro/tail of the ENDING track (back-announce)
+#   start — over the intro of the NEW track (front-announce)
+#   seam  — during the crossfade seam (alias of track-change, deeper default duck
+#           to punch through the blend)
+PENDING_END_FILE = "/state/dj-pending-end-of-song.json"   # in-pod: aired on next on_track
+PENDING_START_FILE = "/state/dj-pending-start-of-song.json"  # in-pod: aired at new-track start
+PENDING_SEAM_FILE = "/state/dj-pending-seam.json"         # in-pod: aired during the cross
+# Tier-cap data (shared with next_track.py so the DJ's lookahead matches reality)
+TRACK_TIERS_FILE = "/data/music/track-tiers.json"  # in-pod
+PLAY_HISTORY_LOG = "/data/music/play-history.log"  # in-pod
+SEAM_DEFAULT_DUCK = 0.1  # seam clips duck slightly deeper to cut through the blend
 BUDGET_URL = "http://localhost:8877/budget"
 WHO_HOME = "/mnt/arthur/.hermes/scripts/who-is-home.sh"
 TICK_STATE = "/mnt/arthur/.hermes/data/radio-tick-state.json"
@@ -282,6 +294,87 @@ def candidate_tracks(graph, audience, limit=40):
     return out[:limit]
 
 
+# ─────────────────────── tier-cap lookahead filter ──────────────────────
+# The selector (next_track.py) enforces daily/weekly artist caps at PLAY TIME:
+# if an artist already has a play within its cooldown window, the track is
+# bumped and a DIFFERENT one airs. If the DJ teases such a track in its
+# "upcoming" context, the announcement desyncs from the audio (e.g. "Fatboy
+# Slim next" but Basement Jaxx actually plays). So we apply the SAME cap to the
+# lookahead the DJ sees — never hand it a track the selector would skip.
+
+def _artist_of(name):
+    """Primary artist from an 'Artist - Title' display string (mirrors
+    next_track.get_artist_from_name closely enough for cap matching)."""
+    part = name.split(" - ")[0].strip().strip('"') if " - " in name else name
+    for sep in (" & ", ", ", " feat.", " feat ", " ft.", " ft ", " x ", " X ", " vs ", " VS "):
+        if sep in part:
+            part = part.split(sep)[0].strip()
+            break
+    return part.lower()
+
+
+def load_artist_tiers():
+    """Read /data/music/track-tiers.json from the pod and return the daily +
+    weekly artist-cap config: {tier: {artists:set(lower), cooldown_hours:float}}.
+    Empty/missing → no caps."""
+    data = read_pod_json(TRACK_TIERS_FILE) or {}
+    out = {}
+    for tier, default_hours in (("daily", 24.0), ("weekly", 168.0)):
+        cfg = data.get(tier) or {}
+        artists = {a.strip().lower() for a in cfg.get("artists", []) if a.strip()}
+        hours = float(cfg.get("cooldown_hours", default_hours))
+        out[tier] = {"artists": artists, "cooldown_hours": hours}
+    return out
+
+
+def get_artist_play_count_since(artist_lower, hours, history_lines):
+    """Count plays of `artist_lower` within the last `hours` from the pod's
+    play-history.log lines. Log format: 'ISO_TS  Artist - Title  (file.mp3)'."""
+    cutoff = time.time() - hours * 3600
+    count = 0
+    for line in history_lines:
+        parts = line.strip().split("  ")
+        if len(parts) < 2:
+            continue
+        try:
+            ts = datetime.fromisoformat(parts[0]).timestamp()
+        except ValueError:
+            continue
+        if ts < cutoff:
+            continue
+        if _artist_of(parts[1]) == artist_lower:
+            count += 1
+    return count
+
+
+def filter_capped_tracks(cands):
+    """Drop any candidate whose artist is already at/over its daily/weekly cap —
+    exactly what next_track.py would skip at play time. Keeps the DJ's lookahead
+    in sync with what will actually air."""
+    tiers = load_artist_tiers()
+    capped = {a for t in tiers.values() for a in t["artists"]}
+    if not capped:
+        return cands  # no caps configured — nothing to filter
+    pod = liquidsoap_pod()
+    history_lines = []
+    if pod:
+        r = sh(["kubectl", "exec", "-n", NS, pod, "-c", "liquidsoap", "--",
+                "cat", PLAY_HISTORY_LOG], timeout=15)
+        history_lines = r.stdout.splitlines()
+    kept = []
+    for c in cands:
+        artist = _artist_of(c.get("n", ""))
+        skip = False
+        for tier in tiers.values():
+            if artist in tier["artists"] and \
+                    get_artist_play_count_since(artist, tier["cooldown_hours"], history_lines) >= 1:
+                skip = True
+                break
+        if not skip:
+            kept.append(c)
+    return kept
+
+
 # ─────────────────────────── subcommands ───────────────────────────
 
 def cmd_gate(_args):
@@ -301,6 +394,9 @@ def cmd_context(_args):
     hist = recent_history(50)
     b = budget()
     cands = candidate_tracks(graph, audience)
+    # Apply next_track.py's artist cap so the DJ never teases a track the
+    # selector will bump at play time (prevents announce/audio desync).
+    cands = filter_capped_tracks(cands)
     st = tick_state()
     since_spoke = int(time.time()) - st.get("last_spoke_ts", 0)
 
@@ -343,7 +439,8 @@ def cmd_context(_args):
 
 
 def cmd_speak(args):
-    """Air a clip. timing: asap (duck+now) | end (queued for next track change)."""
+    """Air a clip. timing: asap (duck+now) | start (over next intro) |
+    end (over outro/tail) | seam (during the crossfade)."""
     dj = args.dj.lower()
     if dj not in ("arthur", "cara"):
         sys.stderr.write("speak: dj must be arthur|cara\n")
@@ -380,23 +477,47 @@ def cmd_speak(args):
         print(json.dumps({"aired": False, "reason": "no dj-brain pod"}))
         return
 
-    if args.timing == "end":
-        # Write pending file; next_track.py airs it on the next track change.
-        rec = json.dumps({"dj": dj, "text": text, "ts": int(time.time())})
-        kubectl_write(PENDING_END_FILE, rec, pod)
+    # Duck depth for this clip (1.0=full music, lower=deeper duck). Validate range.
+    duck = args.duck
+    if not 0.0 <= duck <= 1.0:
+        duck = 0.15
+
+    # Non-asap timings write a pending record that next_track.py airs at the
+    # corresponding moment of the next track change. We persist the duck level in
+    # every record so the airing side annotates the clip identically.
+    #   end   → over outro/tail (back-announce)
+    #   start → over the intro of the new track (front-announce)
+    #   seam  → during the crossfade seam (deeper default duck to cut through)
+    pending = {
+        "end": (PENDING_END_FILE, "queued-end-of-song"),
+        "start": (PENDING_START_FILE, "queued-start-of-song"),
+        "seam": (PENDING_SEAM_FILE, "queued-seam"),
+    }
+    if args.timing in pending:
+        path, status = pending[args.timing]
+        # seam punches through the blend — default slightly deeper unless the
+        # caller explicitly set --duck away from the asap default.
+        clip_duck = duck
+        if args.timing == "seam" and duck == 0.15:
+            clip_duck = SEAM_DEFAULT_DUCK
+        rec = json.dumps({"dj": dj, "text": text, "duck": clip_duck,
+                          "ts": int(time.time())})
+        kubectl_write(path, rec, pod)
         _mark_spoke(text, dj)
-        print(json.dumps({"aired": "queued-end-of-song", "dj": dj, "chars": len(text)}))
+        print(json.dumps({"aired": status, "dj": dj, "duck": clip_duck,
+                          "chars": len(text)}))
         return
 
     # asap: duck + speak now via the proven dj-commentary.sh path inside the pod.
     # Pass text as a positional argv (no shell interpolation / quoting games).
+    # 4th positional arg = duck depth.
     r = sh(["kubectl", "exec", "-n", NS, pod, "--",
-            "/radio/dj-commentary.sh", dj, "api-call", text],
+            "/radio/dj-commentary.sh", dj, "api-call", text, str(duck)],
            timeout=90, check=True)
     ok = "Done" in r.stdout or r.returncode == 0
     _mark_spoke(text, dj)
     print(json.dumps({"aired": bool(ok), "dj": dj, "chars": len(text),
-                      "detail": r.stdout.strip()[-200:]}))
+                      "duck": duck, "detail": r.stdout.strip()[-200:]}))
 
 
 def _mark_spoke(text, dj="arthur"):
@@ -457,6 +578,13 @@ def cmd_queue(args):
         prev = tid
 
     valid = valid[:LOOKAHEAD_N]
+    # Drop any pick the selector would bump at play time (daily/weekly artist
+    # cap) so the lookahead the DJ teases matches what actually airs.
+    capped_cands = filter_capped_tracks(
+        [{"id": tid, "n": tracks.get(str(tid), {}).get("n", "")} for tid in valid])
+    kept_ids = {c["id"] for c in capped_cands}
+    dropped = [tid for tid in valid if tid not in kept_ids]
+    valid = [tid for tid in valid if tid in kept_ids]
     if not valid:
         print(json.dumps({"written": False, "reason": "no valid track IDs",
                           "hint": "pick from the candidate list in context"}))
@@ -466,7 +594,8 @@ def cmd_queue(args):
     kubectl_write(QUEUE_FILE, json.dumps(valid), pod, container="liquidsoap")
     named = [f"{tid}: {tracks[str(tid)]['n']}" for tid in valid]
     print(json.dumps({"written": True, "count": len(valid),
-                      "chained_from_current": chained, "tracks": named}))
+                      "chained_from_current": chained,
+                      "dropped_artist_cap": dropped, "tracks": named}))
 
 
 def main():
@@ -477,7 +606,9 @@ def main():
     sub.add_parser("context")
     sp = sub.add_parser("speak")
     sp.add_argument("--dj", required=True)
-    sp.add_argument("--timing", choices=["asap", "end"], default="end")
+    sp.add_argument("--timing", choices=["asap", "start", "end", "seam"], default="end")
+    sp.add_argument("--duck", type=float, default=0.15,
+                    help="music duck depth 0.0-1.0 (1.0=full music, lower=deeper)")
     sp.add_argument("--text")
     sp.add_argument("--file")
     qp = sub.add_parser("queue")

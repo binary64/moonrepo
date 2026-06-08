@@ -17,6 +17,7 @@ import sys
 import random
 import time
 import re
+import subprocess  # nosec B404 - airs pending DJ clips via dj-commentary.sh (fixed argv)
 import urllib.request
 import urllib.error
 from datetime import datetime
@@ -626,6 +627,50 @@ def load_index():
 
 REQUEST_FILE = "/state/radio-request.json"
 
+# ─── Pending DJ-commentary clips (written by radio_tick.py speak) ────────────
+# These are aired at the corresponding moment of THIS track change so the DJ's
+# timed commentary lands where intended. Each record is JSON:
+#   {"dj": "...", "text": "...", "duck": 0.15, "ts": ...}
+# We air via /radio/dj-commentary.sh (the dj-brain helper, present in that
+# image) passing the persisted duck level as the 4th positional arg.
+PENDING_END_FILE = "/state/dj-pending-end-of-song.json"     # over outro/tail
+PENDING_START_FILE = "/state/dj-pending-start-of-song.json"  # over the new intro
+PENDING_SEAM_FILE = "/state/dj-pending-seam.json"           # during the crossfade seam
+DJ_COMMENTARY_SH = "/radio/dj-commentary.sh"
+
+
+def air_pending_clip(pending_file):
+    """If `pending_file` exists, air it via dj-commentary.sh then remove it.
+    Mirrors the record schema written by radio_tick.py cmd_speak; the duck
+    level is passed as the 4th positional arg (default 0.15 if absent)."""
+    try:
+        if not os.path.exists(pending_file):
+            return
+        with open(pending_file) as f:
+            rec = json.load(f)
+        os.remove(pending_file)
+    except (OSError, json.JSONDecodeError) as e:
+        print(f"PENDING: error reading {pending_file}: {e}", file=sys.stderr)
+        return
+    dj = str(rec.get("dj", "arthur"))
+    text = str(rec.get("text", "")).strip()
+    duck = str(rec.get("duck", "0.15"))
+    if not text:
+        return
+    if not os.path.exists(DJ_COMMENTARY_SH):
+        print(f"PENDING: {DJ_COMMENTARY_SH} not found, cannot air clip", file=sys.stderr)
+        return
+    try:
+        # Fire-and-forget so track selection is never blocked by TTS render.
+        subprocess.Popen(  # nosec B603 - fixed argv, no shell, values from our own record
+            [DJ_COMMENTARY_SH, dj, "api-call", text, duck],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        print(f"PENDING: aired {os.path.basename(pending_file)} (dj={dj} duck={duck})",
+              file=sys.stderr)
+    except OSError as e:
+        print(f"PENDING: failed to air clip: {e}", file=sys.stderr)
+
+
 def check_request():
     """Check if there's a pending song request. Returns path or None."""
     try:
@@ -650,6 +695,12 @@ def check_request():
 
 def main():
     graph = load_graph()
+
+    # ─── Air timed DJ commentary for THIS track change ───
+    # next_track.py runs once per track change. The ENDING track's back-announce
+    # (end) and the crossfade-seam clip air now, as the cross begins.
+    air_pending_clip(PENDING_END_FILE)
+    air_pending_clip(PENDING_SEAM_FILE)
 
     if not graph:
         # Fallback: random from music dir
@@ -771,6 +822,10 @@ def main():
     state["session_position"] = state.get("session_position", 0) + 1
 
     save_state(state)
+
+    # The new track is chosen and about to begin — air any "start" clip so it
+    # lands over the intro of this new track (front-announce).
+    air_pending_clip(PENDING_START_FILE)
 
     # Output path for Liquidsoap
     print(path)
