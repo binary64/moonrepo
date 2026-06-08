@@ -31,7 +31,11 @@ TRACK_FILE=$(basename "$TRACK_PATH" 2>/dev/null || echo "unknown")
 # Uses [[ ]] with `=` glob matching (not `==`/`=~`) so it stays portable per
 # DeepSource SH-3014/SH-3015 while remaining bash pattern matching. The final
 # pattern matches a leading UUID (8-4-4-4-12 hex) used by DJ-clip filenames.
-uuid_glob='????????-????-????-????-????????????*'
+# Use hex character classes ([0-9a-fA-F]) rather than `?` so non-UUID library
+# filenames (which may contain digits/hyphens in the same positions) are not
+# falsely filtered as DJ clips and silently skipped (cubic review #277).
+hx='[0-9a-fA-F]'
+uuid_glob="${hx}${hx}${hx}${hx}${hx}${hx}${hx}${hx}-${hx}${hx}${hx}${hx}-${hx}${hx}${hx}${hx}-${hx}${hx}${hx}${hx}-${hx}${hx}${hx}${hx}${hx}${hx}${hx}${hx}${hx}${hx}${hx}${hx}*"
 # shellcheck disable=SC2053  # $uuid_glob is an intentional glob pattern
 if [[ "$TRACK_PATH" = /tmp/* ]] || [[ "$TRACK_PATH" = /state/* ]] || \
    [[ "$TRACK_FILE" = *"radio-norm"* ]] || [[ "$TRACK_FILE" = *"dj-"* ]] || \
