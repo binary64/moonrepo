@@ -21,7 +21,7 @@ spec:
         - name: ghcr-pull
       containers:
         - name: wyoming-hume
-          image: ghcr.io/binary64/wyoming-hume:latest
+          image: ghcr.io/binary64/wyoming-hume:c6ec198
           ports:
             - containerPort: 10200
               protocol: TCP
