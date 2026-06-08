@@ -2,3 +2,8 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: tts-server
+  labels:
+    # Enroll in Istio ambient mesh. Home Assistant (ambient) opens a long-lived
+    # raw-TCP Wyoming connection to wyoming-hume here; ztunnel resets such streams
+    # when the peer namespace is NOT in the mesh, so both ends must be ambient.
+    istio.io/dataplane-mode: ambient
