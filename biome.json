@@ -24,11 +24,15 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true
+      "recommended": true,
+      "suspicious": {
+        "noExplicitAny": "off"
+      }
     },
     "domains": {
       "next": "recommended",
-      "react": "recommended"
+      "react": "recommended",
+      "tailwind": "recommended"
     }
   },
   "assist": {
@@ -36,6 +40,12 @@
       "source": {
         "organizeImports": "on"
       }
+    }
+  },
+  "css": {
+    "parser": {
+      "cssModules": true,
+      "tailwindDirectives": true
     }
   }
 }

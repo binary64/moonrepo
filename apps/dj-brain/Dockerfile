@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     jq \
     ffmpeg \
+    bash \
     netcat-openbsd \
     python3 \
     ca-certificates \

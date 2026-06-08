@@ -1,20 +1,10 @@
 #!/bin/bash
-# dj-commentary.sh — Generate TTS commentary and inject into Liquidsoap queue
-# Usage: dj-commentary.sh <dj_name> <track_name> <text>
-#
-# Calls the tts-server to generate speech, pads with 300ms silence for
-# smooth ducking lead-in, then pushes to the appropriate Liquidsoap queue.
-
 set -euo pipefail
 
-DJ_NAME="${1:?Usage: dj-commentary.sh <dj_name> <track_name> <text>}"
-TRACK_NAME="${2:?Usage: dj-commentary.sh <dj_name> <track_name> <text>}"
-TEXT="${3:?Usage: dj-commentary.sh <dj_name> <track_name> <text>}"
-
-# TTS server URL — plain HTTP is intentional: the cluster runs on a single node
-# (vmi3137202) so dj-brain → tts-server traffic stays on localhost/pod network.
-# TLS termination is handled by Istio at the ingress layer for external access.
-# If the TTS server moves off-node, switch this to HTTPS.
+# Environment (with defaults)
+DJ_NAME="${1:-arthur}"
+CLIP_TYPE="${2:-api-call}"
+TEXT="${3:-}"
 TTS_SERVER_URL="${TTS_SERVER_URL:-http://tts-server.tts-server.svc.cluster.local:3090}"
 TTS_AUTH_TOKEN="${TTS_AUTH_TOKEN:-}"
 LIQUIDSOAP_HOST="${LIQUIDSOAP_HOST:-liquidsoap.radio-dj.svc.cluster.local}"
@@ -26,21 +16,11 @@ CARA_VOICE_ID="7c45223a-60a8-45e5-9c74-0339f354ca81"
 
 # Determine voice ID and queue name from DJ name
 case "${DJ_NAME,,}" in
-    arthur)
-        VOICE_ID="$ARTHUR_VOICE_ID"
-        QUEUE_NAME="queue_arthur"
-        ;;
-    cara)
-        VOICE_ID="$CARA_VOICE_ID"
-        QUEUE_NAME="queue_cara"
-        ;;
-    *)
-        echo "[dj-commentary] Unknown DJ: $DJ_NAME" >&2
-        exit 1
-        ;;
+    arthur) VOICE_ID="$ARTHUR_VOICE_ID"; QUEUE_NAME="queue_arthur" ;;
+    cara)   VOICE_ID="$CARA_VOICE_ID";   QUEUE_NAME="queue_cara"   ;;
+    *)      echo "[dj-commentary] ERROR: Unknown DJ '$DJ_NAME'" >&2; exit 1 ;;
 esac
 
-# Generate unique filename
 CLIP_ID="dj-$(date +%s)-$$"
 RAW_FILE="/state/${CLIP_ID}-raw.mp3"
 PADDED_FILE="/state/${CLIP_ID}.mp3"
@@ -51,9 +31,8 @@ cleanup() {
 trap cleanup EXIT
 
 # Build auth header
-AUTH_HEADER=""
 if [ -n "$TTS_AUTH_TOKEN" ]; then
-    AUTH_HEADER="Authorization: Bearer ${TTS_AUTH_TOKEN}"
+    AUTH_HEADER="Authorization: Bearer $TTS_AUTH_TOKEN"
 fi
 
 # Step 1: Call /prepare to generate TTS
@@ -72,7 +51,6 @@ PREPARE_RESPONSE=$(curl -sf \
     exit 1
 }
 
-# Extract download URL from response
 DOWNLOAD_URL=$(echo "$PREPARE_RESPONSE" | jq -r '.url // empty')
 if [ -z "$DOWNLOAD_URL" ]; then
     echo "[dj-commentary] ERROR: No URL in TTS response: $PREPARE_RESPONSE" >&2
@@ -89,34 +67,38 @@ curl -sf --max-time 30 \
     exit 1
 }
 
-# Verify we got a valid file
-if [ ! -s "$RAW_FILE" ]; then
-    echo "[dj-commentary] ERROR: Downloaded file is empty" >&2
+# Verify file size
+FILE_SIZE=$(stat -c%s "$RAW_FILE" 2>/dev/null || echo 0)
+if [ "$FILE_SIZE" -lt 1000 ]; then
+    echo "[dj-commentary] ERROR: TTS file too small (${FILE_SIZE} bytes)" >&2
     exit 1
 fi
 
-# Step 3: Pad 300ms silence at start for smooth ducking lead-in
+# Step 3: Pad 300ms silence for smooth ducking
 echo "[dj-commentary] Padding 300ms silence..."
-ffmpeg -y -loglevel error \
-    -f lavfi -i "anullsrc=r=44100:cl=stereo" \
-    -i "$RAW_FILE" \
-    -filter_complex "[0]atrim=0:0.3[silence];[silence][1:a]concat=n=2:v=0:a=1" \
-    "$PADDED_FILE" || {
-    echo "[dj-commentary] WARN: ffmpeg padding failed, using raw file" >&2
+if command -v ffmpeg &>/dev/null; then
+    ffmpeg -y -loglevel error \
+        -f lavfi -i "anullsrc=r=44100:cl=stereo" \
+        -i "$RAW_FILE" \
+        -filter_complex "[0]atrim=0:0.3[silence];[silence][1:a]concat=n=2:v=0:a=1" \
+        "$PADDED_FILE" 2>/dev/null || {
+        echo "[dj-commentary] WARN: ffmpeg padding failed, using raw file" >&2
+        cp "$RAW_FILE" "$PADDED_FILE"
+    }
+else
     cp "$RAW_FILE" "$PADDED_FILE"
-}
+fi
 
 # Step 4: Push to Liquidsoap queue via telnet
 echo "[dj-commentary] Pushing to ${QUEUE_NAME} via ${LIQUIDSOAP_HOST}:${LIQUIDSOAP_PORT}..."
-PUSH_RESPONSE=$(echo "${QUEUE_NAME}.push ${PADDED_FILE}" | nc -w2 "$LIQUIDSOAP_HOST" "$LIQUIDSOAP_PORT" 2>&1) || {
-    echo "[dj-commentary] ERROR: Failed to push to Liquidsoap queue" >&2
-    exit 1
-}
+PUSH_RESPONSE=$(echo "${QUEUE_NAME}.push ${PADDED_FILE}" | nc -w2 "$LIQUIDSOAP_HOST" "$LIQUIDSOAP_PORT" 2>&1) || true
+if echo "$PUSH_RESPONSE" | grep -qi 'error\|failed\|unknown'; then
+    echo "[dj-commentary] WARNING: Push to Liquidsoap had issues: $PUSH_RESPONSE" >&2
+fi
 
-# On success, disable the EXIT trap for PADDED_FILE — schedule delayed cleanup
-# instead so Liquidsoap has time to read the file before it's removed.
+# Success — disable EXIT trap cleanup for PADDED_FILE (Liquidsoap will consume it)
 trap - EXIT
 rm -f "$RAW_FILE" 2>/dev/null || true
-(sleep "${CLEANUP_DELAY_SECS:-30}" && rm -f "$PADDED_FILE") &
+(sleep "${CLEANUP_DELAY_SECS:-30}" && rm -f "$PADDED_FILE") >/dev/null 2>&1 &
 
 echo "[dj-commentary] Done — DJ $DJ_NAME commentary queued ($CLIP_ID)"

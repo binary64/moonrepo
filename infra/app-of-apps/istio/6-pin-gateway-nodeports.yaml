@@ -1,0 +1,128 @@
+# PostSync hook: pin gateway-istio Service NodePorts to deterministic values.
+#
+# Why: Istio's Gateway API controller auto-creates the `gateway-istio` Service from the
+#      Gateway resource and assigns random nodePorts each time it's recreated.
+#      Our ISP router NAT forwards 80/443 to fixed NodePorts on the NUC, so they must
+#      be stable across rebuilds.
+#
+# Pinned NodePorts:
+#   - 30080 → port 80   (HTTP, redirects to HTTPS)
+#   - 30443 → port 443  (HTTPS)
+#   - status-port (15021) and headscale-grpc (50443) left dynamic — not externally exposed.
+#
+# Router NAT update required after this lands: see PR description.
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: gateway-nodeport-pin
+  namespace: istio-system
+  annotations:
+    moonrepo.dev/skip-local: "true"
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: gateway-nodeport-pin
+  namespace: istio-system
+  annotations:
+    moonrepo.dev/skip-local: "true"
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+rules:
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: gateway-nodeport-pin
+  namespace: istio-system
+  annotations:
+    moonrepo.dev/skip-local: "true"
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: gateway-nodeport-pin
+subjects:
+  - kind: ServiceAccount
+    name: gateway-nodeport-pin
+    namespace: istio-system
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: gateway-nodeport-pin
+  namespace: istio-system
+  annotations:
+    moonrepo.dev/skip-local: "true"
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  ttlSecondsAfterFinished: 300
+  backoffLimit: 3
+  template:
+    spec:
+      serviceAccountName: gateway-nodeport-pin
+      restartPolicy: OnFailure
+      containers:
+        - name: pin
+          image: bitnami/kubectl:1.35.3
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              # Wait up to 60s for the Service to exist (in case Istio is still reconciling)
+              SERVICE_FOUND=false
+              for i in $(seq 1 30); do
+                if kubectl get svc -n istio-system gateway-istio >/dev/null 2>&1; then
+                  SERVICE_FOUND=true
+                  break
+                fi
+                echo "Waiting for gateway-istio service... ($i/30)"
+                sleep 2
+              done
+
+              if [ "$SERVICE_FOUND" = "false" ]; then
+                echo "ERROR: gateway-istio service not found after 60s — aborting" >&2
+                exit 1
+              fi
+
+              # Strategic merge patch: only updates the named ports, leaves others untouched.
+              kubectl patch svc -n istio-system gateway-istio --type=strategic --patch '
+              spec:
+                ports:
+                  - name: default
+                    port: 80
+                    targetPort: 80
+                    protocol: TCP
+                    nodePort: 30080
+                  - name: https
+                    port: 443
+                    targetPort: 443
+                    protocol: TCP
+                    nodePort: 30443
+              '
+              echo "gateway-istio NodePorts pinned: 80→30080, 443→30443"
+              kubectl get svc -n istio-system gateway-istio -o jsonpath='{range .spec.ports[*]}{.name}={.nodePort} {end}{"\n"}'

@@ -1,0 +1,13 @@
+node_modules
+.next
+.env*
+*.log
+.git
+.gitignore
+Dockerfile
+.dockerignore
+README.md
+.moon
+biome.json
+moon.yml
+tsconfig.tsbuildinfo

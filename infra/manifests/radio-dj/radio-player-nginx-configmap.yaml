@@ -1,0 +1,149 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: radio-player-nginx-config
+  namespace: radio-dj
+data:
+  default.conf: |    # Default server — catches IP-based access and unknown hostnames
+    server {
+        listen 80 default_server;
+        server_name _;
+
+        # Disable nginx's own cache-control; let Icecast headers through
+        proxy_hide_header Cache-Control;
+        proxy_hide_header Expires;
+        proxy_hide_header Pragma;
+
+        location /stream {
+            proxy_pass http://icecast.radio-dj.svc.cluster.local:8100/stream;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header Connection "";
+            proxy_method GET;
+            proxy_set_header Range "";
+            proxy_buffering off;
+            proxy_cache off;
+            # CORS headers for Cast compatibility
+            add_header Access-Control-Allow-Origin "*" always;
+            add_header Access-Control-Allow-Methods "GET, OPTIONS" always;
+            add_header Access-Control-Allow-Headers "Range, Content-Type" always;
+            # Pass through Icecast ICY headers
+            proxy_pass_header icy-*;
+        }
+
+        location = /stream.mp3 {
+            proxy_pass http://icecast.radio-dj.svc.cluster.local:8100/stream;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header Connection "";
+            proxy_method GET;
+            proxy_set_header Range "";
+            proxy_buffering off;
+            proxy_cache off;
+            add_header Access-Control-Allow-Origin "*" always;
+            add_header Access-Control-Allow-Methods "GET, OPTIONS" always;
+            add_header Access-Control-Allow-Headers "Range, Content-Type" always;
+            proxy_pass_header icy-*;
+        }
+
+        location = /stream-video.ts {
+            proxy_pass http://icecast.radio-dj.svc.cluster.local:8100/stream-video;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header Connection "";
+            proxy_method GET;
+            proxy_set_header Range "";
+            proxy_buffering off;
+            proxy_cache off;
+            proxy_hide_header Content-Type;
+            add_header Content-Type video/mp2t;
+            add_header Access-Control-Allow-Origin "*" always;
+            add_header Access-Control-Allow-Methods "GET, OPTIONS" always;
+            add_header Access-Control-Allow-Headers "Range, Content-Type" always;
+            default_type video/mp2t;
+        }
+    }
+
+    # Server for player.stream.brandwhisper.cloud — static web content
+    server {
+        listen 80;
+        server_name player.stream.brandwhisper.cloud;
+        root /usr/share/nginx/html;
+        index index.html;
+        location / {
+            try_files $uri $uri/ =404;
+        }
+    }
+
+    # Server for stream.brandwhisper.cloud — proxy to Icecast (explicit, overrides default)
+    server {
+        listen 80;
+        server_name stream.brandwhisper.cloud;
+
+        # Disable nginx's own cache-control; let Icecast headers through
+        proxy_hide_header Cache-Control;
+        proxy_hide_header Expires;
+        proxy_hide_header Pragma;
+
+        location /stream {
+            proxy_pass http://icecast.radio-dj.svc.cluster.local:8100/stream;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header Connection "";
+            proxy_method GET;
+            proxy_set_header Range "";
+            proxy_buffering off;
+            proxy_cache off;
+            # CORS headers for Cast compatibility
+            add_header Access-Control-Allow-Origin "*" always;
+            add_header Access-Control-Allow-Methods "GET, OPTIONS" always;
+            add_header Access-Control-Allow-Headers "Range, Content-Type" always;
+            # Pass through Icecast ICY headers
+            proxy_pass_header icy-*;
+        }
+
+        location = /stream.mp3 {
+            proxy_pass http://icecast.radio-dj.svc.cluster.local:8100/stream;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header Connection "";
+            proxy_method GET;
+            proxy_set_header Range "";
+            proxy_buffering off;
+            proxy_cache off;
+            add_header Access-Control-Allow-Origin "*" always;
+            add_header Access-Control-Allow-Methods "GET, OPTIONS" always;
+            add_header Access-Control-Allow-Headers "Range, Content-Type" always;
+            proxy_pass_header icy-*;
+        }
+
+        location = /stream-video.ts {
+            proxy_pass http://icecast.radio-dj.svc.cluster.local:8100/stream-video;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header Connection "";
+            proxy_method GET;
+            proxy_set_header Range "";
+            proxy_buffering off;
+            proxy_cache off;
+            proxy_hide_header Content-Type;
+            add_header Content-Type video/mp2t;
+            add_header Access-Control-Allow-Origin "*" always;
+            add_header Access-Control-Allow-Methods "GET, OPTIONS" always;
+            add_header Access-Control-Allow-Headers "Range, Content-Type" always;
+            default_type video/mp2t;
+        }
+    }
+

@@ -1,0 +1,52 @@
+name: Deploy Powerlinks Web to Vercel
+
+# Build happens here in GitHub Actions. We ship the prebuilt Vercel Build
+# Output (.vercel/output) via `vercel deploy --prebuilt`, so Vercel never
+# pulls the repo, never sees src/, and never runs its own build.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'apps/powerlinks-web/**'
+      - '.github/workflows/deploy-powerlinks.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: powerlinks-web-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/powerlinks-web
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_POWERLINKS }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+
+      # Generate the Vercel project link metadata (.vercel/project.json) from
+      # secrets, without contacting Vercel for a build. Required for --prebuilt.
+      - name: Pull Vercel project settings
+        run: npx -y vercel@latest pull --yes --environment=production --token "${{ secrets.VERCEL_TOKEN }}"
+
+      # Build the static site into .vercel/output (Build Output API v3).
+      - name: Build (in CI, not on Vercel)
+        run: node build.mjs
+
+      # Ship the prebuilt output. --prebuilt means Vercel deploys exactly what
+      # we built here and does NOT access the repository or run a build.
+      - name: Deploy prebuilt to Vercel (production)
+        run: npx -y vercel@latest deploy --prebuilt --prod --yes --token "${{ secrets.VERCEL_TOKEN }}"

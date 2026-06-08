@@ -10,6 +10,11 @@ spec:
   selector:
     app: liquidsoap
   ports:
-    - port: 1234
+    - name: telnet
+      port: 1234
       targetPort: 1234
+      protocol: TCP
+    - name: http
+      port: 8000
+      targetPort: 8000
       protocol: TCP

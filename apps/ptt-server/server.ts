@@ -179,7 +179,7 @@ const BYTES_PER_SAMPLE = 2;
 const FRAME_SAMPLES = 512; // Silero VAD v6.2 only accepts 512-sample frames at 16kHz.
 const FRAME_BYTES = FRAME_SAMPLES * BYTES_PER_SAMPLE;
 const FRAME_MS = (FRAME_SAMPLES / SAMPLE_RATE) * 1000;
-const SPEECH_THRESHOLD = 0.50; // Silero default for 32ms frames (512 samples @ 16kHz)
+const SPEECH_THRESHOLD = 0.85;
 const SILENCE_AFTER_SPEECH_MS = 1600;
 const MIN_SPEECH_MS = 400;
 const MIN_SPEECH_FRAMES = Math.ceil(MIN_SPEECH_MS / FRAME_MS); // Derived from MIN_SPEECH_MS to keep speech-start and completion thresholds in sync.
@@ -1228,67 +1228,15 @@ async function pickSessionViaLLM(text: string): Promise<string> {
   });
 }
 
-// Transcribe-only: calls Whisper and returns raw text without sending anywhere
-function transcribeOnly(wavBuffer: Buffer): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const boundary = `----WatchPTT${Date.now()}`;
-    const prompt =
-      "Arthur, radio on, lights off, TV on, skip track, what's the weather [BRITISH]";
-
-    const pre = Buffer.from(
-      `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="audio.wav"\r\nContent-Type: audio/wav\r\n\r\n`,
-    );
-    const post = Buffer.from(
-      `\r\n--${boundary}\r\nContent-Disposition: form-data; name="model"\r\n\r\nwhisper-1\r\n` +
-        `--${boundary}\r\nContent-Disposition: form-data; name="language"\r\n\r\nen\r\n` +
-        `--${boundary}\r\nContent-Disposition: form-data; name="response_format"\r\n\r\ntext\r\n` +
-        `--${boundary}\r\nContent-Disposition: form-data; name="prompt"\r\n\r\n${prompt}\r\n` +
-        `--${boundary}--\r\n`,
-    );
-    const body = Buffer.concat([pre, wavBuffer, post]);
-
-    const apiReq = https.request(
-      {
-        hostname: "api.openai.com",
-        path: "/v1/audio/transcriptions",
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${OPENAI_KEY}`,
-          "Content-Type": `multipart/form-data; boundary=${boundary}`,
-          "Content-Length": body.length,
-        },
-      },
-      (apiRes) => {
-        let data = "";
-        apiRes.on("data", (c: string) => {
-          data += c;
-        });
-        apiRes.on("end", () => {
-          clearTimeout(whisperTimeout);
-          if (apiRes.statusCode !== 200)
-            return reject(new Error(`Whisper ${apiRes.statusCode}: ${data}`));
-          resolve(data.trim());
-        });
-      },
-    );
-
-    const whisperTimeout = setTimeout(() => {
-      apiReq.destroy(new Error("Whisper API timeout after 30s"));
-    }, 30000);
-
-    apiReq.on("error", (err: Error) => {
-      clearTimeout(whisperTimeout);
-      reject(err);
-    });
-    apiReq.end(body);
-  });
-}
-
 // Transcribe raw PCM buffer and route via LLM, echo to Telegram immediately
 async function transcribeAndRoute(wavBuffer: Buffer): Promise<void> {
   let text: string;
   try {
-    text = await transcribeOnly(wavBuffer);
+    const result = await transcribeAndSend(wavBuffer, MAIN_SESSION);
+    text =
+      typeof result === "object"
+        ? (result as { text: string }).text
+        : (result as string);
   } catch (e) {
     console.error(`[${ts()}] ❌ Whisper failed: ${(e as Error).message}`);
     return;
@@ -1304,8 +1252,7 @@ async function transcribeAndRoute(wavBuffer: Buffer): Promise<void> {
   console.log(`[${ts()}] 🗣️ "${text}"`);
 
   // 1. Echo to James's DM immediately (he sees it on Telegram)
-  const echoSession = "agent:main:telegram:direct:james";
-  sendViaGateway(`⌚ ${text}`, echoSession, (err) => {
+  sendViaGateway(`⌚ ${text}`, "agent:main:telegram:direct:james", (err) => {
     if (err) console.error(`[${ts()}] Echo failed: ${err.message}`);
     else console.log(`[${ts()}] 📱 Echoed to James DM`);
   });
@@ -1313,15 +1260,11 @@ async function transcribeAndRoute(wavBuffer: Buffer): Promise<void> {
   // 2. LLM picks best session
   const routedSession = await pickSessionViaLLM(text);
 
-  // 3. Post ⌚ turn to routed session — skip if same as echo to avoid double-post
-  if (routedSession !== echoSession) {
-    sendViaGateway(`⌚ ${text}`, routedSession, (err) => {
-      if (err) console.error(`[${ts()}] Turn failed: ${err.message}`);
-      else console.log(`[${ts()}] ✅ Turn sent to ${routedSession}`);
-    });
-  } else {
-    console.log(`[${ts()}] ✅ Routed to James DM (already echoed)`);
-  }
+  // 3. Post ⌚ turn to routed session — triggers agent reply
+  sendViaGateway(`⌚ ${text}`, routedSession, (err) => {
+    if (err) console.error(`[${ts()}] Turn failed: ${err.message}`);
+    else console.log(`[${ts()}] ✅ Turn sent to ${routedSession}`);
+  });
 }
 
 function ts(): string {

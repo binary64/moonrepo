@@ -6,3 +6,14 @@ pre-commit:
       stage_fixed: true
     moon-sync:
       run: moon sync
+
+pre-push:
+  commands:
+    check-behind-master:
+      run: |
+        git fetch origin master --quiet
+        BEHIND=$(git rev-list --count HEAD..origin/master)
+        if [ "$BEHIND" -gt 0 ]; then
+          echo "Your branch is $BEHIND commit(s) behind origin/master. Rebase first."
+          exit 1
+        fi

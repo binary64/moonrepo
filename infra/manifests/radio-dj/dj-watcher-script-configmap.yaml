@@ -1,0 +1,421 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dj-watcher-script
+  namespace: radio-dj
+data:
+  dj-commentary.sh: |
+    #!/bin/bash
+    set -euo pipefail
+
+    # Environment (with defaults)
+    DJ_NAME="${1:-arthur}"
+    CLIP_TYPE="${2:-api-call}"
+    TEXT_OR_FLAG="${3:-}"
+    JSON_FILE="${4:-}"
+    TTS_SERVER_URL="${TTS_SERVER_URL:-http://tts-server.tts-server.svc.cluster.local:3090}"
+    TTS_AUTH_TOKEN="${TTS_AUTH_TOKEN:-}"
+    LIQUIDSOAP_HOST="${LIQUIDSOAP_HOST:-liquidsoap.radio-dj.svc.cluster.local}"
+    LIQUIDSOAP_PORT="${LIQUIDSOAP_PORT:-1234}"
+    GENERATION_ID_FILE="/state/last-generation-id-${DJ_NAME}.txt"
+
+    # Voice IDs
+    ARTHUR_VOICE_ID="b4e39673-3fec-446a-a965-6517b5e0ea52"
+    CARA_VOICE_ID="7c45223a-60a8-45e5-9c74-0339f354ca81"
+
+    # Determine voice ID and queue name from DJ name
+    case "${DJ_NAME,,}" in
+        arthur) VOICE_ID="$ARTHUR_VOICE_ID"; QUEUE_NAME="queue_arthur" ;;
+        cara)   VOICE_ID="$CARA_VOICE_ID";   QUEUE_NAME="queue_cara"   ;;
+        *)      echo "[dj-commentary] ERROR: Unknown DJ '$DJ_NAME'" >&2; exit 1 ;;
+    esac
+
+    CLIP_ID="dj-$(date +%s)-$$"
+    RAW_FILE="/state/${CLIP_ID}-raw.mp3"
+    PADDED_FILE="/state/${CLIP_ID}.mp3"
+
+    cleanup() {
+        rm -f "$RAW_FILE" "$PADDED_FILE" 2>/dev/null || true
+    }
+    trap cleanup EXIT
+
+    # Build auth header
+    AUTH_HEADER=""
+    if [ -n "$TTS_AUTH_TOKEN" ]; then
+        AUTH_HEADER="Authorization: Bearer $TTS_AUTH_TOKEN"
+    fi
+
+    # Build the TTS request payload
+    if [ "$TEXT_OR_FLAG" = "--json" ] && [ -n "$JSON_FILE" ] && [ -f "$JSON_FILE" ]; then
+        # ── Structured utterances mode ──
+        echo "[dj-commentary] Using structured utterances from $JSON_FILE"
+
+        # Read previous generation_id for continuation
+        PREV_GEN_ID=""
+        if [ -f "$GENERATION_ID_FILE" ]; then
+            PREV_GEN_ID=$(cat "$GENERATION_ID_FILE" 2>/dev/null || true)
+        fi
+
+        # Build the payload with per-utterance acting instructions
+        TTS_PAYLOAD=$(python3 -c "
+    import json, sys
+
+    with open('$JSON_FILE') as f:
+        data = json.load(f)
+
+    utterances = data.get('utterances', [])
+    voice_id = '$VOICE_ID'
+    prev_gen_id = '$PREV_GEN_ID'
+
+    tts_utterances = []
+    for i, u in enumerate(utterances):
+        entry = {
+            'text': u.get('text', ''),
+            'voice': {'id': voice_id},
+        }
+        # Acting instructions
+        desc = u.get('description', '')
+        if desc:
+            entry['description'] = desc[:100]  # Hume recommends <=100 chars
+        # Speed
+        speed = u.get('speed', 1.0)
+        if speed and speed != 1.0:
+            entry['speed'] = max(0.5, min(2.0, float(speed)))
+        # Trailing silence between utterances (not on the last one)
+        ts = u.get('trailing_silence')
+        if ts:
+            entry['trailing_silence'] = float(ts)
+        tts_utterances.append(entry)
+
+    payload = {
+        'utterances': tts_utterances,
+        'format': {'type': 'mp3'}
+    }
+
+    # Add continuation context from previous generation
+    if prev_gen_id:
+        payload['context'] = {'generation_id': prev_gen_id}
+
+    print(json.dumps(payload))
+    ")
+
+    else
+        # ── Legacy plain text mode ──
+        TEXT="$TEXT_OR_FLAG"
+        echo "[dj-commentary] Using plain text mode: ${TEXT:0:60}..."
+        TTS_PAYLOAD=$(jq -n \
+            --arg text "$TEXT" \
+            --arg voice_id "$VOICE_ID" \
+            '{utterances: [{text: $text, voice: {id: $voice_id}}], format: {type: "mp3"}}')
+    fi
+
+    # Step 1: Call TTS API
+    echo "[dj-commentary] Generating TTS for DJ $DJ_NAME..."
+    PREPARE_RESPONSE=$(curl -sf \
+        --max-time 30 \
+        -X POST \
+        -H "Content-Type: application/json" \
+        ${AUTH_HEADER:+-H "$AUTH_HEADER"} \
+        -d "$TTS_PAYLOAD" \
+        "${TTS_SERVER_URL}/prepare") || {
+        echo "[dj-commentary] ERROR: TTS /prepare failed" >&2
+        exit 1
+    }
+
+    DOWNLOAD_URL=$(echo "$PREPARE_RESPONSE" | jq -r '.url // empty')
+    if [ -z "$DOWNLOAD_URL" ]; then
+        echo "[dj-commentary] ERROR: No URL in TTS response: $PREPARE_RESPONSE" >&2
+        exit 1
+    fi
+
+    # Save generation_id for continuation in next clip
+    NEW_GEN_ID=$(echo "$PREPARE_RESPONSE" | jq -r '.generation_id // empty' 2>/dev/null || true)
+    if [ -n "$NEW_GEN_ID" ]; then
+        echo "$NEW_GEN_ID" > "$GENERATION_ID_FILE"
+        echo "[dj-commentary] Saved generation_id for continuation: ${NEW_GEN_ID:0:20}..."
+    fi
+
+    # Step 2: Download the MP3
+    echo "[dj-commentary] Downloading TTS clip from $DOWNLOAD_URL..."
+    curl -sf --max-time 30 \
+        ${AUTH_HEADER:+-H "$AUTH_HEADER"} \
+        -o "$RAW_FILE" \
+        "$DOWNLOAD_URL" || {
+        echo "[dj-commentary] ERROR: Failed to download TTS clip" >&2
+        exit 1
+    }
+
+    # Verify file size
+    FILE_SIZE=$(stat -c%s "$RAW_FILE" 2>/dev/null || echo 0)
+    if [ "$FILE_SIZE" -lt 1000 ]; then
+        echo "[dj-commentary] ERROR: TTS file too small (${FILE_SIZE} bytes)" >&2
+        exit 1
+    fi
+
+    # Step 3: Pad 300ms silence for smooth ducking
+    echo "[dj-commentary] Padding 300ms silence..."
+    if command -v ffmpeg &>/dev/null; then
+        ffmpeg -y -loglevel error \
+            -f lavfi -i "anullsrc=r=44100:cl=stereo" \
+            -i "$RAW_FILE" \
+            -filter_complex "[0]atrim=0:0.3[silence];[silence][1:a]concat=n=2:v=0:a=1" \
+            "$PADDED_FILE" 2>/dev/null || {
+            echo "[dj-commentary] WARN: ffmpeg padding failed, using raw file" >&2
+            cp "$RAW_FILE" "$PADDED_FILE"
+        }
+    else
+        cp "$RAW_FILE" "$PADDED_FILE"
+    fi
+
+    # Step 4: Push to Liquidsoap queue via telnet
+    echo "[dj-commentary] Pushing to ${QUEUE_NAME} via ${LIQUIDSOAP_HOST}:${LIQUIDSOAP_PORT}..."
+    PUSH_RESPONSE=$(echo "${QUEUE_NAME}.push ${PADDED_FILE}" | nc -w2 "$LIQUIDSOAP_HOST" "$LIQUIDSOAP_PORT" 2>&1) || true
+    if echo "$PUSH_RESPONSE" | grep -qi 'error\|failed\|unknown'; then
+        echo "[dj-commentary] WARNING: Push to Liquidsoap had issues: $PUSH_RESPONSE" >&2
+    fi
+
+    # Success — disable EXIT trap cleanup for PADDED_FILE (Liquidsoap will consume it)
+    trap - EXIT
+    rm -f "$RAW_FILE" 2>/dev/null || true
+    (sleep "${CLEANUP_DELAY_SECS:-30}" && rm -f "$PADDED_FILE") >/dev/null 2>&1 &
+
+    echo "[dj-commentary] Done — DJ $DJ_NAME commentary queued ($CLIP_ID)"
+  dj-watcher.sh: |
+    #!/bin/bash
+    # set -e  # removed — non-critical failures should not kill the watcher
+    EVENT_FILE="/state/new-track-event"
+    LAST_TRACK=""
+    HISTORY_FILE="/state/dj-recent-history.json"
+    echo "[dj-watcher] Started. Polling ${EVENT_FILE} every 5s..."
+
+    # Ensure history file exists
+    [ -f "$HISTORY_FILE" ] || echo '[]' > "$HISTORY_FILE"
+
+    # Start Python API server in background
+    if [ -f /server/server.py ]; then
+        echo "[dj-watcher] Starting Python API server..."
+        python3 -B /server/server.py &
+        sleep 1
+    else
+        echo "[dj-watcher] WARNING: /server/server.py not found — API endpoint unavailable" >&2
+    fi
+
+    while true; do
+        # ── Agentic tick: air any end-of-song DJ clip queued by radio_tick.py ──
+        # The tick writes {dj,text,ts} to this file via `speak --timing end`.
+        # We air it here (dj-brain pod has dj-commentary.sh + TTS token). Fired on
+        # the next 5s poll after it's queued — effectively the end-of-song break.
+        PENDING_CLIP="/state/dj-pending-end-of-song.json"
+        if [ -f "$PENDING_CLIP" ]; then
+            P_DJ=$(python3 -c "import json;print(json.load(open('$PENDING_CLIP')).get('dj','arthur'))" 2>/dev/null)
+            P_TEXT=$(python3 -c "import json;print(json.load(open('$PENDING_CLIP')).get('text',''))" 2>/dev/null)
+            P_TS=$(python3 -c "import json;print(json.load(open('$PENDING_CLIP')).get('ts',0))" 2>/dev/null)
+            rm -f "$PENDING_CLIP"
+            NOW_TS=$(date +%s)
+            if [ -n "$P_TEXT" ] && { [ "$P_TS" = "0" ] || [ $((NOW_TS - P_TS)) -lt 1800 ]; }; then
+                echo "[dj-watcher] Airing agentic ${P_DJ} end-of-song clip (${#P_TEXT} chars)"
+                /radio/dj-commentary.sh "$P_DJ" api-call "$P_TEXT" || echo "[dj-watcher] WARN: pending clip air failed" >&2
+            else
+                echo "[dj-watcher] Pending clip stale/empty — skipped"
+            fi
+        fi
+
+        if [ -f "$EVENT_FILE" ]; then
+            TRACK_PATH=$(cat "$EVENT_FILE")
+            if [ -n "$TRACK_PATH" ] && [ "$TRACK_PATH" != "$LAST_TRACK" ]; then
+                LAST_TRACK="$TRACK_PATH"
+                ARTIST="$(basename "$(dirname "$TRACK_PATH")")"
+                TITLE="$(basename "$TRACK_PATH" .mp3)"
+                TITLE="$(basename "$TITLE")"
+                echo "[dj-watcher] New track: $ARTIST - $TITLE"
+                export ARTIST TITLE
+
+                # Reactive commentary is SUPERSEDED by the agentic radio-tick loop
+                # (Hermes cron → radio_tick.py). When REACTIVE_COMMENTARY != "true"
+                # the watcher still runs (keeps the API server + history file alive)
+                # but does NOT trigger its own commentary — the tick owns the mic.
+                # This prevents double-speak. Set REACTIVE_COMMENTARY=true to roll back.
+                if [ "${REACTIVE_COMMENTARY:-false}" != "true" ]; then
+                    echo "[dj-watcher] Reactive commentary disabled (agentic tick owns the mic) — track noted, no TTS trigger"
+                    sleep 5
+                    continue
+                fi
+
+                # Determine DJ based on schedule + time of day
+                HOUR=$(date +%H)
+                TODAY=$(date +%Y-%m-%d)
+                ABI_STATUS=""
+                if [ -f /config/schedule.json ]; then
+                    ABI_STATUS=$(python3 -c "
+    import json
+    with open('/config/schedule.json') as f:
+        sched = json.load(f)
+    day = sched.get('${TODAY}', {})
+    abi = day.get('abi', {})
+    print(abi.get('status', 'unknown'))
+    " 2>/dev/null)
+                fi
+                if [ "$ABI_STATUS" = "not-working" ]; then
+                    DJ_NAME="cara"
+                    echo "[dj-watcher] Abi is off today — Cara presenting all day"
+                elif [ "$HOUR" -ge 17 ] || [ "$HOUR" -lt 6 ]; then
+                    DJ_NAME="cara"
+                else
+                    DJ_NAME="arthur"
+                fi
+                export DJ_NAME
+                echo "[dj-watcher] DJ shift: $DJ_NAME (hour: $HOUR)"
+
+                # – Listener gate: skip TTS if nobody is tuned in –––––––––––––––––––
+                get_stream_listeners() {
+                    curl -sf --max-time 3 "http://icecast.radio-dj.svc.cluster.local:8100/status-json.xsl" 2>/dev/null | \
+                        python3 -c "import sys,json; d=json.load(sys.stdin); s=d.get('icestats',{}).get('source',{}); print(s.get('listeners',0) if isinstance(s,dict) else sum(x.get('listeners',0) for x in s))" 2>/dev/null || echo 0
+                }
+
+                LISTENER_COUNT=$(get_stream_listeners)
+                if [ -z "$LISTENER_COUNT" ] || [ "$LISTENER_COUNT" -eq 0 ]; then
+                    echo "[dj-watcher] No listeners on /stream, skipping TTS"
+                    continue
+                fi
+
+                COMMENTARY=$(python3 - <<'PY'
+    import json, os, urllib.request
+
+    ARTIST = os.environ.get("ARTIST", "Unknown Artist")
+    TITLE = os.environ.get("TITLE", "Unknown Title")
+    DJ_NAME = os.environ.get("DJ_NAME", "arthur")
+    HISTORY_FILE = "/state/dj-recent-history.json"
+
+    # Read BPM from state file if available
+    bpm = ""
+    try:
+        with open("/state/current-track-bpm") as f:
+            bpm = f.read().strip()
+    except:
+        pass
+
+    # --- Upcoming tracks: peek at next 2 from queue + graph ---
+    upcoming = []
+    try:
+        with open("/state/radio-llm-queue.json") as f:
+            queue = json.load(f)
+        with open("/data/radio-track-graph.json") as f:
+            graph = json.load(f)
+        tracks_db = graph.get("tracks", {})
+        for tid in queue[:2]:
+            t = tracks_db.get(str(tid), {})
+            name = t.get("n", "")
+            if " - " in name:
+                parts = name.split(" - ", 1)
+                upcoming.append({"artist": parts[0].strip(), "title": parts[1].strip(), "genres": t.get("g", "")})
+            elif name:
+                upcoming.append({"artist": "Unknown", "title": name, "genres": t.get("g", "")})
+    except Exception as e:
+        import sys
+        print(f"[upcoming] Error: {e}", file=sys.stderr)
+
+    # --- Recent history ---
+    # full_history is persisted (last 100); recent_history is the LLM context window (last 10)
+    full_history = []
+    try:
+        with open(HISTORY_FILE) as f:
+            full_history = json.load(f)
+    except:
+        full_history = []
+    recent_history = full_history[-10:]
+
+    # --- Audience: check who's home via HA ---
+    audience = []
+    try:
+        HA_TOKEN = os.environ.get("HA_TOKEN", "")
+        HA_BASE = "https://home.brandwhisper.cloud"
+        people = {
+            "person.james": "james",
+            "person.abi": "abi",
+        }
+        for entity, name in people.items():
+            req = urllib.request.Request(
+                f"{HA_BASE}/api/states/{entity}",
+                headers={
+                    "Authorization": f"Bearer {HA_TOKEN}",
+                    "Content-Type": "application/json",
+                    "User-Agent": "ArthurRadio/1.0"
+                }
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    data = json.loads(resp.read().decode())
+                    if data.get("state") == "home":
+                        audience.append(name)
+            except:
+                pass
+    except Exception as e:
+        import sys
+        print(f"[audience] Error: {e}", file=sys.stderr)
+
+    # --- Call brain server ---
+    BRAIN_URL = os.environ.get("BRAIN_URL", "http://158.220.90.28:8877")
+    payload = json.dumps({
+        "artist": ARTIST,
+        "title": TITLE,
+        "bpm": bpm,
+        "dj": DJ_NAME,
+        "upcoming_tracks": upcoming,
+        "recent_history": recent_history,
+        "audience": audience
+    }).encode()
+
+    try:
+        req = urllib.request.Request(
+            f"{BRAIN_URL}/commentary",
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            result = json.loads(resp.read().decode())
+            text = result.get("commentary", "")
+            utterances = result.get("utterances")
+            if text and not result.get("error"):
+                # Update history file with this commentary
+                try:
+                    full_history.append({
+                        "artist": ARTIST,
+                        "title": TITLE,
+                        "commentary": text
+                    })
+                    # Persist last 100
+                    full_history = full_history[-100:]
+                    with open(HISTORY_FILE, "w") as f:
+                        json.dump(full_history, f)
+                except:
+                    pass
+                # Write full result to temp file for commentary script
+                if utterances:
+                    import tempfile
+                    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', dir='/state', delete=False, prefix='utt-') as tf:
+                        json.dump({"utterances": utterances, "dj": result.get("dj", "arthur")}, tf)
+                        print(f"[[json:{tf.name}]]")
+                else:
+                    print(text)
+            else:
+                print(f"[[error:{result.get('error', 'empty')}]]")
+    except Exception as e:
+        print(f"[[error:{e}]]")
+    PY
+    )
+                if [ -n "$COMMENTARY" ] && [[ ! "$COMMENTARY" == *"[[skip]]"* ]] && [[ ! "$COMMENTARY" == *"[[error:"* ]]; then
+                    if [[ "$COMMENTARY" == *"[[json:"* ]]; then
+                        # Structured utterances mode - extract JSON file path
+                        JSON_FILE=$(echo "$COMMENTARY" | grep -oP '\[\[json:\K[^\]]+')
+                        /radio/dj-commentary.sh "$DJ_NAME" "$TITLE" "--json" "$JSON_FILE"
+                        rm -f "$JSON_FILE" 2>/dev/null || true
+                    else
+                        # Legacy plain text mode
+                        /radio/dj-commentary.sh "$DJ_NAME" "$TITLE" "$COMMENTARY"
+                    fi
+                fi
+            fi
+        fi
+        sleep 5
+    done

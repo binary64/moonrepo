@@ -2,7 +2,7 @@
 # - node: Pure Node.js — no native deps, no external packages
 # Uses only built-in `http` and `net` modules.
 
-FROM node:20-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 COPY index.js ./

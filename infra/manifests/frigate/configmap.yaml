@@ -16,14 +16,21 @@ data:
 
     go2rtc:
       streams:
-        # Live stream (_live) removed - continuous Ring cloud streaming drains doorbell battery
-        # Event stream (_event) retained for playback of recorded motion clips
+        # _live is the ONLY real video source on a battery Ring without a Ring Protect
+        # subscription (_event clips require Protect, so that stream is empty here).
+        # Keeping a persistent consumer on _live drains the battery (100->9% in days),
+        # so the front_door camera is DISABLED by default (enabled: false below) and
+        # only switched on on-demand by the HA automation
+        # "ring_front_door_ondemand_record" for ~30s on motion / ~120s on ding.
+        # This gives free local recordings (Nest-Protect style) at minimal battery cost.
         front_door:
-          - "rtsp://ring-mqtt.ring-mqtt.svc:8554/5c475e55fb69_event"
+          - "rtsp://ring-mqtt.ring-mqtt.svc:8554/5c475e55fb69_live"
 
     cameras:
       front_door:
-        enabled: true
+        # Disabled at rest = no RTSP consumer = Ring stays asleep = no battery drain.
+        # Toggled on-demand via MQTT topic frigate/front_door/enabled/set by HA.
+        enabled: false
         ffmpeg:
           inputs:
             - path: rtsp://127.0.0.1:8554/front_door
@@ -39,8 +46,11 @@ data:
         record:
           enabled: true
           retain:
+            # mode: all -> keep the FULL on-demand window (a person ringing while
+            # standing still may not trip motion-based retention). Cheap because the
+            # camera is only on during real events, not 24/7.
             days: 7
-            mode: motion
+            mode: all
           events:
             retain:
               default: 14
