@@ -1,0 +1,6 @@
+{
+  "name": "dj-brain",
+  "version": "1.0.0",
+  "description": "DJ Brain commentary server for Arthur Radio (TTS + telnet push)",
+  "private": true
+}

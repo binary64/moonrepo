@@ -1,0 +1,6 @@
+{
+  "name": "liquidsoap",
+  "version": "1.0.0",
+  "description": "Liquidsoap music player + BPM-aware crossfade + DJ ducking for Arthur Radio",
+  "private": true
+}
