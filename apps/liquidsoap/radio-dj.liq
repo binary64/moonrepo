@@ -169,7 +169,10 @@ end
 ignore(add_timeout(fast=false, 0.05, _ease))
 
 # Apply the eased duck as a dynamic gain on the music (amplify takes a getter).
-music_ducked = amplify(fun () -> duck(), music_quiet)
+# mksafe keeps the music bed infallible (it's the always-present layer) so the
+# downstream add / insert_metadata / output chain stays infallible like the
+# original smooth_add did via its `normal` input. Voices ride on top.
+music_ducked = mksafe(amplify(fun () -> duck(), music_quiet))
 
 # Music ducks when DJ speaks — depth driven per-clip by the `duck` ref above.
 radio = add(normalize=false, [music_ducked, voices])
