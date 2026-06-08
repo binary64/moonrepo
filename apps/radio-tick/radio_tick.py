@@ -144,8 +144,44 @@ def recent_history(limit=50):
     return out
 
 
+SELECTOR_STATE_FILE = "/state/radio-selector-state.json"  # in-pod: next_track.py state
+ARTIST_COOLDOWN = 10  # mirrors next_track.py — no same-artist back-to-back
 SCHEDULE_FILE = "/mnt/arthur/clawd/memory/schedule.json"
 ABI_LEAVE, ABI_RETURN = 7, 18
+
+
+def _artists_from_name(name):
+    """All artists in a track name. Mirrors next_track.get_all_artists() closely
+    enough to predict the artist-cooldown skip."""
+    import re as _re
+    head = name.split(" - ")[0].strip().strip('"') if " - " in name else name
+    parts = _re.split(r"\s*[&,]\s*|\s+(?:feat\.?|ft\.?|x|vs\.?)\s+", head,
+                       flags=_re.IGNORECASE)
+    return {p.strip().strip('"') for p in parts if p.strip()}
+
+
+def resolve_next_track(graph, queue):
+    """Predict the track that will ACTUALLY play next, mirroring next_track.py's
+    queue-pop skip logic. The naive answer (queue[0]) is WRONG whenever the head
+    of the queue trips the artist-cooldown (same artist as a recently played
+    track → bumped to the queue tail). Returns (id, name, n_skipped) or
+    (None, None, 0) if it can't resolve. Tier/blacklist/Christmas skips and live
+    song-requests are NOT simulated here — surfaced as a caveat instead."""
+    tracks = graph["tracks"]
+    sel = read_pod_json(SELECTOR_STATE_FILE) or {}
+    recent_artists = set(sel.get("recent_artists", [])[-ARTIST_COOLDOWN:])
+    skipped = 0
+    for tid in queue:
+        t = tracks.get(str(tid))
+        if not t:
+            skipped += 1
+            continue
+        name = t.get("n", "")
+        if _artists_from_name(name) & recent_artists:
+            skipped += 1  # would be bumped to tail for artist cooldown
+            continue
+        return tid, name, skipped
+    return None, None, skipped
 
 
 def _audience():
@@ -194,6 +230,18 @@ def budget():
         return json.loads(r.stdout)
     except (ValueError, TypeError):
         return {}
+
+
+def record_usage(text, dj="arthur"):
+    """Tell the brain server how many chars were just aired, so the monthly
+    budget counter stays accurate. Best-effort: never blocks airing."""
+    np = now_playing()
+    artist, _, title = np.partition(" - ")
+    payload = json.dumps({"chars": len(text), "dj": dj,
+                          "artist": artist.strip(), "title": title.strip()})
+    sh(["curl", "-sf", "--max-time", "5", "-X", "POST",
+        "-H", "Content-Type: application/json", "-d", payload,
+        "http://localhost:8877/record-usage"], timeout=8)
 
 
 def tick_state():
@@ -313,6 +361,21 @@ def cmd_context(_args):
     lines.append(f"**Active DJ:** {dj}")
     lines.append(f"**Listening now:** {', '.join(audience) if audience else 'unknown (someone is — listener gate passed)'}")
     lines.append(f"**Now playing:** {np or 'unknown'}")
+    # Deterministic next-track resolution: predict what next_track.py will ACTUALLY
+    # pop (artist-cooldown can bump queue[0] to the tail). This is what end-of-song
+    # commentary may safely tease — naming the wrong next track on-air is the
+    # "promised Parov Stelar for days" failure class.
+    nx_id, nx_name, nx_skipped = resolve_next_track(graph, q)
+    if nx_name:
+        tease = f"**NEXT TRACK (airs after this one — SAFE to tease at end-of-song):** {nx_name}"
+        if nx_skipped:
+            tease += f"  (queue head skipped {nx_skipped} for artist-cooldown)"
+        lines.append(tease)
+    else:
+        lines.append("**NEXT TRACK:** unresolved — do NOT name a next track on-air this tick.")
+    lines.append("⚠️ A live listener song-request overrides the above. Tease the next "
+                 "track only with `--timing end`; for `--timing asap` react to the "
+                 "CURRENT track/moment, not the next one.")
     lines.append(f"**Seconds since DJ last spoke:** {since_spoke if st.get('last_spoke_ts') else 'never this session'}")
     lines.append("")
     if b:
@@ -385,6 +448,7 @@ def cmd_speak(args):
         rec = json.dumps({"dj": dj, "text": text, "ts": int(time.time())})
         kubectl_write(PENDING_END_FILE, rec, pod)
         _mark_spoke(text, dj)
+        record_usage(text, dj)
         print(json.dumps({"aired": "queued-end-of-song", "dj": dj, "chars": len(text)}))
         return
 
@@ -395,6 +459,8 @@ def cmd_speak(args):
            timeout=90, check=True)
     ok = "Done" in r.stdout or r.returncode == 0
     _mark_spoke(text, dj)
+    if ok:
+        record_usage(text, dj)
     print(json.dumps({"aired": bool(ok), "dj": dj, "chars": len(text),
                       "detail": r.stdout.strip()[-200:]}))
 
