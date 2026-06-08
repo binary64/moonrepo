@@ -14,6 +14,7 @@ The LLM (hermes -z, radio-tick skill) calls `speak` and `queue` as its tools.
 import argparse
 import json
 import os
+import re
 import subprocess  # nosec B404 - kubectl/curl orchestration; all calls use shell=False with fixed argv
 import sys
 import time
@@ -153,10 +154,9 @@ ABI_LEAVE, ABI_RETURN = 7, 18
 def _artists_from_name(name):
     """All artists in a track name. Mirrors next_track.get_all_artists() closely
     enough to predict the artist-cooldown skip."""
-    import re as _re
     head = name.split(" - ")[0].strip().strip('"') if " - " in name else name
-    parts = _re.split(r"\s*[&,]\s*|\s+(?:feat\.?|ft\.?|x|vs\.?)\s+", head,
-                       flags=_re.IGNORECASE)
+    parts = re.split(r"\s*[&,]\s*|\s+(?:feat\.?|ft\.?|x|vs\.?)\s+", head,
+                     flags=re.IGNORECASE)
     return {p.strip().strip('"') for p in parts if p.strip()}
 
 
@@ -365,7 +365,8 @@ def cmd_context(_args):
     # pop (artist-cooldown can bump queue[0] to the tail). This is what end-of-song
     # commentary may safely tease — naming the wrong next track on-air is the
     # "promised Parov Stelar for days" failure class.
-    nx_id, nx_name, nx_skipped = resolve_next_track(graph, q)
+    nx_id_unused, nx_name, nx_skipped = resolve_next_track(graph, q)
+    del nx_id_unused
     if nx_name:
         tease = f"**NEXT TRACK (airs after this one — SAFE to tease at end-of-song):** {nx_name}"
         if nx_skipped:
