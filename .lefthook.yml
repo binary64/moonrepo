@@ -11,8 +11,14 @@ pre-push:
   commands:
     check-behind-master:
       run: |
-        git fetch origin master --quiet
-        BEHIND=$(git rev-list --count HEAD..origin/master)
+        if ! git fetch origin master --quiet; then
+          echo "Failed to fetch origin/master; cannot verify branch freshness." >&2
+          exit 1
+        fi
+        BEHIND=$(git rev-list --count HEAD..origin/master) || {
+          echo "Failed to compute behind count against origin/master." >&2
+          exit 1
+        }
         if [ "$BEHIND" -gt 0 ]; then
           echo "Your branch is $BEHIND commit(s) behind origin/master. Rebase first."
           exit 1
