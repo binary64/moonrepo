@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wyoming-hume
+  namespace: tts-server
+  labels:
+    app: wyoming-hume
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: wyoming-hume
+  template:
+    metadata:
+      labels:
+        app: wyoming-hume
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull
+      containers:
+        - name: wyoming-hume
+          image: ghcr.io/binary64/wyoming-hume:latest
+          ports:
+            - containerPort: 10200
+              protocol: TCP
+          env:
+            - name: WYOMING_URI
+              value: "tcp://0.0.0.0:10200"
+            - name: HUME_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: tts-server-secret
+                  key: hume-api-key
+                  optional: false
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          readinessProbe:
+            tcpSocket:
+              port: 10200
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 10200
+            initialDelaySeconds: 5
+            periodSeconds: 30

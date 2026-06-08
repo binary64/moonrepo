@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: wyoming-hume
+  namespace: tts-server
+  labels:
+    app: wyoming-hume
+spec:
+  type: ClusterIP
+  selector:
+    app: wyoming-hume
+  ports:
+    - port: 10200
+      targetPort: 10200
+      protocol: TCP
