@@ -19,7 +19,7 @@ spec:
   project: default
   source:
     repoURL: https://charts.zigbee2mqtt.io/
-    targetRevision: "2.9.1"
+    targetRevision: "2.11.0"
     chart: zigbee2mqtt
     helm:
       releaseName: zigbee2mqtt
@@ -30,7 +30,10 @@ spec:
 
           mqtt:
             server: 'mqtt://mosquitto:1883'
-            username: mqtt
+            # z2m reads `user`, NOT `username` — `username` is silently ignored and
+            # falls through to anonymous login → broker rejects (Not authorized).
+            # See Koenkk/zigbee2mqtt#25607 and the chart's own values.yaml (`user:`).
+            user: mqtt
             password: mqtt
 
           serial:
