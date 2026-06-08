@@ -1,0 +1,9 @@
+{
+  "name": "wyoming-hume",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Wyoming-protocol TTS bridge exposing Hume Octave Arthur & Cara voices to Home Assistant",
+  "scripts": {
+    "start": "python3 server.py"
+  }
+}
