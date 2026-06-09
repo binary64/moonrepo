@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: doorbell-chime-conf
+  namespace: doorbell-chime
+data:
+  default.conf: |
+    server {
+      listen 8088;
+      server_name _;
+
+      # Lightweight health endpoint for k8s probes
+      location = /healthz {
+        access_log off;
+        return 200 "ok\n";
+        add_header Content-Type text/plain;
+      }
+
+      location / {
+        root /usr/share/nginx/html;
+        add_header Cache-Control "public, max-age=86400";
+        types {
+          audio/mpeg mp3;
+          audio/ogg  ogg;
+          audio/wav  wav;
+        }
+      }
+    }
