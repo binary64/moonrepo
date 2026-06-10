@@ -34,6 +34,36 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       initContainers:
+        - name: init-config
+          # Frigate 0.16 auto-migrates config.yml on boot AND writes a version
+          # stamp + backup into /config. A ConfigMap subPath mount is read-only,
+          # which makes that migration fail ("Config file is read-only") and can
+          # crash-loop the pod. Fix: copy the ConfigMap into a writable /config
+          # (hostPath) so Frigate can rewrite it freely. The same writable dir
+          # holds /config/model_cache, so the face-recognition + semantic-search
+          # embedding models persist across restarts instead of re-downloading.
+          image: busybox:1.36@sha256:73aaf090f3d85aa34ee199857f03fa3a95c8ede2ffd4cc2cdb5b94e566b11662
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              # Always overwrite config.yml from the ConfigMap (git is source of
+              # truth); leave model_cache and migration backups untouched.
+              cp -f /config-src/config.yml /config/config.yml
+              chmod 644 /config/config.yml
+          securityContext:
+            runAsUser: 0
+            runAsNonRoot: false
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: config-src
+              mountPath: /config-src
+            - name: config
+              mountPath: /config
         - name: init-shm-logs
           # Pre-create /dev/shm/logs subdirs with correct permissions so s6-overlay's
           # log-prepare service does not need CAP_FOWNER to chmod them at startup.
@@ -58,7 +88,7 @@ spec:
               mountPath: /dev/shm
       containers:
         - name: frigate
-          image: ghcr.io/blakeblackshear/frigate:0.14.1@sha256:656301bd28c08f15a778f1fe37b8332e0ae8189c6311e0fcc58b1e7a8f8ab310
+          image: ghcr.io/blakeblackshear/frigate:0.16.4@sha256:1f8dbaaa4c7c2855c2aef711842d13b0c20bfdc3f28ad88faf66aa1bc219b108
           imagePullPolicy: IfNotPresent
           env:
             # Mosquitto requires auth (allow_anonymous false). Same 'mqtt' user as
@@ -104,8 +134,7 @@ spec:
                 - FOWNER     # s6-overlay log-prepare chmods /dev/shm/logs/* subdirs
           volumeMounts:
             - name: config
-              mountPath: /config/config.yml
-              subPath: config.yml
+              mountPath: /config
             - name: data
               mountPath: /data
             - name: media
@@ -120,7 +149,17 @@ spec:
               memory: 512Mi
             limits:
               cpu: 2000m
-              memory: 2Gi
+              memory: 3Gi  # 0.16 face-recognition + semantic-search embedding models need headroom (was 2Gi)
+          # 0.16 first boot runs a DB schema migration and downloads embedding
+          # models — can take several minutes. startupProbe gives it up to 10min
+          # before liveness kicks in, preventing a crash-loop on first rollout.
+          startupProbe:
+            httpGet:
+              path: /api/version
+              port: 5000
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 40
           livenessProbe:
             httpGet:
               path: /api/version
@@ -137,9 +176,17 @@ spec:
       # Recordings and runtime data are non-critical (ephemeral/overwritten by retention policy)
       # and must live on the host filesystem for performance and persistence across pod restarts.
       volumes:
-        - name: config
+        # ConfigMap mounted read-only at a side path; init-config copies it into
+        # the writable hostPath /config below so Frigate can self-migrate.
+        - name: config-src
           configMap:
             name: frigate-config
+        # Writable config dir — holds the live (migratable) config.yml plus
+        # /config/model_cache (face-recognition + semantic-search embedding models).
+        - name: config
+          hostPath:
+            path: /opt/frigate/config
+            type: DirectoryOrCreate
         - name: data
           hostPath:
             path: /opt/frigate/data
