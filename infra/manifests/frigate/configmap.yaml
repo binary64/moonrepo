@@ -40,9 +40,16 @@ data:
 
     cameras:
       front_door:
-        # Disabled at rest = no RTSP consumer = Ring stays asleep = no battery drain.
-        # Toggled on-demand via MQTT topic frigate/front_door/enabled/set by HA.
-        enabled: false
+        # MUST be `enabled: true` for runtime MQTT control to work. Per the Frigate
+        # maintainer, `enabled: false` HARD-disables a camera — MQTT ON is ignored and
+        # the camera is hidden (frigate#16894, frigate-hass#858). So we keep it enabled
+        # here and let HA hold it OFF at rest: on Frigate `frigate/available -> online`,
+        # HA publishes OFF to frigate/front_door/enabled/set (stops the ffmpeg consumer =
+        # Ring stays asleep = no battery drain), then publishes ON on motion/ding for the
+        # on-demand record window, then OFF again. Net battery cost = a few seconds of
+        # _live at each Frigate restart before HA's OFF lands. Worth it for a toggle that
+        # actually works.
+        enabled: true
         ffmpeg:
           inputs:
             - path: rtsp://127.0.0.1:8554/front_door
