@@ -153,12 +153,18 @@ spec:
           # 0.16 first boot runs a DB schema migration and downloads embedding
           # models — can take several minutes. startupProbe gives it up to 10min
           # before liveness kicks in, preventing a crash-loop on first rollout.
+          # CPU face-recognition embedding briefly blocks the HTTP API (the
+          # facenet model runs synchronously on-CPU, no GPU on the NUC). With the
+          # default timeoutSeconds:1 the probe declares the pod dead during any
+          # face register/recognise and Kubernetes crash-loops it. Generous
+          # timeouts let the API be briefly busy without being killed.
           startupProbe:
             httpGet:
               path: /api/version
               port: 5000
             initialDelaySeconds: 30
             periodSeconds: 15
+            timeoutSeconds: 10
             failureThreshold: 40
           livenessProbe:
             httpGet:
@@ -166,12 +172,16 @@ spec:
               port: 5000
             initialDelaySeconds: 30
             periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
           readinessProbe:
             httpGet:
               path: /api/version
               port: 5000
             initialDelaySeconds: 15
             periodSeconds: 10
+            timeoutSeconds: 8
+            failureThreshold: 5
       # hostPath volumes are intentional for a single-node NVR deployment.
       # Recordings and runtime data are non-critical (ephemeral/overwritten by retention policy)
       # and must live on the host filesystem for performance and persistence across pod restarts.
