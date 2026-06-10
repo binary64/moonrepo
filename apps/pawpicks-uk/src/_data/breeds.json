@@ -7,29 +7,60 @@
     "weightRange": "12-16kg",
     "lifespan": "12-15 years",
     "activityLevel": "high",
-    "commonHealthIssues": ["ear infections", "hip dysplasia", "eye conditions (PRA)", "skin allergies", "obesity"],
+    "commonHealthIssues": [
+      "ear infections",
+      "hip dysplasia",
+      "eye conditions (PRA)",
+      "skin allergies",
+      "obesity"
+    ],
     "dietaryNeeds": {
       "protein": "26-30%",
       "fat": "12-16%",
       "caloriesPerDay": "700-900 kcal",
       "feedingAmount": "180-250g dry per day",
-      "keyNutrients": ["omega-3 for coat", "glucosamine for joints", "probiotics for digestion"],
-      "commonSensitivities": ["chicken", "beef", "grains", "dairy"],
+      "keyNutrients": [
+        "omega-3 for coat",
+        "glucosamine for joints",
+        "probiotics for digestion"
+      ],
+      "commonSensitivities": [
+        "chicken",
+        "beef",
+        "grains",
+        "dairy"
+      ],
       "breedSpecificNotes": "Cocker Spaniels are prone to ear infections exacerbated by food allergies. Grain-free diets can reduce inflammation that blocks ear canals. They also gain weight easily despite their activity level — controlled portions are essential."
     },
     "topPicks": {
-      "bestOverall": { "brand": "Canagan Free-Run Chicken", "why": "60% meat with glucosamine supports their active joints. British-made, good protein-to-fat ratio for medium breeds." },
-      "bestForSensitiveStomach": { "brand": "Symply Fresh Turkey", "why": "Single protein source (turkey) ideal for elimination diets. Many Cockers develop chicken sensitivity — turkey is a clean alternative." },
-      "bestForCoat": { "brand": "Lily's Kitchen Chicken & Duck", "why": "Omega-rich formulation keeps that famous Cocker coat silky. Added botanicals support skin health." },
-      "bestValue": { "brand": "Forthglade Natural Chicken", "why": "50% meat at £7.50/kg. Lower fat (12%) suits Cockers prone to pancreatitis." },
-      "bestPremium": { "brand": "Orijen Original", "why": "85% animal ingredients for maximum nutrition. Calorie-dense — feed less volume." }
+      "bestOverall": {
+        "brand": "Canagan Free-Run Chicken",
+        "why": "60% meat with glucosamine supports their active joints. British-made, good protein-to-fat ratio for medium breeds."
+      },
+      "bestForSensitiveStomach": {
+        "brand": "Symply Fresh Turkey",
+        "why": "Single protein source (turkey) ideal for elimination diets. Many Cockers develop chicken sensitivity — turkey is a clean alternative."
+      },
+      "bestForCoat": {
+        "brand": "Lily's Kitchen Chicken & Duck",
+        "why": "Omega-rich formulation keeps that famous Cocker coat silky. Added botanicals support skin health."
+      },
+      "bestValue": {
+        "brand": "Forthglade Natural Chicken",
+        "why": "50% meat at £7.50/kg. Lower fat (12%) suits Cockers prone to pancreatitis."
+      },
+      "bestPremium": {
+        "brand": "Orijen Original",
+        "why": "85% animal ingredients for maximum nutrition. Calorie-dense — feed less volume."
+      }
     },
     "targetKeywords": [
       "best dog food for cocker spaniels uk",
       "best grain free food for cocker spaniels",
       "cocker spaniel food uk 2026",
       "grain free cocker spaniel food"
-    ]
+    ],
+    "puppyGuide": "/best-food-for-cocker-spaniel-puppies/"
   },
   {
     "name": "French Bulldog",
@@ -39,22 +70,54 @@
     "weightRange": "8-14kg",
     "lifespan": "10-12 years",
     "activityLevel": "low-moderate",
-    "commonHealthIssues": ["brachycephalic syndrome", "skin fold dermatitis", "allergies", "joint problems", "digestive sensitivity", "flatulence"],
+    "commonHealthIssues": [
+      "brachycephalic syndrome",
+      "skin fold dermatitis",
+      "allergies",
+      "joint problems",
+      "digestive sensitivity",
+      "flatulence"
+    ],
     "dietaryNeeds": {
       "protein": "24-28%",
       "fat": "10-14%",
       "caloriesPerDay": "500-700 kcal",
       "feedingAmount": "120-200g dry per day",
-      "keyNutrients": ["probiotics for digestion", "omega-3 for skin folds", "L-carnitine for weight management"],
-      "commonSensitivities": ["grains", "chicken", "soy", "dairy", "artificial additives"],
+      "keyNutrients": [
+        "probiotics for digestion",
+        "omega-3 for skin folds",
+        "L-carnitine for weight management"
+      ],
+      "commonSensitivities": [
+        "grains",
+        "chicken",
+        "soy",
+        "dairy",
+        "artificial additives"
+      ],
       "breedSpecificNotes": "Frenchies are flatulence champions — poor-quality food makes it worse. Their brachycephalic anatomy means eating large kibble is difficult. They overheat easily, so maintaining a healthy weight is critical. Skin fold infections are worsened by food allergies. Grain-free with limited ingredients works best."
     },
     "topPicks": {
-      "bestOverall": { "brand": "Lily's Kitchen Chicken & Duck", "why": "Gentle recipe with natural ingredients. Small kibble size works for flat-faced breeds. Added prebiotics reduce the notorious Frenchie gas." },
-      "bestForSensitiveDigestion": { "brand": "Symply Fresh Turkey", "why": "Single protein, hypoallergenic approach. Turkey is less likely to trigger the skin reactions common in French Bulldogs." },
-      "bestForSkinHealth": { "brand": "Canagan Free-Run Chicken", "why": "Omega-3 and omega-6 balance supports skin barrier function. Critical for breeds with skin folds." },
-      "bestValue": { "brand": "Forthglade Natural Chicken", "why": "Lower fat content (12%) suits their sedentary nature. Clean ingredient list without fillers that cause gas." },
-      "bestPremium": { "brand": "Acana Prairie Poultry", "why": "Multiple animal proteins for nutritional diversity. Moderate calorie density for a breed prone to obesity." }
+      "bestOverall": {
+        "brand": "Lily's Kitchen Chicken & Duck",
+        "why": "Gentle recipe with natural ingredients. Small kibble size works for flat-faced breeds. Added prebiotics reduce the notorious Frenchie gas."
+      },
+      "bestForSensitiveDigestion": {
+        "brand": "Symply Fresh Turkey",
+        "why": "Single protein, hypoallergenic approach. Turkey is less likely to trigger the skin reactions common in French Bulldogs."
+      },
+      "bestForSkinHealth": {
+        "brand": "Canagan Free-Run Chicken",
+        "why": "Omega-3 and omega-6 balance supports skin barrier function. Critical for breeds with skin folds."
+      },
+      "bestValue": {
+        "brand": "Forthglade Natural Chicken",
+        "why": "Lower fat content (12%) suits their sedentary nature. Clean ingredient list without fillers that cause gas."
+      },
+      "bestPremium": {
+        "brand": "Acana Prairie Poultry",
+        "why": "Multiple animal proteins for nutritional diversity. Moderate calorie density for a breed prone to obesity."
+      }
     },
     "targetKeywords": [
       "best dog food for french bulldogs uk",
@@ -71,29 +134,60 @@
     "weightRange": "25-34kg",
     "lifespan": "10-12 years",
     "activityLevel": "high",
-    "commonHealthIssues": ["hip dysplasia", "elbow dysplasia", "cancer", "skin allergies", "ear infections", "obesity"],
+    "commonHealthIssues": [
+      "hip dysplasia",
+      "elbow dysplasia",
+      "cancer",
+      "skin allergies",
+      "ear infections",
+      "obesity"
+    ],
     "dietaryNeeds": {
       "protein": "26-32%",
       "fat": "14-18%",
       "caloriesPerDay": "1000-1400 kcal",
       "feedingAmount": "280-400g dry per day",
-      "keyNutrients": ["glucosamine/chondroitin for joints", "omega-3 for coat and anti-inflammatory", "antioxidants for cancer prevention"],
-      "commonSensitivities": ["grains", "chicken", "beef"],
+      "keyNutrients": [
+        "glucosamine/chondroitin for joints",
+        "omega-3 for coat and anti-inflammatory",
+        "antioxidants for cancer prevention"
+      ],
+      "commonSensitivities": [
+        "grains",
+        "chicken",
+        "beef"
+      ],
       "breedSpecificNotes": "Golden Retrievers share many traits with Labradors — big appetite, joint vulnerability, tendency to obesity. However, Goldens have a significantly higher cancer rate (60% develop cancer), making antioxidant-rich food more important. Their luxurious coat needs omega-3 support."
     },
     "topPicks": {
-      "bestOverall": { "brand": "Canagan Free-Run Chicken", "why": "Glucosamine + MSM for joint support from day one. 60% meat delivers quality protein for their active lifestyle." },
-      "bestForJoints": { "brand": "Eden Holistic Original", "why": "80% animal ingredients with joint-supporting nutrients. Five meat sources for complete amino acid profile." },
-      "bestForCoat": { "brand": "Orijen Original", "why": "85% animal ingredients rich in omega-3 from whole fish inclusions. Supports that famous golden coat." },
-      "bestValue": { "brand": "Symply Fresh Turkey", "why": "Clean single-protein at £6.33/kg. Good for large breed budgets. Moderate fat suits less active Goldens." },
-      "bestBudget": { "brand": "Harringtons Grain Free Turkey", "why": "At £2/kg, affordable for feeding a large Golden. 30% meat is lower than ideal but grain-free at this price is rare." }
+      "bestOverall": {
+        "brand": "Canagan Free-Run Chicken",
+        "why": "Glucosamine + MSM for joint support from day one. 60% meat delivers quality protein for their active lifestyle."
+      },
+      "bestForJoints": {
+        "brand": "Eden Holistic Original",
+        "why": "80% animal ingredients with joint-supporting nutrients. Five meat sources for complete amino acid profile."
+      },
+      "bestForCoat": {
+        "brand": "Orijen Original",
+        "why": "85% animal ingredients rich in omega-3 from whole fish inclusions. Supports that famous golden coat."
+      },
+      "bestValue": {
+        "brand": "Symply Fresh Turkey",
+        "why": "Clean single-protein at £6.33/kg. Good for large breed budgets. Moderate fat suits less active Goldens."
+      },
+      "bestBudget": {
+        "brand": "Harringtons Grain Free Turkey",
+        "why": "At £2/kg, affordable for feeding a large Golden. 30% meat is lower than ideal but grain-free at this price is rare."
+      }
     },
     "targetKeywords": [
       "best dog food for golden retrievers uk",
       "best grain free food for golden retrievers",
       "golden retriever food uk 2026",
       "grain free golden retriever food joints"
-    ]
+    ],
+    "puppyGuide": "/best-food-for-golden-retriever-puppies/"
   },
   {
     "name": "Cockapoo",
@@ -103,22 +197,51 @@
     "weightRange": "5-11kg",
     "lifespan": "13-16 years",
     "activityLevel": "moderate-high",
-    "commonHealthIssues": ["ear infections", "patellar luxation", "allergies", "eye problems", "hip dysplasia"],
+    "commonHealthIssues": [
+      "ear infections",
+      "patellar luxation",
+      "allergies",
+      "eye problems",
+      "hip dysplasia"
+    ],
     "dietaryNeeds": {
       "protein": "25-30%",
       "fat": "12-16%",
       "caloriesPerDay": "400-700 kcal",
       "feedingAmount": "100-200g dry per day",
-      "keyNutrients": ["omega-3 for curly coat", "probiotics", "joint support for smaller joints"],
-      "commonSensitivities": ["grains", "chicken", "artificial colours"],
+      "keyNutrients": [
+        "omega-3 for curly coat",
+        "probiotics",
+        "joint support for smaller joints"
+      ],
+      "commonSensitivities": [
+        "grains",
+        "chicken",
+        "artificial colours"
+      ],
       "breedSpecificNotes": "Cockapoos inherit traits from both Cocker Spaniels and Poodles. From Cockers: ear infection risk and food sensitivities. From Poodles: curly coat needing omega support and dental issues. As a crossbreed, they're generally healthier but their varied genetics mean food reactions can be unpredictable. Start with limited ingredients."
     },
     "topPicks": {
-      "bestOverall": { "brand": "Lily's Kitchen Chicken & Duck", "why": "Natural ingredients with omega-rich formulation. Small-medium kibble suits their smaller jaws. Gentle on sensitive stomachs." },
-      "bestForSensitiveStomach": { "brand": "Symply Fresh Turkey", "why": "Limited ingredient approach perfect for crossbreeds with unpredictable food reactions. Turkey only — no chicken." },
-      "bestForCurlyCoat": { "brand": "Canagan Free-Run Chicken", "why": "Omega fatty acids keep that Poodle-inherited coat in condition. Joint support for a breed that stays active well into old age." },
-      "bestValue": { "brand": "Forthglade Natural Chicken", "why": "Clean, simple recipe at a fair price. Lower fat content suits smaller builds." },
-      "bestPremium": { "brand": "Orijen Original", "why": "Nutrient-dense — Cockapoos eat less volume so cost per day is reasonable even at premium prices." }
+      "bestOverall": {
+        "brand": "Lily's Kitchen Chicken & Duck",
+        "why": "Natural ingredients with omega-rich formulation. Small-medium kibble suits their smaller jaws. Gentle on sensitive stomachs."
+      },
+      "bestForSensitiveStomach": {
+        "brand": "Symply Fresh Turkey",
+        "why": "Limited ingredient approach perfect for crossbreeds with unpredictable food reactions. Turkey only — no chicken."
+      },
+      "bestForCurlyCoat": {
+        "brand": "Canagan Free-Run Chicken",
+        "why": "Omega fatty acids keep that Poodle-inherited coat in condition. Joint support for a breed that stays active well into old age."
+      },
+      "bestValue": {
+        "brand": "Forthglade Natural Chicken",
+        "why": "Clean, simple recipe at a fair price. Lower fat content suits smaller builds."
+      },
+      "bestPremium": {
+        "brand": "Orijen Original",
+        "why": "Nutrient-dense — Cockapoos eat less volume so cost per day is reasonable even at premium prices."
+      }
     },
     "targetKeywords": [
       "best dog food for cockapoos uk",
@@ -130,27 +253,60 @@
   {
     "name": "German Shepherd",
     "slug": "german-shepherds",
+    "puppyGuide": "/best-food-for-german-shepherd-puppies/",
     "ukPopularityRank": 7,
     "sizeCategory": "large",
     "weightRange": "30-40kg",
     "lifespan": "9-13 years",
     "activityLevel": "high",
-    "commonHealthIssues": ["hip dysplasia", "elbow dysplasia", "degenerative myelopathy", "bloat (GDV)", "exocrine pancreatic insufficiency (EPI)", "skin allergies"],
+    "commonHealthIssues": [
+      "hip dysplasia",
+      "elbow dysplasia",
+      "degenerative myelopathy",
+      "bloat (GDV)",
+      "exocrine pancreatic insufficiency (EPI)",
+      "skin allergies"
+    ],
     "dietaryNeeds": {
       "protein": "28-32%",
       "fat": "14-18%",
       "caloriesPerDay": "1200-1800 kcal",
       "feedingAmount": "300-500g dry per day",
-      "keyNutrients": ["glucosamine/chondroitin for joints", "digestive enzymes for EPI prevention", "omega-3 for skin and coat", "prebiotics for gut health"],
-      "commonSensitivities": ["grains", "chicken", "dairy", "soy"],
+      "keyNutrients": [
+        "glucosamine/chondroitin for joints",
+        "digestive enzymes for EPI prevention",
+        "omega-3 for skin and coat",
+        "prebiotics for gut health"
+      ],
+      "commonSensitivities": [
+        "grains",
+        "chicken",
+        "dairy",
+        "soy"
+      ],
       "breedSpecificNotes": "German Shepherds have notoriously sensitive stomachs. Exocrine pancreatic insufficiency (EPI) is more common in this breed than any other, causing the pancreas to fail at producing digestive enzymes. They're also highly prone to bloat — feeding smaller, more frequent meals and avoiding exercise after eating is essential. Their deep chest and active nature mean they burn through calories fast, but quality matters more than quantity."
     },
     "topPicks": {
-      "bestOverall": { "brand": "Eden Holistic Original", "why": "80% meat with six protein sources delivers exceptional nutrition for this demanding breed. Low-temperature preparation preserves digestive enzymes that GSDs desperately need." },
-      "bestForSensitiveStomach": { "brand": "Symply Fresh Turkey", "why": "Single protein source eliminates common triggers. Turkey is gentle on the GSD's notoriously sensitive digestive system, and the moderate fat content won't overwhelm the pancreas." },
-      "bestForJoints": { "brand": "Canagan Free-Run Chicken", "why": "Built-in glucosamine and MSM support the breed's vulnerable hips and elbows. 60% meat provides quality protein for maintaining the muscle mass that protects joints." },
-      "bestValue": { "brand": "Forthglade Natural Chicken", "why": "Cold-pressed for better digestibility — crucial for a breed prone to EPI. Lower fat at 12% reduces pancreatic strain. Excellent price point for a large breed." },
-      "bestPremium": { "brand": "Orijen Original", "why": "85% animal ingredients with WholePrey ratios including organs. The closest thing to a biologically appropriate diet for a breed that thrives on nutrient density." }
+      "bestOverall": {
+        "brand": "Eden Holistic Original",
+        "why": "80% meat with six protein sources delivers exceptional nutrition for this demanding breed. Low-temperature preparation preserves digestive enzymes that GSDs desperately need."
+      },
+      "bestForSensitiveStomach": {
+        "brand": "Symply Fresh Turkey",
+        "why": "Single protein source eliminates common triggers. Turkey is gentle on the GSD's notoriously sensitive digestive system, and the moderate fat content won't overwhelm the pancreas."
+      },
+      "bestForJoints": {
+        "brand": "Canagan Free-Run Chicken",
+        "why": "Built-in glucosamine and MSM support the breed's vulnerable hips and elbows. 60% meat provides quality protein for maintaining the muscle mass that protects joints."
+      },
+      "bestValue": {
+        "brand": "Forthglade Natural Chicken",
+        "why": "Cold-pressed for better digestibility — crucial for a breed prone to EPI. Lower fat at 12% reduces pancreatic strain. Excellent price point for a large breed."
+      },
+      "bestPremium": {
+        "brand": "Orijen Original",
+        "why": "85% animal ingredients with WholePrey ratios including organs. The closest thing to a biologically appropriate diet for a breed that thrives on nutrient density."
+      }
     },
     "targetKeywords": [
       "best dog food for german shepherds uk",
@@ -167,22 +323,54 @@
     "weightRange": "18-25kg",
     "lifespan": "12-14 years",
     "activityLevel": "very-high",
-    "commonHealthIssues": ["ear infections", "hip dysplasia", "eye conditions (PRA)", "epilepsy", "skin allergies", "obesity in later years"],
+    "commonHealthIssues": [
+      "ear infections",
+      "hip dysplasia",
+      "eye conditions (PRA)",
+      "epilepsy",
+      "skin allergies",
+      "obesity in later years"
+    ],
     "dietaryNeeds": {
       "protein": "28-32%",
       "fat": "15-20%",
       "caloriesPerDay": "900-1200 kcal",
       "feedingAmount": "220-320g dry per day",
-      "keyNutrients": ["omega-3 for coat and ear health", "glucosamine for joints", "antioxidants for eye health", "high-quality fats for sustained energy"],
-      "commonSensitivities": ["grains", "chicken", "beef", "artificial additives"],
+      "keyNutrients": [
+        "omega-3 for coat and ear health",
+        "glucosamine for joints",
+        "antioxidants for eye health",
+        "high-quality fats for sustained energy"
+      ],
+      "commonSensitivities": [
+        "grains",
+        "chicken",
+        "beef",
+        "artificial additives"
+      ],
       "breedSpecificNotes": "Springers are perpetual motion machines — they need calorie-dense food to match their energy output. However, as they age (7+), their metabolism drops sharply and obesity becomes a real risk. Their long, floppy ears trap moisture and warmth, making ear infections chronic for many Springers. Food allergies are a major contributor to ear problems in this breed. A grain-free diet with omega-3 support can significantly reduce ear inflammation."
     },
     "topPicks": {
-      "bestOverall": { "brand": "Orijen Original", "why": "85% animal ingredients deliver the calorie density an active Springer needs. Multiple fish inclusions provide omega-3 for ear and coat health — the breed's biggest vulnerability." },
-      "bestForEarHealth": { "brand": "Canagan Free-Run Chicken", "why": "Omega-rich formulation with zero grain reduces the inflammation cycle that causes chronic ear infections. Many Springer owners report significant ear improvement after switching to grain-free." },
-      "bestForActiveSpringers": { "brand": "Eden Holistic Original", "why": "80% meat with six protein sources for sustained energy during long field days. High fat content (18%) fuels working Springers without needing excessive portion sizes." },
-      "bestValue": { "brand": "Symply Fresh Turkey", "why": "Clean single protein for Springers with identified food allergies. At £6.33/kg, affordable enough for a breed that eats more than its size suggests." },
-      "bestForSeniors": { "brand": "Forthglade Natural Chicken", "why": "Lower fat (12%) suits older Springers whose activity level has dropped. Cold-pressed for gentle digestion as the system slows down." }
+      "bestOverall": {
+        "brand": "Orijen Original",
+        "why": "85% animal ingredients deliver the calorie density an active Springer needs. Multiple fish inclusions provide omega-3 for ear and coat health — the breed's biggest vulnerability."
+      },
+      "bestForEarHealth": {
+        "brand": "Canagan Free-Run Chicken",
+        "why": "Omega-rich formulation with zero grain reduces the inflammation cycle that causes chronic ear infections. Many Springer owners report significant ear improvement after switching to grain-free."
+      },
+      "bestForActiveSpringers": {
+        "brand": "Eden Holistic Original",
+        "why": "80% meat with six protein sources for sustained energy during long field days. High fat content (18%) fuels working Springers without needing excessive portion sizes."
+      },
+      "bestValue": {
+        "brand": "Symply Fresh Turkey",
+        "why": "Clean single protein for Springers with identified food allergies. At £6.33/kg, affordable enough for a breed that eats more than its size suggests."
+      },
+      "bestForSeniors": {
+        "brand": "Forthglade Natural Chicken",
+        "why": "Lower fat (12%) suits older Springers whose activity level has dropped. Cold-pressed for gentle digestion as the system slows down."
+      }
     },
     "targetKeywords": [
       "best dog food for springer spaniels uk",
@@ -199,22 +387,55 @@
     "weightRange": "11-17kg",
     "lifespan": "12-14 years",
     "activityLevel": "moderate-high",
-    "commonHealthIssues": ["skin allergies", "hip dysplasia", "cataracts", "L-2 hydroxyglutaric aciduria", "patellar luxation", "gas/flatulence"],
+    "commonHealthIssues": [
+      "skin allergies",
+      "hip dysplasia",
+      "cataracts",
+      "L-2 hydroxyglutaric aciduria",
+      "patellar luxation",
+      "gas/flatulence"
+    ],
     "dietaryNeeds": {
       "protein": "26-30%",
       "fat": "12-16%",
       "caloriesPerDay": "600-900 kcal",
       "feedingAmount": "150-250g dry per day",
-      "keyNutrients": ["omega-3 for skin health", "high-quality protein for muscle maintenance", "probiotics for digestion", "antioxidants for eye health"],
-      "commonSensitivities": ["grains", "chicken", "beef", "dairy", "artificial colours"],
+      "keyNutrients": [
+        "omega-3 for skin health",
+        "high-quality protein for muscle maintenance",
+        "probiotics for digestion",
+        "antioxidants for eye health"
+      ],
+      "commonSensitivities": [
+        "grains",
+        "chicken",
+        "beef",
+        "dairy",
+        "artificial colours"
+      ],
       "breedSpecificNotes": "Staffies are muscular, compact dogs that need quality protein to maintain their athletic build without gaining excess fat. They're one of the breeds most prone to skin allergies — itchy skin, hot spots, and recurring skin infections are extremely common. Grain-free diets often dramatically improve Staffy skin conditions. They're also prone to flatulence, particularly on lower-quality food. Despite their muscular appearance, they're not as active as many think — moderate portions prevent the stocky build from becoming overweight."
     },
     "topPicks": {
-      "bestOverall": { "brand": "Canagan Free-Run Chicken", "why": "High protein (33%) supports the Staffy's muscular build. Omega-3 and omega-6 balance addresses their notorious skin issues. Glucosamine supports joints under load from a compact, muscular frame." },
-      "bestForSkinAllergies": { "brand": "Symply Fresh Turkey", "why": "Single protein eliminates the chicken and beef that cause most Staffy skin reactions. Many Staffy owners report dramatic skin improvement within 4-6 weeks of switching to turkey-only." },
-      "bestForMuscle": { "brand": "Orijen Original", "why": "85% animal protein is ideal for maintaining the Staffy's muscular physique. Multiple protein sources provide a complete amino acid profile for muscle repair and maintenance." },
-      "bestValue": { "brand": "Forthglade Natural Chicken", "why": "Clean, simple ingredients that reduce skin flare-ups. Lower fat (12%) suits less active Staffies and prevents weight gain on a stocky frame." },
-      "bestBudget": { "brand": "Harringtons Grain Free Turkey", "why": "At £2/kg, accessible for owners on a budget. Grain-free at this price is rare, and many Staffies with mild sensitivities do well on it." }
+      "bestOverall": {
+        "brand": "Canagan Free-Run Chicken",
+        "why": "High protein (33%) supports the Staffy's muscular build. Omega-3 and omega-6 balance addresses their notorious skin issues. Glucosamine supports joints under load from a compact, muscular frame."
+      },
+      "bestForSkinAllergies": {
+        "brand": "Symply Fresh Turkey",
+        "why": "Single protein eliminates the chicken and beef that cause most Staffy skin reactions. Many Staffy owners report dramatic skin improvement within 4-6 weeks of switching to turkey-only."
+      },
+      "bestForMuscle": {
+        "brand": "Orijen Original",
+        "why": "85% animal protein is ideal for maintaining the Staffy's muscular physique. Multiple protein sources provide a complete amino acid profile for muscle repair and maintenance."
+      },
+      "bestValue": {
+        "brand": "Forthglade Natural Chicken",
+        "why": "Clean, simple ingredients that reduce skin flare-ups. Lower fat (12%) suits less active Staffies and prevents weight gain on a stocky frame."
+      },
+      "bestBudget": {
+        "brand": "Harringtons Grain Free Turkey",
+        "why": "At £2/kg, accessible for owners on a budget. Grain-free at this price is rare, and many Staffies with mild sensitivities do well on it."
+      }
     },
     "targetKeywords": [
       "best dog food for staffies uk",
@@ -231,22 +452,53 @@
     "weightRange": "7-15kg",
     "lifespan": "12-16 years",
     "activityLevel": "moderate",
-    "commonHealthIssues": ["intervertebral disc disease (IVDD)", "obesity", "dental problems", "patellar luxation", "skin allergies", "diabetes"],
+    "commonHealthIssues": [
+      "intervertebral disc disease (IVDD)",
+      "obesity",
+      "dental problems",
+      "patellar luxation",
+      "skin allergies",
+      "diabetes"
+    ],
     "dietaryNeeds": {
       "protein": "24-28%",
       "fat": "10-14%",
       "caloriesPerDay": "300-600 kcal",
       "feedingAmount": "80-160g dry per day",
-      "keyNutrients": ["calcium and phosphorus for spine health", "omega-3 for joint lubrication", "L-carnitine for weight management", "glucosamine for disc support"],
-      "commonSensitivities": ["grains", "chicken", "soy"],
+      "keyNutrients": [
+        "calcium and phosphorus for spine health",
+        "omega-3 for joint lubrication",
+        "L-carnitine for weight management",
+        "glucosamine for disc support"
+      ],
+      "commonSensitivities": [
+        "grains",
+        "chicken",
+        "soy"
+      ],
       "breedSpecificNotes": "Weight management is the single most important dietary factor for Dachshunds. Their elongated spine makes them extremely vulnerable to intervertebral disc disease (IVDD), and every extra gram of weight increases spinal pressure. A lean Dachshund is a healthy Dachshund — you should always be able to feel their ribs. Low-fat, high-protein food keeps muscle supporting the spine without adding dangerous weight. Small kibble size matters too — Dachshunds have small mouths and can struggle with large biscuits."
     },
     "topPicks": {
-      "bestOverall": { "brand": "Lily's Kitchen Chicken & Duck", "why": "Moderate protein and fat ratio perfect for a breed where weight control is critical. Small kibble size suits their smaller mouths. Natural ingredients with no fillers that cause weight gain." },
-      "bestForWeightControl": { "brand": "Forthglade Natural Chicken", "why": "Lowest fat on our list at 12% — ideal for a breed where every gram counts. Cold-pressed for slow energy release that prevents the sugar spikes leading to overeating." },
-      "bestForSpineHealth": { "brand": "Canagan Free-Run Chicken", "why": "Glucosamine and MSM support the discs and joints under constant strain. Quality protein maintains the muscle mass that protects an elongated spine." },
-      "bestValue": { "brand": "Symply Fresh Turkey", "why": "Single protein with moderate fat. At £6.33/kg, Dachshunds eat so little that even premium food is affordable — a 6kg bag lasts over a month." },
-      "bestPremium": { "brand": "Acana Prairie Poultry", "why": "Balanced 60% meat formula with moderate calories. Multiple proteins for nutritional variety without the extreme calorie density of Orijen." }
+      "bestOverall": {
+        "brand": "Lily's Kitchen Chicken & Duck",
+        "why": "Moderate protein and fat ratio perfect for a breed where weight control is critical. Small kibble size suits their smaller mouths. Natural ingredients with no fillers that cause weight gain."
+      },
+      "bestForWeightControl": {
+        "brand": "Forthglade Natural Chicken",
+        "why": "Lowest fat on our list at 12% — ideal for a breed where every gram counts. Cold-pressed for slow energy release that prevents the sugar spikes leading to overeating."
+      },
+      "bestForSpineHealth": {
+        "brand": "Canagan Free-Run Chicken",
+        "why": "Glucosamine and MSM support the discs and joints under constant strain. Quality protein maintains the muscle mass that protects an elongated spine."
+      },
+      "bestValue": {
+        "brand": "Symply Fresh Turkey",
+        "why": "Single protein with moderate fat. At £6.33/kg, Dachshunds eat so little that even premium food is affordable — a 6kg bag lasts over a month."
+      },
+      "bestPremium": {
+        "brand": "Acana Prairie Poultry",
+        "why": "Balanced 60% meat formula with moderate calories. Multiple proteins for nutritional variety without the extreme calorie density of Orijen."
+      }
     },
     "targetKeywords": [
       "best dog food for dachshunds uk",
@@ -263,28 +515,443 @@
     "weightRange": "14-20kg",
     "lifespan": "12-15 years",
     "activityLevel": "very-high",
-    "commonHealthIssues": ["hip dysplasia", "epilepsy", "collie eye anomaly", "trapped neutrophil syndrome", "dental problems", "noise sensitivity"],
+    "commonHealthIssues": [
+      "hip dysplasia",
+      "epilepsy",
+      "collie eye anomaly",
+      "trapped neutrophil syndrome",
+      "dental problems",
+      "noise sensitivity"
+    ],
     "dietaryNeeds": {
       "protein": "28-32%",
       "fat": "15-20%",
       "caloriesPerDay": "900-1400 kcal",
       "feedingAmount": "220-350g dry per day",
-      "keyNutrients": ["omega-3 for brain function and coat", "high-quality fats for sustained energy", "antioxidants for eye health", "B vitamins for neurological function"],
-      "commonSensitivities": ["grains", "chicken", "artificial additives"],
+      "keyNutrients": [
+        "omega-3 for brain function and coat",
+        "high-quality fats for sustained energy",
+        "antioxidants for eye health",
+        "B vitamins for neurological function"
+      ],
+      "commonSensitivities": [
+        "grains",
+        "chicken",
+        "artificial additives"
+      ],
       "breedSpecificNotes": "Border Collies are the athletes and intellectuals of the dog world — they need food that fuels both body and brain. Working Collies can burn 1400+ calories per day, making calorie-dense food essential. Their double coat requires omega-3 support, and their eyes are genetically vulnerable, making antioxidant-rich food important. Mental stimulation matters as much as physical exercise, and a well-nourished brain means a more trainable dog. Unlike many breeds, Collies rarely overeat — they self-regulate well."
     },
     "topPicks": {
-      "bestOverall": { "brand": "Orijen Original", "why": "85% animal ingredients deliver the calorie density a working Collie needs. Fish inclusions provide DHA for brain function — critical for a breed that needs to think and learn constantly." },
-      "bestForWorkingCollies": { "brand": "Eden Holistic Original", "why": "80% meat with sustained energy release for all-day herding. Six protein sources for complete nutrition. Small-batch quality suits an owner who cares about what their Collie eats." },
-      "bestForCoat": { "brand": "Canagan Free-Run Chicken", "why": "Omega balance keeps the double coat in show condition. Glucosamine supports joints that absorb constant high-impact activity." },
-      "bestValue": { "brand": "Acana Prairie Poultry", "why": "60% meat at a mid-range price. Good balance of nutrition and cost for pet Collies who are active but not working." },
-      "bestForPetCollies": { "brand": "Lily's Kitchen Chicken & Duck", "why": "For Collies who are companions rather than workers, the moderate calorie profile prevents weight gain. Natural ingredients support the sensitive digestion common in the breed." }
+      "bestOverall": {
+        "brand": "Orijen Original",
+        "why": "85% animal ingredients deliver the calorie density a working Collie needs. Fish inclusions provide DHA for brain function — critical for a breed that needs to think and learn constantly."
+      },
+      "bestForWorkingCollies": {
+        "brand": "Eden Holistic Original",
+        "why": "80% meat with sustained energy release for all-day herding. Six protein sources for complete nutrition. Small-batch quality suits an owner who cares about what their Collie eats."
+      },
+      "bestForCoat": {
+        "brand": "Canagan Free-Run Chicken",
+        "why": "Omega balance keeps the double coat in show condition. Glucosamine supports joints that absorb constant high-impact activity."
+      },
+      "bestValue": {
+        "brand": "Acana Prairie Poultry",
+        "why": "60% meat at a mid-range price. Good balance of nutrition and cost for pet Collies who are active but not working."
+      },
+      "bestForPetCollies": {
+        "brand": "Lily's Kitchen Chicken & Duck",
+        "why": "For Collies who are companions rather than workers, the moderate calorie profile prevents weight gain. Natural ingredients support the sensitive digestion common in the breed."
+      }
     },
     "targetKeywords": [
       "best dog food for border collies uk",
       "best grain free food for border collies",
       "border collie food uk 2026",
       "grain free border collie food working dogs"
+    ]
+  },
+  {
+    "name": "Pug",
+    "slug": "pugs",
+    "ukPopularityRank": 11,
+    "sizeCategory": "small",
+    "weightRange": "6-9kg",
+    "lifespan": "12-15 years",
+    "activityLevel": "low-moderate",
+    "commonHealthIssues": [
+      "brachycephalic obstructive airway syndrome (BOAS)",
+      "obesity",
+      "skin fold dermatitis",
+      "eye problems (corneal ulcers, proptosis)",
+      "allergies",
+      "hip dysplasia"
+    ],
+    "dietaryNeeds": {
+      "protein": "24-28%",
+      "fat": "10-13%",
+      "caloriesPerDay": "350-550 kcal",
+      "feedingAmount": "80-150g dry per day",
+      "keyNutrients": [
+        "L-carnitine for weight management",
+        "omega-3 for skin folds and eyes",
+        "probiotics for digestion",
+        "antioxidants for eye health"
+      ],
+      "commonSensitivities": [
+        "grains",
+        "chicken",
+        "beef",
+        "soy",
+        "dairy"
+      ],
+      "breedSpecificNotes": "Weight management is the single most important dietary priority for Pugs. Their brachycephalic (flat-faced) anatomy means every extra gram of fat directly worsens their already-compromised breathing — an overweight Pug is at serious risk of overheating and respiratory distress. They are masters of begging and will happily eat themselves into obesity. Choose a low-to-moderate fat food, measure every meal precisely, and avoid calorie-dense formulas. Their facial skin folds are prone to infection, which food allergies make worse, so a clean grain-free recipe with omega-3 helps. Small kibble is essential — flat faces struggle to pick up large biscuits."
+    },
+    "topPicks": {
+      "bestOverall": {
+        "brand": "Lily's Kitchen Chicken & Duck",
+        "why": "Moderate calorie profile suits a breed where weight gain is dangerous. Small kibble works for flat faces, and the natural omega-rich recipe supports the skin folds and sensitive digestion Pugs are known for."
+      },
+      "bestForWeightControl": {
+        "brand": "Forthglade Natural Chicken",
+        "why": "Lowest fat on our list at 12% — exactly what a Pug needs to keep weight off and breathing easier. Cold-pressed for slow energy release that helps curb the relentless Pug appetite."
+      },
+      "bestForSkinHealth": {
+        "brand": "Canagan Free-Run Chicken",
+        "why": "Balanced omega-3 and omega-6 support the skin barrier — important for a breed plagued by skin fold dermatitis. Grain-free reduces the allergic inflammation behind many Pug skin and eye flare-ups."
+      },
+      "bestForSensitiveStomach": {
+        "brand": "Symply Fresh Turkey",
+        "why": "Single-protein turkey recipe ideal for the elimination diets many allergy-prone Pugs eventually need. Gentle on digestion and free from the chicken and beef that trigger most reactions."
+      },
+      "bestValue": {
+        "brand": "Harringtons Grain Free Turkey",
+        "why": "At £2/kg it is the most affordable grain-free route. Pugs eat so little that even a budget bag lasts a long time, and the lower meat content matters less for a low-activity breed needing fewer calories."
+      }
+    },
+    "targetKeywords": [
+      "best dog food for pugs uk",
+      "best grain free food for pugs",
+      "pug food uk 2026",
+      "best dog food for pug weight loss"
+    ]
+  },
+  {
+    "name": "Jack Russell Terrier",
+    "slug": "jack-russell-terriers",
+    "ukPopularityRank": 12,
+    "sizeCategory": "small",
+    "weightRange": "5-8kg",
+    "lifespan": "13-16 years",
+    "activityLevel": "high",
+    "commonHealthIssues": [
+      "patellar luxation",
+      "lens luxation and other eye conditions",
+      "dental disease",
+      "deafness",
+      "allergies",
+      "Legg-Calvé-Perthes disease"
+    ],
+    "dietaryNeeds": {
+      "protein": "26-30%",
+      "fat": "12-16%",
+      "caloriesPerDay": "350-550 kcal",
+      "feedingAmount": "80-150g dry per day",
+      "keyNutrients": [
+        "high-quality protein for lean muscle",
+        "omega-3 for coat and joints",
+        "antioxidants for eye health",
+        "dental-supporting kibble texture"
+      ],
+      "commonSensitivities": [
+        "grains",
+        "chicken",
+        "artificial additives"
+      ],
+      "breedSpecificNotes": "Jack Russells are small but mighty — a working terrier temperament packed into a compact frame, and one of the longest-lived breeds at 13-16 years. They burn energy constantly, so they need nutrient-dense, high-quality protein to maintain lean muscle without bulk. Dental disease is extremely common in small breeds, so kibble that encourages chewing and a low-sugar, grain-free recipe both help protect the teeth. Their eyes are genetically vulnerable (primary lens luxation is notably common in the breed), making antioxidant-rich food worthwhile. Because they are small, a premium food costs surprisingly little per day."
+    },
+    "topPicks": {
+      "bestOverall": {
+        "brand": "Canagan Free-Run Chicken",
+        "why": "High protein (33%) supports the lean, athletic build of a working terrier. British-made with omega balance for coat and joint health, and grain-free to reduce the additive-driven sensitivities Jacks can develop."
+      },
+      "bestForActiveTerriers": {
+        "brand": "Orijen Original",
+        "why": "85% animal ingredients deliver the calorie density a perpetually busy Jack Russell needs. Because the breed is so small, even this premium food works out affordable per day — you simply feed a small volume."
+      },
+      "bestForSensitiveStomach": {
+        "brand": "Symply Fresh Turkey",
+        "why": "Single-protein turkey is a clean choice for terriers with itchy skin or digestive upset. Free from chicken and artificial additives, two of the most common Jack Russell triggers."
+      },
+      "bestForDentalHealth": {
+        "brand": "Eden Holistic Original",
+        "why": "80% meat with a low-carbohydrate, grain-free profile means less sugar feeding plaque bacteria. The dense kibble encourages chewing, helping a breed highly prone to dental disease."
+      },
+      "bestValue": {
+        "brand": "Forthglade Natural Chicken",
+        "why": "Clean, simple cold-pressed recipe at a fair price. Lower fat suits less-active or older Jacks, and the gentle formulation is kind to small-breed digestion."
+      }
+    },
+    "targetKeywords": [
+      "best dog food for jack russells uk",
+      "best grain free food for jack russell terriers",
+      "jack russell food uk 2026",
+      "best dog food for jack russell terrier"
+    ]
+  },
+  {
+    "name": "Beagle",
+    "slug": "beagles",
+    "ukPopularityRank": 13,
+    "sizeCategory": "medium",
+    "weightRange": "9-16kg",
+    "lifespan": "12-15 years",
+    "activityLevel": "high",
+    "commonHealthIssues": [
+      "obesity",
+      "epilepsy",
+      "hypothyroidism",
+      "intervertebral disc disease",
+      "ear infections",
+      "cherry eye"
+    ],
+    "dietaryNeeds": {
+      "protein": "25-30%",
+      "fat": "12-15%",
+      "caloriesPerDay": "650-900 kcal",
+      "feedingAmount": "160-260g dry per day",
+      "keyNutrients": [
+        "L-carnitine for weight management",
+        "omega-3 for skin and ears",
+        "controlled calorie density",
+        "joint support for the spine"
+      ],
+      "commonSensitivities": [
+        "grains",
+        "chicken",
+        "beef",
+        "dairy"
+      ],
+      "breedSpecificNotes": "Beagles are scent hounds ruled by their stomachs — arguably the most food-obsessed breed in the UK, and one of the most prone to obesity as a result. They will counter-surf, raid bins, and convincingly act starving minutes after a full meal. Strict portion control is non-negotiable: free-feeding a Beagle almost guarantees weight gain, which in turn worsens their risk of intervertebral disc disease and joint strain. Choose a food with controlled calorie density and high satiety, weigh every meal, and count all treats in the daily allowance. Their long, low-hanging ears trap moisture and are infection-prone, so omega-3 support and a clean grain-free recipe help reduce inflammation."
+    },
+    "topPicks": {
+      "bestOverall": {
+        "brand": "Canagan Free-Run Chicken",
+        "why": "60% meat delivers satisfying, high-quality protein that keeps a food-driven Beagle fuller for longer. Moderate fat and grain-free help with both weight control and the ear inflammation the breed is prone to."
+      },
+      "bestForWeightControl": {
+        "brand": "Forthglade Natural Chicken",
+        "why": "Lower fat (12%) and cold-pressed slow energy release are ideal for a breed that struggles with portion control. Helps keep an obesity-prone Beagle lean and protect the spine."
+      },
+      "bestForSensitiveStomach": {
+        "brand": "Symply Fresh Turkey",
+        "why": "Single-protein turkey is a clean option for Beagles with food sensitivities or recurring ear issues, removing the chicken and beef that commonly trigger reactions."
+      },
+      "bestForEarHealth": {
+        "brand": "Lily's Kitchen Chicken & Duck",
+        "why": "Omega-rich natural recipe supports the skin and reduces the inflammation cycle behind chronic Beagle ear infections, while staying moderate in calories."
+      },
+      "bestBudget": {
+        "brand": "Harringtons Grain Free Turkey",
+        "why": "At £2/kg it is an accessible grain-free choice for a medium breed with a big appetite. The lower meat content keeps calories in check for a breed that must not overeat."
+      }
+    },
+    "targetKeywords": [
+      "best dog food for beagles uk",
+      "best grain free food for beagles",
+      "beagle food uk 2026",
+      "best dog food for beagle weight management"
+    ]
+  },
+  {
+    "name": "Whippet",
+    "slug": "whippets",
+    "ukPopularityRank": 14,
+    "sizeCategory": "medium",
+    "weightRange": "9-19kg",
+    "lifespan": "12-15 years",
+    "activityLevel": "high",
+    "commonHealthIssues": [
+      "naturally lean build (low body fat)",
+      "dental disease",
+      "anaesthesia sensitivity",
+      "gastric sensitivity",
+      "cold intolerance",
+      "MDR1 drug sensitivity"
+    ],
+    "dietaryNeeds": {
+      "protein": "28-32%",
+      "fat": "16-20%",
+      "caloriesPerDay": "700-1000 kcal",
+      "feedingAmount": "180-280g dry per day",
+      "keyNutrients": [
+        "calorie-dense fats for sprint energy",
+        "high-quality protein for lean muscle",
+        "omega-3 for skin and coat",
+        "digestible carbohydrates for sustained energy"
+      ],
+      "commonSensitivities": [
+        "grains",
+        "chicken",
+        "artificial additives"
+      ],
+      "breedSpecificNotes": "Whippets are sighthounds built like sprinters — naturally lean with very little body fat, you should always be able to see a hint of the last few ribs and a tucked waist. This means feeding guidance written for stockier breeds will make a Whippet look skinny when in fact it is at a healthy weight, and owners often overfeed trying to 'fill them out'. They burn energy in explosive bursts so need a calorie-dense, high-fat food to maintain condition and muscle without forcing large meal volumes onto a deep, narrow chest. Their thin skin and short coat offer little insulation, so omega-rich food supports skin health, and their fast metabolism rewards highly digestible recipes. Grain-free with named meat suits the gastric sensitivity many Whippets show."
+    },
+    "topPicks": {
+      "bestOverall": {
+        "brand": "Orijen Original",
+        "why": "85% animal ingredients pack the calorie density a lean, fast-metabolising sighthound needs into a small volume — ideal for a deep, narrow chest that can't handle huge meals. Whole-fish omega-3 supports the thin Whippet skin and coat."
+      },
+      "bestForLeanMuscle": {
+        "brand": "Eden Holistic Original",
+        "why": "80% meat from six protein sources builds and maintains the long sprint muscle a Whippet carries, with a low-temperature process that keeps the recipe highly digestible for sensitive sighthound stomachs."
+      },
+      "bestForSensitiveStomach": {
+        "brand": "Symply Fresh Turkey",
+        "why": "Single-protein turkey is a clean choice for the gastric sensitivity Whippets often show, removing the chicken and additives that commonly trigger loose stools in the breed."
+      },
+      "bestForCoat": {
+        "brand": "Canagan Free-Run Chicken",
+        "why": "Balanced omega-3 and omega-6 support the thin, low-coverage Whippet coat and skin, while 60% meat keeps protein quality high for a lean athletic frame."
+      },
+      "bestValue": {
+        "brand": "Forthglade Natural Chicken",
+        "why": "Cold-pressed and gentle on digestion, with a clean ingredient list. A fair price for a medium breed, and easy to top up with a little extra to maintain condition on an active Whippet."
+      }
+    },
+    "targetKeywords": [
+      "best dog food for whippets uk",
+      "best grain free food for whippets",
+      "whippet food uk 2026",
+      "best dog food for whippet weight gain"
+    ]
+  },
+  {
+    "name": "Shih Tzu",
+    "slug": "shih-tzus",
+    "ukPopularityRank": 15,
+    "sizeCategory": "small",
+    "weightRange": "4-8kg",
+    "lifespan": "12-16 years",
+    "activityLevel": "low-moderate",
+    "commonHealthIssues": [
+      "brachycephalic airway issues",
+      "eye problems (corneal ulcers, dry eye)",
+      "dental crowding and disease",
+      "skin allergies",
+      "ear infections",
+      "obesity"
+    ],
+    "dietaryNeeds": {
+      "protein": "24-28%",
+      "fat": "12-16%",
+      "caloriesPerDay": "300-500 kcal",
+      "feedingAmount": "70-130g dry per day",
+      "keyNutrients": [
+        "omega-3 for skin and eye health",
+        "small kibble for crowded jaws",
+        "probiotics for digestion",
+        "antioxidants for eye health"
+      ],
+      "commonSensitivities": [
+        "grains",
+        "chicken",
+        "beef",
+        "dairy",
+        "artificial colours"
+      ],
+      "breedSpecificNotes": "Shih Tzus are flat-faced toy companions, and their anatomy drives every feeding decision. Their short muzzle and crowded teeth make large kibble genuinely hard to pick up and chew, so small biscuit size is essential and a low-sugar grain-free recipe helps slow the dental disease the breed is very prone to. Their prominent eyes are vulnerable to ulcers and dryness, so antioxidant- and omega-rich food supports eye health, and tear staining is often reduced on a clean, additive-free diet. Skin allergies and recurrent ear infections are common, and grain-free limited-ingredient food frequently calms both. Because they are sedentary and small, weight gain creeps up fast and worsens their breathing — measure portions precisely and keep treats within the daily allowance."
+    },
+    "topPicks": {
+      "bestOverall": {
+        "brand": "Lily's Kitchen Chicken & Duck",
+        "why": "Small kibble suits a crowded flat-faced mouth, and the natural omega-rich recipe supports the skin, coat and sensitive digestion Shih Tzus are known for. Moderate calories keep a sedentary toy breed from gaining dangerous weight."
+      },
+      "bestForSkinHealth": {
+        "brand": "Canagan Free-Run Chicken",
+        "why": "Balanced omega-3 and omega-6 strengthen the skin barrier behind the breed's recurrent skin and ear flare-ups, and grain-free removes a common source of allergic inflammation."
+      },
+      "bestForSensitiveStomach": {
+        "brand": "Symply Fresh Turkey",
+        "why": "Single-protein turkey is ideal for the elimination diets allergy-prone Shih Tzus often need, free from the chicken, beef and additives that trigger most reactions and tear staining."
+      },
+      "bestForDentalHealth": {
+        "brand": "Eden Holistic Original",
+        "why": "A low-carbohydrate, grain-free profile means less sugar feeding plaque bacteria in a breed with severely crowded teeth, while the small dense kibble encourages the chewing that helps keep teeth cleaner."
+      },
+      "bestValue": {
+        "brand": "Forthglade Natural Chicken",
+        "why": "Lower fat (12%) suits a low-activity toy breed prone to obesity, with a clean cold-pressed recipe that's gentle on small-breed digestion. Shih Tzus eat so little that even quality food costs little per day."
+      }
+    },
+    "targetKeywords": [
+      "best dog food for shih tzus uk",
+      "best grain free food for shih tzus",
+      "shih tzu food uk 2026",
+      "best dog food for shih tzu sensitive stomach"
+    ]
+  },
+  {
+    "name": "Yorkshire Terrier",
+    "slug": "yorkshire-terriers",
+    "ukPopularityRank": 16,
+    "sizeCategory": "small",
+    "weightRange": "2-3.5kg",
+    "lifespan": "13-16 years",
+    "activityLevel": "moderate",
+    "commonHealthIssues": [
+      "dental disease (severe in toy breeds)",
+      "hypoglycaemia (low blood sugar)",
+      "luxating patella",
+      "tracheal collapse",
+      "sensitive digestion",
+      "tear staining"
+    ],
+    "dietaryNeeds": {
+      "protein": "26-30%",
+      "fat": "14-18%",
+      "caloriesPerDay": "150-300 kcal",
+      "feedingAmount": "40-80g dry per day",
+      "keyNutrients": [
+        "calorie-dense food in tiny portions",
+        "small kibble for tiny jaws",
+        "omega-3 for the silky coat",
+        "high-quality protein for stable blood sugar"
+      ],
+      "commonSensitivities": [
+        "grains",
+        "chicken",
+        "artificial colours",
+        "dairy"
+      ],
+      "breedSpecificNotes": "Yorkshire Terriers are true toy dogs, often weighing under 3.5kg, and their tiny size creates very specific feeding needs. Their small stomachs can only hold a little at a time, yet their fast metabolism means they are prone to hypoglycaemia (dangerous drops in blood sugar) if meals are skipped — so a calorie-dense, high-quality food fed in small, regular portions is essential, especially for puppies. Dental disease is arguably worse in Yorkies than almost any breed: their crowded little teeth demand small kibble and a low-sugar, grain-free recipe to slow plaque. The famous silky coat thrives on omega-3, and tear staining often improves on a clean, additive-free diet. Because they eat so little by volume, premium food costs only pennies a day for a Yorkie."
+    },
+    "topPicks": {
+      "bestOverall": {
+        "brand": "Lily's Kitchen Chicken & Duck",
+        "why": "Small kibble suits a tiny toy-breed mouth, and the omega-rich natural recipe keeps the signature silky Yorkie coat in condition while staying gentle on a small, sensitive stomach."
+      },
+      "bestForStableBloodSugar": {
+        "brand": "Orijen Original",
+        "why": "85% animal ingredients deliver high-quality protein and calorie density in a very small volume — exactly what a hypoglycaemia-prone Yorkie needs to keep blood sugar steady between small meals, with negligible cost per day at toy-breed portions."
+      },
+      "bestForDentalHealth": {
+        "brand": "Eden Holistic Original",
+        "why": "A grain-free, low-sugar profile means less plaque-feeding carbohydrate for a breed with notoriously bad teeth, and the small dense kibble encourages protective chewing."
+      },
+      "bestForSensitiveStomach": {
+        "brand": "Symply Fresh Turkey",
+        "why": "Single-protein turkey is a clean, gentle choice for the delicate digestion and tear staining common in Yorkies, free from chicken, dairy and artificial colours."
+      },
+      "bestForCoat": {
+        "brand": "Canagan Free-Run Chicken",
+        "why": "Balanced omega-3 and omega-6 nourish the long, fine, hair-like Yorkshire Terrier coat, while quality protein supports lean muscle on a tiny frame."
+      }
+    },
+    "targetKeywords": [
+      "best dog food for yorkshire terriers uk",
+      "best grain free food for yorkshire terriers",
+      "yorkshire terrier food uk 2026",
+      "best dog food for yorkie sensitive stomach"
     ]
   }
 ]
