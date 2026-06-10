@@ -29,6 +29,15 @@ data:
         front_door:
           - "rtsp://ring-mqtt.ring-mqtt.svc:8554/5c475e55fb69_live"
 
+    # 0.16 native face recognition. small model = CPU-friendly (no GPU on the NUC).
+    # Runs on the face region of detected `person` objects; writes the recognised
+    # name to the event's sub_label, which HA/the doorbell flow reads via MQTT/API.
+    # Enrolment: POST face crops to /api/faces/<name> (the LLM "who's this?" loop
+    # teaches it; once a face is known, Frigate recognises natively — no LLM call).
+    face_recognition:
+      enabled: true
+      model_size: small
+
     cameras:
       front_door:
         # Disabled at rest = no RTSP consumer = Ring stays asleep = no battery drain.
@@ -54,9 +63,15 @@ data:
             # camera is only on during real events, not 24/7.
             days: 7
             mode: all
-          events:
+          # 0.15+ schema: record.events renamed to alerts + detections.
+          alerts:
             retain:
-              default: 14
+              days: 14
+              mode: motion
+          detections:
+            retain:
+              days: 14
+              mode: motion
         snapshots:
           enabled: true
           retain:
@@ -91,9 +106,15 @@ data:
           retain:
             days: 7
             mode: motion
-          events:
+          # 0.15+ schema: record.events renamed to alerts + detections.
+          alerts:
             retain:
-              default: 14
+              days: 14
+              mode: motion
+          detections:
+            retain:
+              days: 14
+              mode: motion
         snapshots:
           enabled: true
           retain:
@@ -127,9 +148,15 @@ data:
           retain:
             days: 7
             mode: motion
-          events:
+          # 0.15+ schema: record.events renamed to alerts + detections.
+          alerts:
             retain:
-              default: 14
+              days: 14
+              mode: motion
+          detections:
+            retain:
+              days: 14
+              mode: motion
         snapshots:
           enabled: true
           retain:
