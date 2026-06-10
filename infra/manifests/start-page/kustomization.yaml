@@ -14,3 +14,15 @@ configMapGenerator:
       - index.html
     options:
       disableNameSuffixHash: true
+  - name: start-page-nginx
+    namespace: start-page
+    files:
+      - default.conf=nginx.conf
+    options:
+      disableNameSuffixHash: true
+  - name: start-page-healthproxy
+    namespace: start-page
+    files:
+      - healthproxy.py
+    options:
+      disableNameSuffixHash: true
