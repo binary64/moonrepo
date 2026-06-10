@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - deployment.yaml
+  - healthproxy-deployment.yaml
   - service.yaml
   - route.yaml
 

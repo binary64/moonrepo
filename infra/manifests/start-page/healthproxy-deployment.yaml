@@ -1,0 +1,66 @@
+# Health proxy runs on the master node (the NUC, 192.168.1.201) — the ONLY node
+# with a route to the home LAN (192.168.1.0/24). Jupiter (vmi3137202) is a cloud
+# VPS and cannot reach those services, so the proxy MUST be pinned to master.
+# nginx on Jupiter reverse-proxies /healthz to this service across the cluster.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: start-page-healthproxy
+  namespace: start-page
+  labels:
+    app: start-page-healthproxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: start-page-healthproxy
+  template:
+    metadata:
+      labels:
+        app: start-page-healthproxy
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: master
+      containers:
+        - name: healthproxy
+          image: python:3.12-alpine
+          command: ["python3", "/app/healthproxy.py"]
+          ports:
+            - containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: 8080
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /livez
+              port: 8080
+            periodSeconds: 15
+          volumeMounts:
+            - name: healthproxy-src
+              mountPath: /app
+              readOnly: true
+          resources:
+            requests:
+              memory: 24Mi
+              cpu: 10m
+            limits:
+              memory: 64Mi
+              cpu: 100m
+      volumes:
+        - name: healthproxy-src
+          configMap:
+            name: start-page-healthproxy
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: start-page-healthproxy
+  namespace: start-page
+spec:
+  selector:
+    app: start-page-healthproxy
+  ports:
+    - port: 8080
+      targetPort: 8080
