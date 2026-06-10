@@ -148,7 +148,7 @@ spec:
               cpu: 250m
               memory: 512Mi
             limits:
-              cpu: 2000m
+              cpu: 3500m  # facenet embedding is CPU-bound (no GPU on the NUC); 2 cores stalled enrollment past the probe timeout. 3.5 leaves ~0.5 for the 4-core node (was 2000m)
               memory: 3Gi  # 0.16 face-recognition + semantic-search embedding models need headroom (was 2Gi)
           # 0.16 first boot runs a DB schema migration and downloads embedding
           # models — can take several minutes. startupProbe gives it up to 10min
@@ -172,7 +172,7 @@ spec:
               port: 5000
             initialDelaySeconds: 30
             periodSeconds: 30
-            timeoutSeconds: 10
+            timeoutSeconds: 20
             failureThreshold: 5
           readinessProbe:
             httpGet:
@@ -180,7 +180,7 @@ spec:
               port: 5000
             initialDelaySeconds: 15
             periodSeconds: 10
-            timeoutSeconds: 8
+            timeoutSeconds: 15
             failureThreshold: 5
       # hostPath volumes are intentional for a single-node NVR deployment.
       # Recordings and runtime data are non-critical (ephemeral/overwritten by retention policy)
