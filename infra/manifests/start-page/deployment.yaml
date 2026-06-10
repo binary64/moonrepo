@@ -46,34 +46,6 @@ spec:
             limits:
               memory: 32Mi
               cpu: 50m
-        # Health proxy sidecar — probes LAN/k8s services server-side (TCP connect)
-        # and serves results as same-origin JSON via nginx /healthz. See healthproxy.py.
-        - name: healthproxy
-          image: python:3.12-alpine
-          command: ["python3", "/app/healthproxy.py"]
-          ports:
-            - containerPort: 8080
-          livenessProbe:
-            httpGet:
-              path: /livez
-              port: 8080
-            periodSeconds: 30
-          readinessProbe:
-            httpGet:
-              path: /livez
-              port: 8080
-            periodSeconds: 15
-          volumeMounts:
-            - name: healthproxy-src
-              mountPath: /app
-              readOnly: true
-          resources:
-            requests:
-              memory: 24Mi
-              cpu: 10m
-            limits:
-              memory: 64Mi
-              cpu: 100m
       volumes:
         - name: html
           configMap:
@@ -81,6 +53,3 @@ spec:
         - name: nginx-conf
           configMap:
             name: start-page-nginx
-        - name: healthproxy-src
-          configMap:
-            name: start-page-healthproxy
