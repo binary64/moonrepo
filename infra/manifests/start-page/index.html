@@ -325,7 +325,7 @@
     <div class="stat">
       <div class="label">Down</div>
       <div class="value" id="stat-down">–</div>
-      <div class="sub">monitored externally</div>
+      <div class="sub">ext + lan + k8s</div>
     </div>
     <div class="stat">
       <div class="label">Total Services</div>
@@ -429,6 +429,16 @@
     const displayUrl = (u) => u.replace(/^https?:\/\//, '').replace(/\/$/, '');
     let allCards = [];
 
+    // Derive a host:port key from a tile URL, matching the health proxy's TARGETS.
+    // Defaults the port to 80 when none is present (proxy does the same).
+    function hostPortKey(url) {
+      try {
+        const u = new URL(url);
+        const port = u.port || (u.protocol === 'https:' ? '443' : '80');
+        return `${u.hostname}:${port}`;
+      } catch { return null; }
+    }
+
     // ---- Greeting ----
     function updateGreeting() {
       const h = new Date().getHours();
@@ -479,7 +489,7 @@
                 <div class="url">${displayUrl(svc.url)}</div>
               </div>
               <div class="meta">
-                <span class="status-dot ${svc.badge === 'ext' ? 'checking' : 'unknown'}" id="status-${sanitizeId(svc.name)}"></span>
+                <span class="status-dot checking" id="status-${sanitizeId(svc.name)}"></span>
                 <span class="badge ${svc.badge}">${svc.badge}</span>
               </div>
             </${tag}>`;
@@ -494,33 +504,52 @@
 
     // ---- Health ----
     async function checkHealth() {
-      let up = 0, down = 0, extTotal = 0;
+      let up = 0, down = 0, monTotal = 0;
       document.querySelectorAll('.status-dot.up,.status-dot.down').forEach(d => d.classList.add('checking'));
+
+      // Pull server-side LAN/k8s reachability (same-origin, set by the health proxy).
+      let lanStatus = {};
+      try {
+        const r = await fetch('/healthz', { cache: 'no-store' });
+        if (r.ok) lanStatus = await r.json();
+      } catch { /* proxy unreachable — lan tiles fall back to unknown below */ }
+
       const tasks = [];
       for (const section of CONFIG.sections) {
         for (const svc of section.services) {
-          if (svc.badge !== 'ext') continue;
-          extTotal++;
           const dot = document.getElementById('status-' + sanitizeId(svc.name));
-          const url = svc.health || svc.url;
-          tasks.push((async () => {
-            try {
-              const c = new AbortController();
-              const t = setTimeout(() => c.abort(), 6000);
-              await fetch(url, { mode: 'no-cors', signal: c.signal });
-              clearTimeout(t);
-              dot.className = 'status-dot up';
-              up++;
-            } catch {
-              dot.className = 'status-dot down';
-              down++;
-            }
-          })());
+          if (!dot) continue;
+
+          if (svc.badge === 'ext') {
+            // Browser-side no-cors probe for HTTPS services.
+            monTotal++;
+            const url = svc.health || svc.url;
+            tasks.push((async () => {
+              try {
+                const c = new AbortController();
+                const t = setTimeout(() => c.abort(), 6000);
+                await fetch(url, { mode: 'no-cors', signal: c.signal });
+                clearTimeout(t);
+                dot.className = 'status-dot up';
+                up++;
+              } catch {
+                dot.className = 'status-dot down';
+                down++;
+              }
+            })());
+          } else {
+            // LAN/k8s service — use server-side proxy result keyed by host:port.
+            const key = hostPortKey(svc.url);
+            const state = key ? lanStatus[key] : undefined;
+            if (state === 'up') { dot.className = 'status-dot up'; up++; monTotal++; }
+            else if (state === 'down') { dot.className = 'status-dot down'; down++; monTotal++; }
+            else { dot.className = 'status-dot unknown'; } // proxy down or unmapped
+          }
         }
       }
       await Promise.all(tasks);
       document.getElementById('stat-up').textContent = up;
-      document.getElementById('stat-up-sub').textContent = `of ${extTotal} external`;
+      document.getElementById('stat-up-sub').textContent = `of ${monTotal} monitored`;
       const downEl = document.getElementById('stat-down');
       downEl.textContent = down;
       downEl.className = 'value' + (down > 0 ? ' bad' : ' good');
@@ -528,7 +557,7 @@
       document.getElementById('stat-sweep').textContent =
         now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
       document.getElementById('last-check').textContent =
-        `Live · ${up}/${extTotal} external services healthy · last sweep ${now.toLocaleTimeString('en-GB')}`;
+        `Live · ${up}/${monTotal} services healthy · last sweep ${now.toLocaleTimeString('en-GB')}`;
     }
 
     // ---- Search / keyboard ----
