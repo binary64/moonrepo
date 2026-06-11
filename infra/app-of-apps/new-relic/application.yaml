@@ -29,26 +29,39 @@ spec:
         # --------------------------------
         newrelic-infrastructure:
           enabled: true
+          # kubelet pod = 2 containers (kubelet + agent), both share this block
           kubelet:
             resources:
               requests:
-                cpu: 50m
+                cpu: 25m
                 memory: 96Mi
               limits:
                 cpu: 200m
                 memory: 256Mi
+          # ksm pod = 2 containers (ksm + forwarder), each has its OWN key path.
+          # A flat `ksm.resources` does NOT land — must nest ksm.ksm + ksm.forwarder.
           ksm:
-            resources:
-              requests:
-                cpu: 50m
-                memory: 96Mi
-              limits:
-                cpu: 200m
-                memory: 256Mi
+            ksm:
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 96Mi
+                limits:
+                  cpu: 200m
+                  memory: 256Mi
+            forwarder:
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 96Mi
+                limits:
+                  cpu: 200m
+                  memory: 256Mi
+          # controlPlane pod = 2 containers (controlplane + forwarder), share this block
           controlPlane:
             resources:
               requests:
-                cpu: 50m
+                cpu: 25m
                 memory: 96Mi
               limits:
                 cpu: 200m
@@ -71,6 +84,12 @@ spec:
         # --------------------------------
         nri-metadata-injection:
           enabled: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 30M
+            limits:
+              memory: 80M
 
         # --------------------------------
         # Kubernetes Events (disabled — noisy, not needed for home cluster)
