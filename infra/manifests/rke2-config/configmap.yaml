@@ -35,3 +35,28 @@ data:
     # Cloudflare proxy disabled for these DNS records — direct A records.
     # headscale.brandwhisper.cloud → 83.105.77.69
     # *.home.brandwhisper.cloud  → 83.105.77.69
+    #
+    # ── Control-plane resource protection (added 2026-06-12) ──────────────
+    # The NUC is a 4-core / 12GB box co-hosting ~79 pods INCLUDING several
+    # databases (Percona XtraDB for Nextcloud, Postgres for authentik+hasura)
+    # whose disk fsyncs share the same local-path disk as etcd's WAL. Under
+    # load, etcd WAL commits queue behind those writes → "apply request took
+    # too long" (1.5-2s) → lease renewals time out → kube-scheduler /
+    # controller-manager / cloud-controller lose leader election and
+    # CrashLoopBackOff. See projects/radio/control-plane-incidents.md.
+    #
+    # These reservations carve guaranteed headroom for the OS + kubelet +
+    # control plane out of the node's allocatable pool, and set a hard memory
+    # eviction floor so the kubelet sheds Burstable pods BEFORE the kernel
+    # OOM-killer can reach etcd. Kept deliberately modest: the node is already
+    # ~88% CPU-requested / ~86% mem-used, so over-reserving would drop
+    # allocatable below current requests and wedge rescheduling on this
+    # (already flappy) node. CPU is compressible (throttle, not evict) so the
+    # reservation is small; the memory floor is the real protection.
+    #
+    # NOTE: reservations are enforced as cgroup limits on the kube/system
+    # slices — `kubelet-arg` carries them through RKE2 to the kubelet.
+    kubelet-arg:
+      - "kube-reserved=cpu=250m,memory=512Mi"
+      - "system-reserved=cpu=250m,memory=512Mi"
+      - "eviction-hard=memory.available<400Mi,nodefs.available<5%"
