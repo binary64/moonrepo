@@ -114,20 +114,48 @@ spec:
                 exit 1
               fi
 
-              # Strategic merge patch: only updates the named ports, leaves others untouched.
-              kubectl patch svc -n istio-system gateway-istio --type=strategic --patch '
-              spec:
-                ports:
-                  - name: default
-                    port: 80
-                    targetPort: 80
-                    protocol: TCP
-                    nodePort: 30080
-                  - name: https
-                    port: 443
-                    targetPort: 443
-                    protocol: TCP
-                    nodePort: 30443
-              '
-              echo "gateway-istio NodePorts pinned: 80→30080, 443→30443"
+              # Best-effort, conflict-aware pin. Pins a (port -> desired nodePort)
+              # only if it doesn't collide with another Service. Detection uses a
+              # server-side dry-run patch: if the desired nodePort is already
+              # allocated elsewhere the API rejects it, and we SKIP rather than
+              # fail — a failed pin must NOT wedge the whole infra-root sync (this
+              # hook silently wedged it for days). External access already works on
+              # Istio's dynamic ports; deterministic pinning + a matching router NAT
+              # change is a separate decision, tracked outside this hook.
+              pin_port() {
+                PORTNAME="$1"; PORT="$2"; TARGET="$3"; DESIRED="$4"
+                PATCH="spec:
+                  ports:
+                    - name: $PORTNAME
+                      port: $PORT
+                      targetPort: $TARGET
+                      protocol: TCP
+                      nodePort: $DESIRED"
+                # Already pinned correctly? Nothing to do.
+                CUR=$(kubectl get svc -n istio-system gateway-istio \
+                  -o jsonpath="{range .spec.ports[?(@.name=='$PORTNAME')]}{.nodePort}{end}" 2>/dev/null)
+                if [ "$CUR" = "$DESIRED" ]; then
+                  echo "ok: $PORTNAME already pinned to $DESIRED"
+                  return 0
+                fi
+                # Server dry-run detects nodePort collisions without mutating.
+                if ! kubectl patch svc -n istio-system gateway-istio --type=strategic \
+                     --dry-run=server --patch "$PATCH" >/dev/null 2>&1; then
+                  echo "SKIP: nodePort $DESIRED ($PORTNAME) unavailable (already allocated) — leaving gateway port dynamic" >&2
+                  return 0
+                fi
+                if kubectl patch svc -n istio-system gateway-istio --type=strategic --patch "$PATCH" >/dev/null 2>&1; then
+                  echo "pinned $PORTNAME -> $DESIRED"
+                else
+                  echo "WARN: could not pin $PORTNAME -> $DESIRED (left dynamic)" >&2
+                fi
+              }
+
+              # NOTE: 'default' (port 80) is intentionally NOT pinned — 30080 is
+              # held by home-assistant/zigbee2mqtt (since before this hook existed).
+              # Choose a free deterministic HTTP nodePort + update router NAT to
+              # match, then add a pin_port line here. https pins cleanly to 30443.
+              pin_port https 443 443 30443
+
+              echo "Current gateway-istio NodePorts:"
               kubectl get svc -n istio-system gateway-istio -o jsonpath='{range .spec.ports[*]}{.name}={.nodePort} {end}{"\n"}'
