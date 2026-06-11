@@ -72,7 +72,12 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: pin
-          image: bitnami/kubectl:1.35.3
+          # registry.k8s.io/kubectl — official, Google-hosted, immune to the
+          # Bitnami Docker Hub tag purge that removed bitnami/kubectl:1.35.3
+          # (only sha/latest tags survive there now), which wedged this PostSync
+          # hook in ImagePullBackOff and stalled every infra-root sync.
+          # Pinned to the cluster's server minor (v1.33.x; server is v1.33.6).
+          image: registry.k8s.io/kubectl:v1.33.0
           securityContext:
             runAsNonRoot: true
             runAsUser: 1001
