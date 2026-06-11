@@ -135,8 +135,13 @@ duck = ref(1.0)    # current music multiplier (eased)
 target = ref(1.0)  # desired music multiplier (1.0 = full, lower = deeper duck)
 
 # Read the per-clip duck depth on each voice clip; restore to full on clip end.
+# delay=0. is CRITICAL: source.on_end defaults to delay=5.0, which fires the
+# handler when 5s of audio REMAIN — un-ducking the music ~3-5s before the DJ
+# actually finishes speaking (sounds like the music swells up over the last
+# words). delay=0. fires at the true end of the clip; the 0.05s easing ramp
+# below then swells the music back smoothly (~0.75s) right as the voice ends.
 voices = source.on_metadata(voices, fun (m) -> target := float_of_string(default=0.15, m["duck"]))
-voices = source.on_end(voices, fun (_, _) -> target := 1.0)
+voices = source.on_end(delay=0., voices, fun (_, _) -> target := 1.0)
 
 # Ease toward target every 0.05s. We use add_timeout (re-arming by returning the
 # next delay) rather than thread.run(every=...): add_timeout is the stable
