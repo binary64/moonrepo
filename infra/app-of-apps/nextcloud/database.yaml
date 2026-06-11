@@ -39,6 +39,15 @@ spec:
           affinity:
             antiAffinityTopologyKey: "none"
 
+        # Fluent Bit log sidecars (logs + logrotate) — chart default reserves
+        # 200m CPU here, but on a home single-node DB they idle. Trim to 25m.
+        logcollector:
+          enabled: true
+          resources:
+            requests:
+              memory: 100M
+              cpu: 25m
+
         # HAProxy for MySQL access
         haproxy:
           enabled: true
