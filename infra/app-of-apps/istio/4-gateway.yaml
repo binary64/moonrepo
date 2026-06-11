@@ -5,12 +5,14 @@ metadata:
   namespace: istio-system
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
-    networking.istio.io/service-type: LoadBalancer
+    # NodePort (not LoadBalancer): external traffic arrives via the ISP router
+    # NAT-forwarding WAN:443 -> NUC:30443 (pinned by 6-pin-gateway-nodeports.yaml),
+    # so the gateway programs off node IPs and needs no MetalLB-assigned address.
+    # Deliberately no spec.addresses here: hardcoding the home WAN IP (a) leaks it
+    # into git, and (b) breaks on every WAN-IP rotation (it has rotated twice).
+    networking.istio.io/service-type: NodePort
 spec:
   gatewayClassName: istio
-  addresses:
-  - type: IPAddress
-    value: "84.69.17.64"
   listeners:
   - name: default
     port: 80
