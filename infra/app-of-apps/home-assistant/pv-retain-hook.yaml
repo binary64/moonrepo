@@ -86,7 +86,9 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: pv-retain
-          image: bitnami/kubectl:latest
+          # registry.k8s.io/kubectl — official, Google-hosted. Avoids the Bitnami
+          # Docker Hub tag purge (versioned tags already gone; :latest may follow).
+          image: registry.k8s.io/kubectl:v1.33.0
           resources:
             requests:
               cpu: 10m
