@@ -20,8 +20,11 @@ spec:
         app.kubernetes.io/name: wealthfolio
         app.kubernetes.io/instance: wealthfolio
     spec:
-      nodeSelector:
-        kubernetes.io/hostname: master
+      # No nodeSelector: master is CPU-saturated (~99% requested), which left the
+      # pod Pending indefinitely. The local-path storageclass is available on both
+      # nodes, so let the scheduler place this on whichever node has capacity
+      # (currently the worker vmi3137202). The local-path PV gains node affinity on
+      # first bind, so subsequent reschedules stay pinned to the data's node.
       # v3.4.0+ runs the container as UID/GID 1000 (was root). Pre-existing
       # /data files are owned 0:0, so chown once on every start (idempotent)
       # to keep SQLite writable. See upstream #940/#919.
