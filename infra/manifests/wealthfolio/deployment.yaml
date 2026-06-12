@@ -24,7 +24,7 @@ spec:
         kubernetes.io/hostname: master
       containers:
         - name: wealthfolio
-          image: ghcr.io/afadil/wealthfolio:3.2.1
+          image: ghcr.io/afadil/wealthfolio:3.3.0
           ports:
             - name: http
               containerPort: 8088
