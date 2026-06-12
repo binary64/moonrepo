@@ -167,6 +167,26 @@ def get_audience():
     if ctx is not None and "abi_home" in ctx and "james_home" in ctx:
         return {"abi_home": bool(ctx["abi_home"]),
                 "james_home": bool(ctx["james_home"])}
+    return _audience_from_schedule()
+
+
+def _parse_abi_status(schedule, today):
+    """Pull Abi's working status for `today` from any schedule file format."""
+    schedule_list = schedule.get("schedule", [])
+    if not isinstance(schedule_list, list):
+        # Legacy format: {"abi": {"2026-03-02": "not-working"}}
+        return schedule.get("abi", {}).get(today, "working")
+    for day in schedule_list:
+        if day.get("date") == today:
+            abi_val = day.get("abi", "working")
+            if isinstance(abi_val, dict):
+                return abi_val.get("status", "working")
+            return str(abi_val)
+    return "working"  # default weekday assumption
+
+
+def _audience_from_schedule():
+    """Heuristic presence from schedule.json + time of day (fallback path)."""
     try:
         with open(SCHEDULE_FILE) as f:
             schedule = json.load(f)
@@ -176,26 +196,7 @@ def get_audience():
     now = datetime.now()
     today = now.strftime("%Y-%m-%d")
     hour = now.hour
-
-    # Schedule file format varies:
-    #   v1: {"schedule": [{"date": "...", "abi": {"status": "..."}}]}
-    #   v2: {"schedule": [{"date": "...", "abi": "not-working"}]}
-    #   legacy: {"abi": {"2026-03-02": "not-working"}}
-    abi_status = "working"  # default weekday assumption
-    schedule_list = schedule.get("schedule", [])
-    if isinstance(schedule_list, list):
-        for day in schedule_list:
-            if day.get("date") == today:
-                abi_val = day.get("abi", "working")
-                if isinstance(abi_val, dict):
-                    abi_status = abi_val.get("status", "working")
-                else:
-                    abi_status = str(abi_val)
-                break
-    else:
-        # Legacy format: {"abi": {"2026-03-02": "not-working"}}
-        abi_status = schedule.get("abi", {}).get(today, "working")
-
+    abi_status = _parse_abi_status(schedule, today)
     is_weekend = now.weekday() >= 5
 
     if abi_status == "not-working" or is_weekend:
