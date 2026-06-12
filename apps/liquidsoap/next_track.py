@@ -29,6 +29,9 @@ QUEUE_FILE = "/state/radio-llm-queue.json"
 MUSIC_DIR = "/data/music"
 SCHEDULE_FILE = "/config/schedule.json"
 DJ_OVERRIDE_FILE = "/data/music/dj-override.json"
+# Slow-loop context: written every ~15 min by a Hermes agent cron job with full
+# tools+skills (live HA presence, taste profiles, mood). Fast loop reads it here.
+DJ_CONTEXT_FILE = "/data/music/dj-context.json"
 
 # OpenAI API direct (avoids gateway defaulting to Sonnet)
 GATEWAY_URL = "https://api.openai.com/v1/chat/completions"
@@ -126,8 +129,45 @@ def is_track_allowed(track_name, tiers):
 ABI_HOME_HOURS = {"work_leave": 7, "work_return": 18}
 
 
+def load_dj_context():
+    """Load the slow-loop DJ context if present and fresh.
+
+    The slow loop (Hermes agent cron, ~every 15 min) writes:
+      {"generated_at": ISO8601, "ttl_minutes": 30,
+       "abi_home": bool, "james_home": bool,
+       "steer_genres": [...], "avoid_genres": [...],
+       "mood": str, "note": str}
+    Returns the dict if fresh, else None (so we fall back to schedule).
+    """
+    try:
+        with open(DJ_CONTEXT_FILE) as f:
+            ctx = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return None
+    try:
+        gen = datetime.fromisoformat(ctx["generated_at"].replace("Z", "+00:00"))
+        ttl = float(ctx.get("ttl_minutes", 30))
+        age_min = (datetime.now(gen.tzinfo) - gen).total_seconds() / 60.0
+        if age_min > ttl:
+            print(f"dj-context stale ({age_min:.0f}m > {ttl:.0f}m), ignoring",
+                  file=sys.stderr)
+            return None
+    except (KeyError, ValueError, TypeError) as e:
+        print(f"dj-context unparseable timestamp: {e}", file=sys.stderr)
+        return None
+    return ctx
+
+
 def get_audience():
-    """Determine who's listening based on schedule + time of day."""
+    """Determine who's listening.
+
+    Prefers the slow-loop dj-context (live HA presence). Falls back to the
+    schedule file + time-of-day heuristics if context is missing or stale.
+    """
+    ctx = load_dj_context()
+    if ctx is not None and "abi_home" in ctx and "james_home" in ctx:
+        return {"abi_home": bool(ctx["abi_home"]),
+                "james_home": bool(ctx["james_home"])}
     try:
         with open(SCHEDULE_FILE) as f:
             schedule = json.load(f)
@@ -333,6 +373,13 @@ def build_llm_context(graph, state):
         "recentArtists": recent_artists,
         "seed": state.get("seed"),
     }
+
+    # Fold in slow-loop taste/mood steering if a fresh context exists.
+    dj_ctx = load_dj_context()
+    if dj_ctx is not None:
+        for key in ("steer_genres", "avoid_genres", "mood", "note"):
+            if dj_ctx.get(key):
+                context[key] = dj_ctx[key]
 
     return context
 
