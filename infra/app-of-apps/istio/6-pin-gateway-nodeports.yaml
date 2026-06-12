@@ -7,7 +7,7 @@
 #
 # Pinned NodePorts:
 #   - 30080 → port 80   (HTTP, redirects to HTTPS)
-#   - 30443 → port 443  (HTTPS)
+#   - 31280 → port 443  (HTTPS) — matches ISP router 443→31280 NAT forward
 #   - status-port (15021) and headscale-grpc (50443) left dynamic — not externally exposed.
 #
 # Router NAT update required after this lands: see PR description.
@@ -151,11 +151,13 @@ spec:
                 fi
               }
 
-              # NOTE: 'default' (port 80) is intentionally NOT pinned — 30080 is
-              # held by home-assistant/zigbee2mqtt (since before this hook existed).
-              # Choose a free deterministic HTTP nodePort + update router NAT to
-              # match, then add a pin_port line here. https pins cleanly to 30443.
-              pin_port https 443 443 30443
+              # NOTE: 'default' (port 80) is intentionally NOT pinned — Istio's
+              # dynamic assignment currently lands on 32600, which already matches
+              # the ISP router's 80→32600 forward. Leave it dynamic unless it drifts.
+              # https is pinned to 31280 to match the router's fixed 443→31280
+              # NAT forward (the router config is manual/un-versioned, so the
+              # cluster matches the router, not vice-versa).
+              pin_port https 443 443 31280
 
               echo "Current gateway-istio NodePorts:"
               kubectl get svc -n istio-system gateway-istio -o jsonpath='{range .spec.ports[*]}{.name}={.nodePort} {end}{"\n"}'
