@@ -83,8 +83,10 @@ data:
     echo "Sanity gate passed (valid public IPv4)."
 
     # --- 4. patch the secret (strategic merge, base64 value) ---
+    # Note: -o /dev/null (root FS is read-only; /tmp is not writable). We capture
+    # the body only on failure via a retry without -o so we can surface the error.
     NEW_B64=$(echo -n "${CURRENT_IP}" | base64 | tr -d '\n')
-    HTTP=$(curl -sS --max-time 15 -o /tmp/patch.out -w "%{http_code}" \
+    HTTP=$(curl -sS --max-time 15 -o /dev/null -w "%{http_code}" \
       --cacert "${SA}/ca.crt" \
       -H "Authorization: Bearer ${TOKEN}" \
       -H "Content-Type: application/strategic-merge-patch+json" \
@@ -92,8 +94,7 @@ data:
       --data "{\"data\":{\"public-ip\":\"${NEW_B64}\"}}" \
       "${APISERVER}/api/v1/namespaces/${NS}/secrets/${SECRET}")
     if [ "${HTTP}" != "200" ]; then
-      echo "ERROR: secret patch failed (HTTP ${HTTP}):" >&2
-      cat /tmp/patch.out >&2 || true
+      echo "ERROR: secret patch failed (HTTP ${HTTP})" >&2
       exit 1
     fi
     echo "✓ home-network secret patched to ${CURRENT_IP} — external-dns will reconcile all records."
