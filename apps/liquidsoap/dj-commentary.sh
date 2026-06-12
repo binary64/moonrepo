@@ -81,15 +81,17 @@ if [ "$FILE_SIZE" -lt 1000 ]; then
     exit 1
 fi
 
-# Step 3: Pad 300ms silence for smooth ducking
-echo "[dj-commentary] Padding 300ms silence..."
+# Step 3: Loudness-normalise to -16 LUFS (equalises Arthur & Cara regardless of
+# Hume's raw output level) THEN pad 300ms silence for smooth ducking. Doing both
+# in one ffmpeg pass. loudnorm also tames peaks (TP=-1.5) so voice never clips.
+echo "[dj-commentary] Loudness-normalising (-16 LUFS) + padding 300ms silence..."
 if command -v ffmpeg &>/dev/null; then
     ffmpeg -y -loglevel error \
         -f lavfi -i "anullsrc=r=44100:cl=stereo" \
         -i "$RAW_FILE" \
-        -filter_complex "[0]atrim=0:0.3[silence];[silence][1:a]concat=n=2:v=0:a=1" \
+        -filter_complex "[1:a]loudnorm=I=-16:TP=-1.5:LRA=11[v];[0]atrim=0:0.3[silence];[silence][v]concat=n=2:v=0:a=1" \
         "$PADDED_FILE" 2>/dev/null || {
-        echo "[dj-commentary] WARN: ffmpeg padding failed, using raw file" >&2
+        echo "[dj-commentary] WARN: ffmpeg loudnorm/padding failed, using raw file" >&2
         cp "$RAW_FILE" "$PADDED_FILE"
     }
 else
