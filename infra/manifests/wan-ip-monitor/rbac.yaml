@@ -5,34 +5,3 @@ metadata:
   namespace: newrelic
   annotations:
     moonrepo.dev/skip-local: "true"
----
-# The monitor's only job in-cluster is to patch the home-network secret in the
-# external-dns namespace (the source of truth for external-dns --default-targets).
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: wan-ip-monitor-secret-patcher
-  namespace: external-dns
-  annotations:
-    moonrepo.dev/skip-local: "true"
-rules:
-  - apiGroups: [""]
-    resources: ["secrets"]
-    resourceNames: ["home-network"]
-    verbs: ["get", "patch"]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: wan-ip-monitor-secret-patcher
-  namespace: external-dns
-  annotations:
-    moonrepo.dev/skip-local: "true"
-subjects:
-  - kind: ServiceAccount
-    name: wan-ip-monitor
-    namespace: newrelic
-roleRef:
-  kind: Role
-  name: wan-ip-monitor-secret-patcher
-  apiGroup: rbac.authorization.k8s.io

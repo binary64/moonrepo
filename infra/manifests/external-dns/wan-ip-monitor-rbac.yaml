@@ -1,0 +1,34 @@
+---
+# RBAC allowing the wan-ip-monitor ServiceAccount (in the newrelic namespace) to
+# patch the home-network secret in THIS (external-dns) namespace. Lives here, with
+# the external-dns-config Application, because the wan-ip-monitor manifests are
+# kustomized with `namespace: newrelic`, which would otherwise force these
+# external-dns-scoped objects into the wrong namespace.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: wan-ip-monitor-secret-patcher
+  namespace: external-dns
+  annotations:
+    moonrepo.dev/skip-local: "true"
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["home-network"]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: wan-ip-monitor-secret-patcher
+  namespace: external-dns
+  annotations:
+    moonrepo.dev/skip-local: "true"
+subjects:
+  - kind: ServiceAccount
+    name: wan-ip-monitor
+    namespace: newrelic
+roleRef:
+  kind: Role
+  name: wan-ip-monitor-secret-patcher
+  apiGroup: rbac.authorization.k8s.io
