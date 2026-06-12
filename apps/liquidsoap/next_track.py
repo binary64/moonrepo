@@ -141,10 +141,16 @@ def load_dj_context():
     try:
         with open(DJ_CONTEXT_FILE) as f:
             ctx = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError, OSError):
+    except (json.JSONDecodeError, OSError):
         return None
     try:
         gen = datetime.fromisoformat(ctx["generated_at"].replace("Z", "+00:00"))
+        if gen.tzinfo is None:
+            # Reject naive timestamps: freshness math would fall back to local
+            # time and could mis-judge staleness across timezone offsets.
+            print("dj-context generated_at missing timezone, ignoring",
+                  file=sys.stderr)
+            return None
         ttl = float(ctx.get("ttl_minutes", 30))
         age_min = (datetime.now(gen.tzinfo) - gen).total_seconds() / 60.0
         if age_min > ttl:
