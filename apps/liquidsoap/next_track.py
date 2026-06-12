@@ -15,7 +15,6 @@ import glob
 import os
 import sys
 import random
-import time
 import re
 import subprocess  # nosec B404 - airs pending DJ clips via dj-commentary.sh (fixed argv)
 import urllib.request
@@ -29,6 +28,9 @@ QUEUE_FILE = "/state/radio-llm-queue.json"
 MUSIC_DIR = "/data/music"
 SCHEDULE_FILE = "/config/schedule.json"
 DJ_OVERRIDE_FILE = "/data/music/dj-override.json"
+# Slow-loop context: written every ~15 min by a Hermes agent cron job with full
+# tools+skills (live HA presence, taste profiles, mood). Fast loop reads it here.
+DJ_CONTEXT_FILE = "/data/music/dj-context.json"
 
 # OpenAI API direct (avoids gateway defaulting to Sonnet)
 GATEWAY_URL = "https://api.openai.com/v1/chat/completions"
@@ -126,8 +128,71 @@ def is_track_allowed(track_name, tiers):
 ABI_HOME_HOURS = {"work_leave": 7, "work_return": 18}
 
 
+def load_dj_context():
+    """Load the slow-loop DJ context if present and fresh.
+
+    The slow loop (Hermes agent cron, ~every 15 min) writes:
+      {"generated_at": ISO8601, "ttl_minutes": 30,
+       "abi_home": bool, "james_home": bool,
+       "steer_genres": [...], "avoid_genres": [...],
+       "mood": str, "note": str}
+    Returns the dict if fresh, else None (so we fall back to schedule).
+    """
+    try:
+        with open(DJ_CONTEXT_FILE) as f:
+            ctx = json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return None
+    try:
+        gen = datetime.fromisoformat(ctx["generated_at"].replace("Z", "+00:00"))
+        if gen.tzinfo is None:
+            # Reject naive timestamps: freshness math would fall back to local
+            # time and could mis-judge staleness across timezone offsets.
+            print("dj-context generated_at missing timezone, ignoring",
+                  file=sys.stderr)
+            return None
+        ttl = float(ctx.get("ttl_minutes", 30))
+        age_min = (datetime.now(gen.tzinfo) - gen).total_seconds() / 60.0
+        if age_min > ttl:
+            print(f"dj-context stale ({age_min:.0f}m > {ttl:.0f}m), ignoring",
+                  file=sys.stderr)
+            return None
+    except (KeyError, ValueError, TypeError) as e:
+        print(f"dj-context unparseable timestamp: {e}", file=sys.stderr)
+        return None
+    return ctx
+
+
 def get_audience():
-    """Determine who's listening based on schedule + time of day."""
+    """Determine who's listening.
+
+    Prefers the slow-loop dj-context (live HA presence). Falls back to the
+    schedule file + time-of-day heuristics if context is missing or stale.
+    """
+    ctx = load_dj_context()
+    if ctx is not None and "abi_home" in ctx and "james_home" in ctx:
+        return {"abi_home": bool(ctx["abi_home"]),
+                "james_home": bool(ctx["james_home"])}
+    return _audience_from_schedule()
+
+
+def _parse_abi_status(schedule, today):
+    """Pull Abi's working status for `today` from any schedule file format."""
+    schedule_list = schedule.get("schedule", [])
+    if not isinstance(schedule_list, list):
+        # Legacy format: {"abi": {"2026-03-02": "not-working"}}
+        return schedule.get("abi", {}).get(today, "working")
+    for day in schedule_list:
+        if day.get("date") == today:
+            abi_val = day.get("abi", "working")
+            if isinstance(abi_val, dict):
+                return abi_val.get("status", "working")
+            return str(abi_val)
+    return "working"  # default weekday assumption
+
+
+def _audience_from_schedule():
+    """Heuristic presence from schedule.json + time of day (fallback path)."""
     try:
         with open(SCHEDULE_FILE) as f:
             schedule = json.load(f)
@@ -137,26 +202,7 @@ def get_audience():
     now = datetime.now()
     today = now.strftime("%Y-%m-%d")
     hour = now.hour
-
-    # Schedule file format varies:
-    #   v1: {"schedule": [{"date": "...", "abi": {"status": "..."}}]}
-    #   v2: {"schedule": [{"date": "...", "abi": "not-working"}]}
-    #   legacy: {"abi": {"2026-03-02": "not-working"}}
-    abi_status = "working"  # default weekday assumption
-    schedule_list = schedule.get("schedule", [])
-    if isinstance(schedule_list, list):
-        for day in schedule_list:
-            if day.get("date") == today:
-                abi_val = day.get("abi", "working")
-                if isinstance(abi_val, dict):
-                    abi_status = abi_val.get("status", "working")
-                else:
-                    abi_status = str(abi_val)
-                break
-    else:
-        # Legacy format: {"abi": {"2026-03-02": "not-working"}}
-        abi_status = schedule.get("abi", {}).get(today, "working")
-
+    abi_status = _parse_abi_status(schedule, today)
     is_weekend = now.weekday() >= 5
 
     if abi_status == "not-working" or is_weekend:
@@ -333,6 +379,13 @@ def build_llm_context(graph, state):
         "recentArtists": recent_artists,
         "seed": state.get("seed"),
     }
+
+    # Fold in slow-loop taste/mood steering if a fresh context exists.
+    dj_ctx = load_dj_context()
+    if dj_ctx is not None:
+        for key in ("steer_genres", "avoid_genres", "mood", "note"):
+            if dj_ctx.get(key):
+                context[key] = dj_ctx[key]
 
     return context
 
@@ -688,7 +741,7 @@ def check_request():
         print(f"REQUEST: Error reading request file: {e}", file=sys.stderr)
         try:
             os.remove(REQUEST_FILE)
-        except:
+        except OSError:
             pass
     return None
 
