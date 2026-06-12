@@ -35,3 +35,13 @@ spec:
         duration: 10s
         factor: 2
         maxDuration: 5m
+  # The home-network Secret's .data is owned at runtime by the wan-ip-monitor
+  # CronJob (it patches public-ip on WAN IP change). Ignore data drift so ArgoCD
+  # selfHeal does not revert the live IP back to the git seed value.
+  ignoreDifferences:
+    - group: ""
+      kind: Secret
+      name: home-network
+      namespace: external-dns
+      jsonPointers:
+        - /data

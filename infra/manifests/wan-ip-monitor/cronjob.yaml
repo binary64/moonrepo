@@ -32,7 +32,8 @@ spec:
               effect: NoSchedule
               operator: Exists
           restartPolicy: OnFailure
-          automountServiceAccountToken: false
+          serviceAccountName: wan-ip-monitor
+          automountServiceAccountToken: true
           securityContext:
             runAsNonRoot: true
             runAsUser: 1000
@@ -73,14 +74,8 @@ spec:
               volumeMounts:
                 - name: scripts
                   mountPath: /scripts
-                - name: state
-                  mountPath: /state
           volumes:
             - name: scripts
               configMap:
                 name: wan-ip-monitor-script
                 defaultMode: 0755
-            - name: state
-              hostPath:
-                path: /tmp/wan-ip-monitor
-                type: DirectoryOrCreate
