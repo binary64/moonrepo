@@ -17,6 +17,17 @@ spec:
       releaseName: pxc-operator
       values: |
         watchAllNamespaces: true
+        # Pin the operator to the Jupiter (storage) node. On master it shared
+        # CPU/etcd contention with the control plane: its controller-runtime
+        # leader-election lease renewal kept hitting "context deadline
+        # exceeded" → "leader election lost" → process exit, producing a
+        # 9000+ restart CrashLoopBackOff over 167 days. The chart exposes no
+        # knob to disable single-replica leader election, so the durable fix
+        # is to run it on an uncontended node where the lease renewal goroutine
+        # gets scheduled on time. Also co-locates it with the PXC cluster it
+        # manages (both on Jupiter). See projects/radio/control-plane-incidents.md.
+        nodeSelector:
+          node.kubernetes.io/storage: "true"
         resources:
           requests:
             cpu: 50m

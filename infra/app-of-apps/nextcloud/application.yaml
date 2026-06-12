@@ -14,6 +14,17 @@ spec:
     helm:
       releaseName: nextcloud
       values: |
+        # Scaled to 0 deliberately (2026-06-12). Nextcloud holds no data we
+        # care about; kept in-repo but dormant. When/if re-enabled, it must
+        # land on the Jupiter (storage) node — NOT master — so its DB stops
+        # sharing the local-path disk with etcd's WAL. See
+        # projects/radio/control-plane-incidents.md.
+        replicaCount: 0
+
+        # Pin to the Jupiter worker (vmi3137202), the labelled storage node.
+        nodeSelector:
+          node.kubernetes.io/storage: "true"
+
         service:
           type: ClusterIP
           port: 80

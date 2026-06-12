@@ -25,6 +25,12 @@ spec:
         # Single node deployment for low-resource environments
         pxc:
           size: 1
+          # Pin to the Jupiter (storage) node — moves the DB's disk fsyncs off
+          # master's local-path disk where they contended with etcd's WAL.
+          # Data is disposable; existing master-bound PVC is deleted on cutover
+          # so local-path provisions a fresh volume on Jupiter.
+          nodeSelector:
+            node.kubernetes.io/storage: "true"
           resources:
             requests:
               memory: 512Mi
@@ -52,6 +58,11 @@ spec:
         haproxy:
           enabled: true
           size: 1
+          # Keep HAProxy co-located with pxc on Jupiter (intra-node TCP — the
+          # NUC↔Jupiter cross-node overlay TCP path is broken, so DB traffic
+          # must not span nodes). See home-network skill (VXLAN udpcsum issue).
+          nodeSelector:
+            node.kubernetes.io/storage: "true"
           resources:
             requests:
               memory: 128Mi
