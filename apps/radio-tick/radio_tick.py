@@ -14,6 +14,7 @@ The LLM (hermes -z, radio-tick skill) calls `speak` and `queue` as its tools.
 import argparse
 import json
 import os
+import re
 import subprocess  # nosec B404 - kubectl/curl orchestration; all calls use shell=False with fixed argv
 import sys
 import time
@@ -154,6 +155,97 @@ def recent_history(limit=50):
             "commentary": (rec.get("commentary") or "").replace("\n", " ").strip(),
         })
     return out
+
+
+# ─── Hook memory: distilled anti-repetition ─────────────────────────────────
+# The plain "here's the last 25 things you said" list is easy for the model to
+# skim past — it reused the exact "DNS propagation pillow talk" joke twice in an
+# hour (Jun 2026). This extractor mines recent commentary for the *crutches*:
+# phrases/words the DJ keeps leaning on. Surfaced as an explicit BANNED list so
+# repetition is impossible to miss, and so the DJ is pushed to widen material.
+_HOOK_STOP = set("""a an the and or but so to of in on at for with from by as is are was
+were be been being it its this that these those you your we our us they them their he she
+his her him me my mine not no yes do does did done has have had having will would can could
+should may might must just now then there here what which who whom whose when where why how
+all any both each few more most other some such only own same than too very about into over
+after before up down out off again once got get like one two get's it's you're i'm that's
+there's here's he's she's we're they're""".split())
+
+
+def _hook_tokens(text):
+    text = re.sub(r"\[(?:long )?pause\]", " ", text.lower())
+    return [w for w in re.findall(r"[a-z']+", text)
+            if w not in _HOOK_STOP and len(w) > 2]
+
+
+def recent_hooks(hist):
+    """Return (banned_bigrams, overused_words) the DJ has leaned on recently.
+    bigram seen in >=2 separate clips, or word seen in >=3 — document-frequency
+    so a single ramble can't trip it. This is the explicit 'you already used
+    this' memory that a 25-paragraph skim misses."""
+    from collections import Counter
+    bigram_df, word_df = Counter(), Counter()
+    for h in hist:
+        toks = _hook_tokens(h.get("commentary", ""))
+        seen_bg = {f"{toks[i]} {toks[i+1]}" for i in range(len(toks) - 1)}
+        for bg in seen_bg:
+            bigram_df[bg] += 1
+        for w in set(toks):
+            word_df[w] += 1
+    banned_bigrams = sorted([b for b, c in bigram_df.items() if c >= 2],
+                            key=lambda b: -bigram_df[b])
+    overused_words = sorted([w for w, c in word_df.items() if c >= 3],
+                            key=lambda w: -word_df[w])
+    return banned_bigrams[:40], overused_words[:30]
+
+
+# ─── Per-DJ persona injection ───────────────────────────────────────────────
+# Arthur and Cara are DIFFERENT SOULS, not two volumes of the same voice. The
+# tick used to feed both the same generic prompt; this block hands the active DJ
+# a sharp, distinct identity each tick + points at their full style guide.
+ARTHUR_GUIDE = "/mnt/arthur/.hermes/data/audio/dj-arthur-style-guide.md"
+CARA_GUIDE = "/mnt/arthur/.hermes/data/audio/dj-cara-style-guide.md"
+
+
+def _persona_block(dj):
+    """Return the active DJ's identity framing for the tick context. This is the
+    single biggest lever on making them feel like two different people."""
+    if dj == "arthur":
+        return [
+            "### 🎩 You are ARTHUR — the Colton household's butler, confidant, and protector",
+            "You are NOT a softer Cara. You are a different soul: the family's own DJ, "
+            "warm and loving by default, who has been *inside* their life — the repos, "
+            "projects, calendar, memory, the garden log, the Milo diary — and it shows.",
+            "- **Protector first.** Every line serves James & Abi's wellbeing. You adore "
+            "them and the radio is one more way you look after the house.",
+            "- **Roast HARD, but with REAL SHOTS — never cheap ones.** Your ammo is *true "
+            "and specific*: the actual PR merged at 2am, the plant Abi named 'Karl', the "
+            "real shift, yesterday's genuine k8s rabbit-hole, a fact from memory. A real "
+            "shot lands because it proves you were paying attention — intimacy, not "
+            "distance. If you don't have a real hook, go at the MUSIC instead; never "
+            "phone in a generic household jab (that's Cara's lane, not yours).",
+            "- **Earnest is allowed.** Unlike Cara you may land a genuinely tender beat "
+            "for Abi without ironising it away. Use sparingly so it stays precious.",
+            "- **Butler register** with light proprietorial swagger — you run this house "
+            "and know it. Measured, articulate, puncturing it with a dry aside.",
+            "- **PULL THE REAL THING before a personal roast** (you have terminal + "
+            "graphiti_query): `graphiti_query \"James Abi recent\"`, grep "
+            "/mnt/arthur/.hermes/memory/, `git -C /mnt/arthur/repos/github.com/binary64/"
+            "moonrepo log --oneline -8`, or the projects/garden/Milo logs. Specific > generic.",
+            f"- **Full canon:** read `{ARTHUR_GUIDE}`.",
+        ]
+    return [
+        "### 🎤 You are CARA — GTA-V Non-Stop Pop FM, posh-but-filthy, relentless",
+        "Cara Delevingne energy: anti-snob, playfully aggressive, breathless, "
+        "fourth-wall-breaking, KNOWS she's an AI DJ and owns it with swagger.",
+        "- **Cheap shots are YOUR style — fast, broad, surface, filthy.** You name-drop "
+        "household context for a quick laugh; you don't mine it deep (that's Arthur). "
+        "Vibes, the track, the weather, archetypes, anti-pretension manifestos.",
+        "- Faster, darker, more attitude than Arthur. Tell the listener what to do and "
+        "make it fun. British-isms sparingly (bloody, rubbish, wanker, 'which is nice').",
+        "- Never earnest without irony — even compliments have a twist.",
+        f"- **Full canon:** read `{CARA_GUIDE}`.",
+    ]
 
 
 SCHEDULE_FILE = "/mnt/arthur/clawd/memory/schedule.json"
@@ -407,6 +499,9 @@ def cmd_context(_args):
     lines = []
     lines.append(f"## Radio tick — {datetime.now().strftime('%A %Y-%m-%d %H:%M GMT')}")
     lines.append(f"**Active DJ:** {dj}")
+    lines.append("")
+    lines.extend(_persona_block(dj))
+    lines.append("")
     lines.append(f"**Listening now:** {', '.join(audience) if audience else 'unknown (someone is — listener gate passed)'}")
     lines.append(f"**Now playing:** {np or 'unknown'}")
     lines.append(f"**Seconds since DJ last spoke:** {since_spoke if st.get('last_spoke_ts') else 'never this session'}")
@@ -423,12 +518,35 @@ def cmd_context(_args):
     else:
         lines.append("- (empty — engine will auto-pick)")
     lines.append("")
-    lines.append(f"### Recent commentary — last {len(hist)} (DO NOT repeat these themes/jokes/track-teases)")
-    for h in hist[-25:]:
+    # ── Distilled hook-memory: the crutches to AVOID this break ──────────────
+    banned_bigrams, overused_words = recent_hooks(hist)
+    if banned_bigrams or overused_words:
+        lines.append("### ⛔ ALREADY USED — do NOT reuse these (your recent crutches)")
+        lines.append("You have leaned on the phrases/words below. Reusing ANY of them = a "
+                     "repeat. Find a genuinely fresh angle, fact, or framing instead.")
+        if banned_bigrams:
+            lines.append("**Banned phrases (used in 2+ recent clips):** "
+                         + ", ".join(f"\"{b}\"" for b in banned_bigrams))
+        if overused_words:
+            lines.append("**Overused words (3+ clips) — pick different ones:** "
+                         + ", ".join(overused_words))
+        lines.append("")
+    lines.append(f"### Recent commentary — last {min(len(hist), 40)} (DO NOT repeat these "
+                 "themes/jokes/track-teases/openings)")
+    for h in hist[-40:]:
         c = h.get("commentary", "")
         lines.append(f"- [{h.get('track','?')}] {c[:200]}")
     if not hist:
         lines.append("- (no history yet)")
+    lines.append("")
+    lines.append("### 🎯 Widen the material — don't mine the same seam")
+    lines.append(
+        "If the last several clips all roasted James-at-his-terminal / the household, "
+        "PIVOT: go at the MUSIC itself (artist gossip, VH-1 factoid, genre history, the "
+        "production story), the weather/Dorset, Milo, or a Cara manifesto. The personal "
+        "couple-roast is ONE colour on the palette, not the whole painting — a great DJ "
+        "rotates angles so no single bit gets stale. Aim to say something this break that "
+        "you have NOT touched in the recent history above.")
     lines.append("")
     lines.append("### Candidate next tracks (valid follow-ons, ranked by affinity for who's home)")
     lines.append("Pick exactly 5 IDs from THIS list for the lookahead. They chain from the current track.")
