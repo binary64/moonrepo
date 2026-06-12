@@ -22,9 +22,23 @@ spec:
     spec:
       nodeSelector:
         kubernetes.io/hostname: master
+      # v3.4.0+ runs the container as UID/GID 1000 (was root). Pre-existing
+      # /data files are owned 0:0, so chown once on every start (idempotent)
+      # to keep SQLite writable. See upstream #940/#919.
+      initContainers:
+        - name: fix-data-perms
+          image: busybox:1.36
+          command: ["sh", "-c", "chown -R 1000:1000 /data"]
+          securityContext:
+            runAsUser: 0
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      securityContext:
+        fsGroup: 1000
       containers:
         - name: wealthfolio
-          image: ghcr.io/afadil/wealthfolio:3.3.0
+          image: wealthfolio/wealthfolio:3.5.2
           ports:
             - name: http
               containerPort: 8088
