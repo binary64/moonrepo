@@ -915,6 +915,84 @@
       "summary": "The fresh-without-the-freezer alternative. Pure Pet Food air-dries whole ingredients that you rehydrate at home, giving fresh-style quality (61–74% AADF) that stores in the cupboard and travels well. Like the fresh subscriptions it's personalised to your puppy's weight and growth, and the soft rehydrated texture suits teething and fussy pups. From around £0.89/day — a middle ground between kibble and chilled fresh."
     }
   ],
+  "puppyFoodSizeSpecialist": [
+    {
+      "brand": "AVA",
+      "name": "AVA Optimum Health Large Breed Puppy (Chicken)",
+      "slug": "ava-large-breed-puppy",
+      "type": "Large-breed dry kibble",
+      "aadf": "63%",
+      "meatContent": "51% chicken (24.5% meal + 17.5% fresh)",
+      "pricePerDay": "~£1.00–1.50/day (large pup)",
+      "packSize": "2kg & 15kg bags",
+      "rating": 4.0,
+      "topPick": false,
+      "bestValue": false,
+      "grainFree": false,
+      "storage": "Cupboard",
+      "affiliateUrl": "#",
+      "ctaText": "Check AVA Large Breed Puppy Price",
+      "bestFor": [
+        "Large & giant-breed puppies (Lab, GSD, Golden, Dane)",
+        "Controlled, joint-protecting growth",
+        "Owners wanting an affordable size-specific kibble",
+        "Easy high-street availability (Pets at Home)"
+      ],
+      "pros": [
+        "Genuinely large-breed-specific: kibble size, energy density and a controlled calcium level (1.5%) are formulated to slow the rapid growth that drives hip and elbow problems in big pups",
+        "Added glucosamine and chondroitin plus salmon-oil omega-3 for developing joints — a real point of difference from all-breed puppy foods",
+        "51% chicken (24.5% chicken meal + 17.5% fresh) with named single protein, hypoallergenic (no added wheat/wheat gluten, no soya or dairy)",
+        "Prebiotics (FOS/MOS) and beta-glucans support digestion and immunity in a fast-growing pup",
+        "Affordable for the size (15kg ~£46.99) and easy to buy in store or online from Pets at Home"
+      ],
+      "cons": [
+        "Grain-inclusive (brown rice + maize) rather than grain-free — fine for most pups but not the choice for grain-sensitive ones",
+        "Standard extruded kibble, so less gentle than cold-pressed or fresh on very sensitive digestion",
+        "Pets at Home exclusive — you can't price-shop it elsewhere",
+        "Chicken-based, so not ideal if your pup reacts to poultry"
+      ],
+      "summary": "The size-specialist pick for big pups. Where our top picks are all-breed, AVA's Large Breed Puppy is formulated specifically for large and giant breeds — controlled calcium (1.5%) and energy to keep growth steady (rapid growth is what drives joint disease in big dogs), a larger kibble that slows fast eaters, and added glucosamine, chondroitin and omega-3 for developing joints. It's 51% named chicken and hypoallergenic, though grain-inclusive and standard extruded rather than grain-free or cold-pressed. At roughly £46.99 for 15kg and stocked in every Pets at Home, it's the most accessible genuinely large-breed-specific puppy food in the UK.",
+      "sizeClass": "large"
+    },
+    {
+      "brand": "Royal Canin",
+      "name": "Royal Canin X-Small Puppy",
+      "slug": "royal-canin-x-small-puppy",
+      "type": "Toy/extra-small-breed dry kibble",
+      "aadf": "40%",
+      "meatContent": "Named poultry meal (under 30% meat)",
+      "pricePerDay": "~£0.55–0.70/day (toy pup)",
+      "packSize": "500g & 1.5kg bags",
+      "rating": 3.5,
+      "topPick": false,
+      "bestValue": false,
+      "grainFree": false,
+      "storage": "Cupboard",
+      "affiliateUrl": "#",
+      "ctaText": "Check Royal Canin X-Small Puppy Price",
+      "bestFor": [
+        "Toy & extra-small breeds (Chihuahua, Pomeranian, Yorkie, toy Poodle)",
+        "Tiny mouths that struggle with normal kibble",
+        "Fussy toy-breed pups",
+        "Owners who want a vet/breeder-standard size-specific formula"
+      ],
+      "pros": [
+        "Micro-sized kibble engineered for an extra-small jaw (adult weight up to 4kg) — the single biggest reason it suits toy pups others can't physically eat",
+        "Tuned to the breakneck growth and high energy needs of toy breeds, which mature far faster than big dogs (done by ~10 months)",
+        "Enriched with omega-3 DHA for brain development plus prebiotics (FOS/MOS/beet pulp) for a settled tummy",
+        "Vitamins C and E support a developing immune system, and the formula is certified nutritionally complete for growth",
+        "Very widely recommended by breeders and vets, and reliably palatable to famously fussy toy-breed pups"
+      ],
+      "cons": [
+        "Low AADF score (40%) — grain-inclusive, contains maize and some artificial additives, and not high in meat",
+        "Poultry meal rather than a high named-meat percentage; ingredient labelling lacks clarity",
+        "Not hypoallergenic or grain-free — the wrong pick for a sensitive or allergy-prone pup",
+        "Premium price per kilo for the quality on paper — you're partly paying for the size-specific format"
+      ],
+      "summary": "The toy-breed specialist, with eyes open. Most puppy foods — including our top picks — are simply too big for a Chihuahua or Yorkie pup to eat, and toy breeds grow and burn energy very differently to big dogs. Royal Canin X-Small Puppy solves the format problem with a micro kibble built for an extra-small jaw, energy and DHA tuned for fast toy-breed growth, and a recipe that fussy tiny pups reliably eat. Be honest about the trade-off: it scores just 40% on AADF (grain-inclusive, maize, some artificial additives, modest meat), so it wins on size-specific design and palatability rather than ingredient quality. If your toy pup will eat a better food, choose one — but for the many that won't, this is the dependable specialist.",
+      "sizeClass": "toy"
+    }
+  ],
   "categories": [
     {
       "name": "Grain-Free Dry Food",
