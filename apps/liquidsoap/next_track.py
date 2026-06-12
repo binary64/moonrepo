@@ -15,7 +15,6 @@ import glob
 import os
 import sys
 import random
-import time
 import re
 import subprocess  # nosec B404 - airs pending DJ clips via dj-commentary.sh (fixed argv)
 import urllib.request
@@ -735,7 +734,7 @@ def check_request():
         print(f"REQUEST: Error reading request file: {e}", file=sys.stderr)
         try:
             os.remove(REQUEST_FILE)
-        except:
+        except OSError:
             pass
     return None
 
