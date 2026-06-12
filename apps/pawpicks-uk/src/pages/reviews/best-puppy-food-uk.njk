@@ -128,6 +128,43 @@ faqs:
   {% endfor %}
 </div>
 
+<h2>Size-Specific Picks: Toy and Large-Breed Puppies</h2>
+
+<p>Our picks above are all-breed foods that suit the vast majority of puppies. But the two extremes of the size scale have genuinely different needs, and sometimes a <strong>size-specific</strong> food is the better answer:</p>
+
+<ul>
+  <li><strong>Large &amp; giant breeds</strong> grow for 15–24 months and are vulnerable to <em>rapid</em> growth, which is the single biggest dietary driver of hip and elbow problems. They benefit from controlled calcium and energy density plus a larger kibble — so growth stays steady and joints are protected.</li>
+  <li><strong>Toy &amp; extra-small breeds</strong> mature fast (often done by ~10 months), burn energy at a high rate, and frequently <em>can't physically eat</em> a normal-sized kibble. A micro kibble built for a tiny jaw is often the deciding factor.</li>
+</ul>
+
+<div class="product-grid">
+  {% for product in products.puppyFoodSizeSpecialist %}
+  <div class="product-card" id="{{ product.slug }}">
+    <span class="badge">{% if product.sizeClass == 'large' %}🦴 Large-Breed Specialist{% else %}🐭 Toy-Breed Specialist{% endif %}</span>
+    <h3>{{ product.name }}</h3>
+    <div class="rating">{{ product.rating | stars }} ({{ product.rating }}/5)</div>
+    <p class="meta">{{ product.brand }} · {{ product.type }} · AADF {{ product.aadf }} · {{ product.pricePerDay }}</p>
+    <p>{{ product.summary }}</p>
+    <div class="pros-cons">
+      <ul class="pros">
+        {% for pro in product.pros %}
+        <li>{{ pro }}</li>
+        {% endfor %}
+      </ul>
+      <ul class="cons">
+        {% for con in product.cons %}
+        <li>{{ con }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    <p><strong>Best for:</strong> {{ product.bestFor | join(", ") }}</p>
+    <a href="{{ product.affiliateUrl }}" class="cta" rel="nofollow sponsored" target="_blank">{{ product.ctaText }} →</a>
+  </div>
+  {% endfor %}
+</div>
+
+<p class="meta"><em>A size-specific food isn't compulsory — a high-quality all-breed puppy food fed in correctly-weighed portions works well for most dogs. These two earn their place where size makes a practical difference: protecting a big pup's joints, or simply being small enough for a toy pup to eat.</em></p>
+
 <h2>How to Choose the Right Food for Your Puppy</h2>
 
 <p>There's no single winner — the best choice depends on your puppy, your budget and how you want to feed:</p>
