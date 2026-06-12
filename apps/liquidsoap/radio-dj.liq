@@ -71,8 +71,15 @@ end)
 
 # ─── Beat-Aware Crossfade (no silence gaps) ───
 def beat_crossfade(a, b)
-  bpm_a_str = if a.metadata["tbpm"] != "" then a.metadata["tbpm"] else a.metadata["bpm"] end
-  bpm_b_str = if b.metadata["tbpm"] != "" then b.metadata["tbpm"] else b.metadata["bpm"] end
+  # Prefer our accurate analyser BPM (ARTHUR_BPM, a float) over the rounded
+  # TBPM frame; fall back to legacy bpm tag, then a 120 default. Every track in
+  # the library now carries these tags (full backfill 2026-06-12).
+  bpm_a_str = if a.metadata["arthur_bpm"] != "" then a.metadata["arthur_bpm"]
+              elsif a.metadata["tbpm"] != "" then a.metadata["tbpm"]
+              else a.metadata["bpm"] end
+  bpm_b_str = if b.metadata["arthur_bpm"] != "" then b.metadata["arthur_bpm"]
+              elsif b.metadata["tbpm"] != "" then b.metadata["tbpm"]
+              else b.metadata["bpm"] end
 
   bpm_a = float_of_string(default=120., bpm_a_str)
   bpm_b = float_of_string(default=120., bpm_b_str)
@@ -119,11 +126,18 @@ music_normalized = amplify(1., override="replay_gain", music_crossed)
 music_quiet = amplify(0.7, music_normalized)  # -3dB = 10^(-3/20) ≈ 0.7 → -23 LUFS
 
 # ─── TTS Voice Boost (per-DJ) ───
-arthur_boosted = amplify(3.0, queue_arthur)
-cara_boosted = amplify(2.5, queue_cara)
+# Both voices are now loudness-normalised to -16 LUFS at source (dj-commentary.sh
+# loudnorm pass), so they share ONE boost multiplier. -16 LUFS voice vs the
+# ~-23 LUFS music bed wants ~+7 LU = ~2.2x to sit clearly on top.
+arthur_boosted = amplify(2.2, queue_arthur)
+cara_boosted = amplify(2.2, queue_cara)
 
 # Merge both voice queues
 voices = add(normalize=false, [arthur_boosted, cara_boosted])
+
+# Brick-wall limiter on the voice bus — catches any residual peaks from the
+# boost so the DJ can never clip, regardless of Hume output variation.
+voices = limit(threshold=-1.5, attack=5., release=50., voices)
 
 # ─── DJ-controlled duck depth ───
 # The music duck under a voice clip is no longer a fixed depth. Each voice clip
@@ -163,6 +177,12 @@ music_ducked = mksafe(amplify(fun () -> duck(), music_quiet))
 
 # Music ducks when DJ speaks — depth driven per-clip by the `duck` ref above.
 radio = add(normalize=false, [music_ducked, voices])
+
+# ─── Final broadcast safety limiter ───
+# True-peak brick wall on the full mix (music + voice combined). Transparent in
+# normal operation; guarantees the stream itself can never clip even if music
+# bed + voice overlay momentarily sum hot. Gentle ratio, fast catch.
+radio = limit(threshold=-1.0, attack=2., release=80., radio)
 
 # ─── Re-inject metadata lost by cross/smooth_add ───
 radio = insert_metadata(id="Arthur_Radio_meta", radio)
