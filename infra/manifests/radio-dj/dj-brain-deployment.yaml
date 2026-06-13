@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: dj-brain
-        image: ghcr.io/binary64/dj-brain:latest
+        image: ghcr.io/binary64/dj-brain:a910313
         imagePullPolicy: Always
         env:
         - name: OPENAI_API_KEY

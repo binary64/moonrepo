@@ -135,22 +135,45 @@ jobs:
       - name: Update deployment manifests
         run: |
           SHA_SHORT="${{ needs.build.outputs.sha_short }}"
+          OWNER="${{ github.repository_owner }}"
           APPS='${{ needs.detect.outputs.matrix }}'
           CHANGED=""
 
           for APP in $(echo "$APPS" | jq -r '.[]'); do
-            MANIFEST="infra/manifests/${APP}/deployment.yaml"
-            if [ ! -f "$MANIFEST" ]; then
-              MANIFEST="infra/manifests/${APP}/cronjob.yaml"
-            fi
-            if [ ! -f "$MANIFEST" ]; then
-              echo "No manifest for ${APP} — skipping"
+            # Defence in depth: app names come from apps/ dir names and owner
+            # from GitHub (both already constrained to [a-z0-9-]), but validate
+            # before either value reaches grep/sed so a future change to the
+            # input source can't smuggle regex metacharacters in.
+            if ! printf '%s' "$APP" | grep -qE '^[a-zA-Z0-9._-]+$'; then
+              echo "Skipping app with unexpected characters: ${APP}"
               continue
             fi
 
-            sed -i "s|ghcr.io/${{ github.repository_owner }}/${APP}:.*|ghcr.io/${{ github.repository_owner }}/${APP}:${SHA_SHORT}|" "$MANIFEST"
-            echo "Pinned ${APP} to :${SHA_SHORT}"
-            grep "image:" "$MANIFEST"
+            IMG="ghcr.io/${OWNER}/${APP}"
+            # Regex-escaped form of IMG for use inside grep -E / sed -E, so the
+            # dots in 'ghcr.io' are literal and can't overmatch (e.g. 'ghcrxio').
+            IMG_RE=$(printf '%s' "$IMG" | sed -e 's/[.[\*^$()+?{}|/]/\\&/g')
+
+            # Search ALL manifests for this exact image (tag OR digest form),
+            # rather than assuming a fixed path/filename. This catches manifests
+            # under namespace dirs (e.g. radio-dj/liquidsoap-deployment.yaml) and
+            # non-standard names (e.g. mgmt-dashboard/rollout.yaml). Fixed-string
+            # grep (-F) for discovery; the image name must be immediately
+            # followed by ':' or '@' so 'foo' never matches 'foo-bar'.
+            FILES=$(grep -rlF "${IMG}:" infra/manifests/ 2>/dev/null; grep -rlF "${IMG}@" infra/manifests/ 2>/dev/null)
+            FILES=$(printf '%s\n' "$FILES" | sort -u | sed '/^$/d')
+            if [ -z "$FILES" ]; then
+              echo "No manifest references ${IMG} — skipping"
+              continue
+            fi
+
+            for MANIFEST in $FILES; do
+              # Replace whatever follows the image name (:tag or @sha256:digest)
+              # with the freshly-built short SHA tag. IMG_RE is regex-escaped.
+              sed -i -E "s#(${IMG_RE})(:[^\"[:space:]]+|@sha256:[a-f0-9]+)#\1:${SHA_SHORT}#g" "$MANIFEST"
+              echo "Pinned ${APP} in ${MANIFEST} to :${SHA_SHORT}"
+              grep -nF "${IMG}" "$MANIFEST" || true
+            done
             CHANGED="${CHANGED} ${APP}"
           done
 
