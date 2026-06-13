@@ -346,10 +346,16 @@ def stage_drop_for(track_id):
     except (FileNotFoundError, json.JSONDecodeError):
         return
     drop = sched.get(str(track_id))
-    if not drop:
+    if not isinstance(drop, dict):
         return
     utt = drop.get("utterances", [])
-    text = " ".join(u.get("text", "").strip() for u in utt if u.get("text"))
+    if not isinstance(utt, list):
+        return
+    text = " ".join(
+        u.get("text", "").strip()
+        for u in utt
+        if isinstance(u, dict) and u.get("text")
+    )
     if not text:
         return
     pos = drop.get("position", "end")
