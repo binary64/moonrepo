@@ -158,7 +158,10 @@ def _validate_ids(raw, tracks):
     """Split the comma id list into (valid_int_ids, dropped_strs)."""
     valid, dropped = [], []
     for s in (x.strip() for x in raw.split(",") if x.strip()):
-        (valid.append(int(s)) if s in tracks else dropped.append(s))
+        if s in tracks:
+            valid.append(int(s))
+        else:
+            dropped.append(s)
     return valid, dropped
 
 
