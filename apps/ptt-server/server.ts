@@ -25,6 +25,9 @@ import { WebSocket, WebSocketServer } from "ws";
 
 const PORT = parseInt(process.env.PORT || "9876", 10);
 const MAIN_SESSION = process.env.MAIN_SESSION || "agent:main:main";
+// Direct-message routing target. Externalised so no personal session key is
+// hardcoded in source; set DM_SESSION in the deployment env.
+const DM_SESSION = process.env.DM_SESSION || MAIN_SESSION;
 const HA_URL = process.env.HA_URL || "https://home.brandwhisper.cloud";
 const HA_TOKEN = process.env.HA_TOKEN || "";
 const GATEWAY_URL = process.env.OPENCLAW_GATEWAY_URL || "ws://127.0.0.1:18789";
@@ -1240,7 +1243,7 @@ function sendToOpenClaw(
 const ROUTING_OPTIONS: Array<{ session: string; label: string; desc: string }> =
   [
     {
-      session: "agent:main:telegram:direct:dm",
+      session: DM_SESSION,
       label: "Direct DM",
       desc: "General questions, personal tasks, anything not clearly matching a project",
     },
@@ -1360,10 +1363,10 @@ async function transcribeAndRoute(wavBuffer: Buffer): Promise<void> {
   }
   console.log(`[${ts()}] 🗣️ "${text}"`);
 
-  // 1. Echo to the DM session immediately (he sees it on Telegram)
-  sendViaGateway(`⌚ ${text}`, "agent:main:telegram:direct:dm", (err) => {
+  // 1. Echo to the DM session immediately (visible on Telegram)
+  sendViaGateway(`⌚ ${text}`, DM_SESSION, (err) => {
     if (err) console.error(`[${ts()}] Echo failed: ${err.message}`);
-    else console.log(`[${ts()}] 📱 Echoed to Direct DM`);
+    else console.log(`[${ts()}] 📱 Echoed to DM`);
   });
 
   // 2. LLM picks best session
