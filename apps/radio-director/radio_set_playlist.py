@@ -154,6 +154,68 @@ def cmd_recent(_args):
     return 0
 
 
+def _validate_ids(raw, tracks):
+    """Split the comma id list into (valid_int_ids, dropped_strs)."""
+    valid, dropped = [], []
+    for s in (x.strip() for x in raw.split(",") if x.strip()):
+        (valid.append(int(s)) if s in tracks else dropped.append(s))
+    return valid, dropped
+
+
+def _build_drops(drops, tracks):
+    """Turn a raw drops list into the keyed schedule, validating each entry's
+    shape. Malformed entries are skipped — a bad drop must not crash the show."""
+    keyed = {}
+    if not isinstance(drops, list):
+        return keyed
+    for d in drops:
+        if not isinstance(d, dict):
+            continue
+        tid = str(d.get("after_track_id"))
+        if tid not in tracks:
+            continue
+        utterances = d.get("utterances", [])
+        if not isinstance(utterances, list):
+            utterances = []
+        keyed[tid] = {"dj": d.get("dj", "arthur"),
+                      "position": d.get("position", "end"),
+                      "utterances": [u for u in utterances if isinstance(u, dict)]}
+    return keyed
+
+
+def _stage_drops(drops_file, tracks, pod):
+    """Load + validate + write the drop schedule into the pod. Returns the count
+    staged (0 if no/invalid drops). Never raises on bad input."""
+    drops, ok = _load_json_file(drops_file)
+    if not ok:
+        if drops_file:
+            print("WARN: drops file missing or malformed — skipping drops", file=sys.stderr)
+        return 0
+    keyed = _build_drops(drops, tracks)
+    if not keyed:
+        return 0
+    rd = kubectl_write(DROPS_POD, json.dumps(keyed), pod)
+    if rd.returncode != 0:
+        print(f"WARN: drops write failed: {rd.stderr}", file=sys.stderr)
+        return 0
+    return len(keyed)
+
+
+def _write_context(ctx):
+    """Stamp + write the context blob to the host file backing pod /data/music.
+    Returns True on success. Never raises on a write failure."""
+    ctx.setdefault("ttl_minutes", 30)
+    ctx["generated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    try:
+        with open(CONTEXT_HOST, "w", encoding="utf-8") as f:
+            f.write(json.dumps(ctx) + "\n")
+        os.chmod(CONTEXT_HOST, 0o644)  # pod reads as uid 999; must be world-readable
+        return True
+    except OSError as e:
+        print(f"WARN: context write failed: {e}", file=sys.stderr)
+        return False
+
+
 def cmd_set(args):
     graph = load_graph()
     tracks = graph["tracks"]
@@ -163,13 +225,7 @@ def cmd_set(args):
         return 2
 
     # ── Validate the playlist IDs against the graph ──
-    raw_ids = [s.strip() for s in args.ids.split(",") if s.strip()]
-    valid, dropped = [], []
-    for s in raw_ids:
-        if s in tracks:
-            valid.append(int(s))
-        else:
-            dropped.append(s)
+    valid, dropped = _validate_ids(args.ids, tracks)
     if not valid:
         print(f"ERROR: no valid track IDs (dropped {len(dropped)})", file=sys.stderr)
         return 3
@@ -180,53 +236,15 @@ def cmd_set(args):
         print(f"ERROR: queue write failed: {r.stderr}", file=sys.stderr)
         return 4
 
-    # ── Stage DJ drops if provided (tolerant of malformed input) ──
-    n_drops = 0
-    drops, ok = _load_json_file(args.drops_file)
-    if ok and isinstance(drops, list):
-        # Key by track id (string) so next_track.py can look up O(1) on pop.
-        # Validate each entry's shape — a bad drop must never crash the show.
-        keyed = {}
-        for d in drops:
-            if not isinstance(d, dict):
-                continue
-            tid = str(d.get("after_track_id"))
-            if tid not in tracks:
-                continue
-            utterances = d.get("utterances", [])
-            if not isinstance(utterances, list):
-                utterances = []
-            keyed[tid] = {"dj": d.get("dj", "arthur"),
-                          "position": d.get("position", "end"),
-                          "utterances": [u for u in utterances if isinstance(u, dict)]}
-        if keyed:
-            rd = kubectl_write(DROPS_POD, json.dumps(keyed), pod)
-            if rd.returncode != 0:
-                print(f"WARN: drops write failed: {rd.stderr}", file=sys.stderr)
-            else:
-                n_drops = len(keyed)
-    elif args.drops_file:
-        print("WARN: drops file missing or malformed — skipping drops", file=sys.stderr)
+    # ── Stage DJ drops (tolerant of malformed input) ──
+    n_drops = _stage_drops(args.drops_file, tracks, pod)
 
     # ── Read context once (reused for the pod write AND the history entry) ──
     ctx, ctx_ok = _load_json_file(args.context_file)
     if not isinstance(ctx, dict):
         ctx, ctx_ok = {}, False
-
-    # ── Write context blob (host file backs pod /data/music) ──
-    wrote_ctx = False
-    if ctx_ok:
-        # Stamp a fresh UTC Z timestamp so the freshness gate accepts it.
-        ctx.setdefault("ttl_minutes", 30)
-        ctx["generated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        try:
-            with open(CONTEXT_HOST, "w", encoding="utf-8") as f:
-                f.write(json.dumps(ctx) + "\n")
-            os.chmod(CONTEXT_HOST, 0o644)  # pod reads as uid 999; must be world-readable
-            wrote_ctx = True
-        except OSError as e:
-            print(f"WARN: context write failed: {e}", file=sys.stderr)
-    elif args.context_file:
+    wrote_ctx = _write_context(ctx) if ctx_ok else False
+    if not ctx_ok and args.context_file:
         print("WARN: context file missing or malformed — skipping context", file=sys.stderr)
 
     first = tracks[str(valid[0])].get("n", "")
