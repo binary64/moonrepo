@@ -40,11 +40,12 @@ playlist tool. Work in this order:
    Use it to EVOLVE, not echo: do NOT repeat any track that appears in the most
    recent show, avoid reusing tracks from earlier shows where you can, and shift
    the energy/mood on naturally rather than re-running the same vibe.
-1. Run the household-location skill to get LIVE presence (James, Abi, Milo).
+1. Run the household-location skill to get LIVE presence (the householders + the
+   dog).
 2. Read /mnt/arthur/clawd/data/music/taste-profiles.json. For each HUMAN who is
    home, pull steer_genres / love_artists / avoid_genres. Blend everyone-home
    into a shared steer set (favour overlap; if tastes clash, lean to the
-   broadest crowd-pleaser). Milo is a dog — ignore for taste. Pick a one-word
+   broadest crowd-pleaser). The dog is a dog — ignore for taste. Pick a one-word
    mood and a short note naming who is home + the blend rationale.
 3. Get the candidate pool:
      python3 /mnt/arthur/.hermes/scripts/radio-director/radio_set_playlist.py \
@@ -60,10 +61,39 @@ playlist tool. Work in this order:
         "position": "end",
         "utterances": [ {"text": "...", "description": "<hume acting note>",
                          "speed": 1.0}, ... ]}
-     DJ choice: Cara (warm, cheeky, flirty) in the evening / when Abi is home;
-     Arthur (measured, witty) otherwise. Keep each drop 1-2 short sentences.
-     Use [pause] tokens for natural beats. Reference what just played or tease
-     whats next — you KNOW the running order, so be specific.
+
+     ANGLE-FIRST: before writing each drop, commit to ONE angle, then write to
+     it. Vary the angle across the show — do not run the same angle twice in a
+     row. The six angles:
+       1. Roast the music (the track/artist/genre just played or coming up).
+       2. Roast ONE person who is home (light, affectionate — either householder).
+       3. Roast BOTH (couple banter — weight this UP when both are home).
+       4. Roast the dog (always fair game, never mean).
+       5. An official Cara station-ident / quote (warm channel-branding beat).
+       6. News & weather (quick, local, real — fetch via terminal if you want it
+          current; otherwise skip rather than invent).
+
+     REAL-LIFE AMMUNITION: the best drops carry a true nugget — artist
+     gossip/scandal/lore, chart trivia, or a VH-1 Pop-Up-Video-style factoid
+     about the track. HARD RULE: source it, do not invent it. Verify via a quick
+     terminal/web lookup or graphiti before you state it as fact; if you cannot
+     confirm it, PIVOT to a different angle rather than fabricate. Never invent
+     facts about the householders or the dog either — only use what
+     presence/taste/memory actually gives you.
+
+     SIZING: usually 2-4 sentences (~40-80 words) per drop — enough for real
+     personality, not a monologue. A pure station-ident (angle 5) can be one
+     line. Use [pause] tokens for natural beats.
+
+     DJ choice: Cara (warm, cheeky, flirty) in the evening / when the
+     evening-leaning householder is home; Arthur (measured, witty) otherwise.
+
+     Reference what just played or tease whats next — you KNOW the running order,
+     so be specific.
+
+     SAFETY RAILS (independent of any spice dial): never touch relationship
+     tension or health anxiety on-air; keep couple banter affectionate, never
+     barbed; keep dog jokes kind.
    - /tmp/director-context.json :
        {"abi_home": <bool>, "james_home": <bool>, "steer_genres": [...],
         "avoid_genres": [...], "mood": "<word>", "note": "<short>"}
@@ -85,7 +115,7 @@ track, how many drops).'
 # than swallowing it — a failed run must not be logged as "complete".
 NO_COLOR=1 timeout 720 "$HERMES" -z "$PROMPT" \
   --provider anthropic -m claude-opus-4-8 \
-  -t terminal,file,homeassistant,skills \
+  -t terminal,file,web,homeassistant,skills \
   --skills household-location,radio-music-curation \
   --yolo >>"$LOG" 2>&1
 rc=$?

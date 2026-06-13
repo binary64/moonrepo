@@ -19,6 +19,27 @@ long-lived session to rot) but keeps a **persistent memory file**
 (`recent-shows.json`) so it can evolve the show across ticks instead of echoing
 itself. See "Anti-repeat memory" below.
 
+## DJ drops: angle-first
+
+To keep the on-air patter from going samey, the director commits to ONE *angle*
+per drop before writing it, and varies the angle across the show (never the same
+angle twice in a row). The six angles:
+
+1. **Roast the music** — the track/artist/genre just played or coming up.
+2. **Roast one person** home (light, affectionate).
+3. **Roast both** — couple banter, weighted up when both are home.
+4. **Roast the dog** — always fair game, never mean.
+5. **Cara station-ident** — a warm channel-branding beat (can be one line).
+6. **News & weather** — quick, local, real (fetched live, or skipped).
+
+The best drops carry a **true** nugget — artist gossip/lore or a VH-1
+*Pop-Up-Video*-style factoid. Hard rule: **source it, don't invent it** — the
+director has `web` + `terminal` to verify, and must pivot to another angle rather
+than fabricate (same rule applies to facts about the householders or the dog). Drops are
+sized ~2–4 sentences (40–80 words). Safety rails — relationship tension and
+health anxiety are hard no-go on-air regardless of tone — are pinned in the
+prompt independent of any spice dial.
+
 ## Files
 
 | File | Deployed to (VPS) | Purpose |
