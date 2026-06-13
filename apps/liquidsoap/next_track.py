@@ -17,10 +17,7 @@ import sys
 import random
 import re
 import subprocess  # nosec B404 - airs pending DJ clips via dj-commentary.sh (fixed argv)
-import urllib.request
-import urllib.error
 from datetime import datetime
-from pathlib import Path
 
 GRAPH_FILE = "/data/radio-track-graph.json"
 STATE_FILE = "/state/radio-selector-state.json"
@@ -32,11 +29,9 @@ DJ_OVERRIDE_FILE = "/data/music/dj-override.json"
 # tools+skills (live HA presence, taste profiles, mood). Fast loop reads it here.
 DJ_CONTEXT_FILE = "/data/music/dj-context.json"
 
-# OpenAI API direct (avoids gateway defaulting to Sonnet)
-GATEWAY_URL = "https://api.openai.com/v1/chat/completions"
-GATEWAY_TOKEN = os.environ.get("OPENAI_API_KEY", "")
-LLM_MODEL = "gpt-4o-mini"
-LLM_TIMEOUT = 15  # seconds — keep short so fallback random walk kicks in fast
+# NOTE: per-track LLM selection has been REMOVED. The playlist is set out of
+# band by the Hermes/Opus director (radio_set_playlist.py). This script is now
+# a pure queue-popper + random-walk fallback. No OpenAI/gateway call remains.
 
 # Tuning
 TRACK_COOLDOWN = 100
@@ -329,175 +324,54 @@ def get_all_artists(name):
     return artists
 
 
-# ─── LLM queue refill ───
+# ─── DJ-drops staging (set by the Opus director via radio_set_playlist.py) ───
 
-PROMPT_FILE = "/config/llm-prompt/system_prompt.txt"
+DROPS_SCHEDULE_FILE = "/state/dj-drops-schedule.json"
+# position -> the pending-clip file next_track.py already airs at that moment
+DROP_POSITION_FILES = {
+    "start": "/state/dj-pending-start-of-song.json",
+    "end": "/state/dj-pending-end-of-song.json",
+    "seam": "/state/dj-pending-seam.json",
+}
 
-def load_system_prompt() -> str:
-    """Load the LLM system prompt from the ConfigMap-mounted file.
 
-    Exits immediately if the file is missing or empty — no silent fallback.
-    The container should crash loudly so the missing ConfigMap is noticed.
-    """
+def stage_drop_for(track_id):
+    """If the director staged a DJ drop keyed to this track, write it into the
+    matching pending-clip file so the existing air_pending_clip() machinery
+    plays it at the right seam. Joins multi-utterance drops into one text blob
+    (dj-commentary.sh renders sequentially). Best-effort; never blocks music."""
     try:
-        prompt = Path(PROMPT_FILE).read_text().strip()
-    except FileNotFoundError:
-        print(f"FATAL: prompt file not found: {PROMPT_FILE}", file=sys.stderr)
-        sys.exit(1)
-    if not prompt:
-        print(f"FATAL: prompt file is empty: {PROMPT_FILE}", file=sys.stderr)
-        sys.exit(1)
-    return prompt
-
-
-def build_llm_context(graph, state):
-    """Build the context object for the LLM."""
-    now = datetime.now()
-    audience = get_audience()
-
-    # Map recent track paths to IDs
-    path_to_id = {}
-    for tid, path in graph.get("pathIndex", {}).items():
-        path_to_id[path] = int(tid)
-
-    last_played = []
-    for path in state["recent_tracks"][-20:]:
-        tid = path_to_id.get(path)
-        if tid:
-            last_played.append(tid)
-
-    # Get recent artists
-    recent_artists = list(set(state["recent_artists"][-10:]))
-
-    context = {
-        "now": now.strftime("%A %Y-%m-%d %H:%M GMT"),
-        "day": now.strftime("%A").lower(),
-        "abiHome": audience["abi_home"],
-        "jamesHome": audience["james_home"],
-        "currentDj": get_current_dj(),
-        "lastPlayed": last_played[-20:],
-        "recentArtists": recent_artists,
-        "seed": state.get("seed"),
-    }
-
-    # Fold in slow-loop taste/mood steering if a fresh context exists.
-    dj_ctx = load_dj_context()
-    if dj_ctx is not None:
-        for key in ("steer_genres", "avoid_genres", "mood", "note"):
-            if dj_ctx.get(key):
-                context[key] = dj_ctx[key]
-
-    return context
-
-
-def build_user_message(graph, context):
-    """Build the user message with track graph subset and context.
-    
-    Keeps the payload compact by limiting to tracks reachable in 2 hops
-    from the starting track, capped at ~300 tracks.
-    """
-    last_played = context.get("lastPlayed", [])
-    seed_id = last_played[-1] if last_played else None
-
-    tracks = graph["tracks"]
-    follow = graph["follow"]
-
-    # BFS from seed: collect tracks reachable in 3 hops
-    relevant_ids = set()
-    if seed_id:
-        seed_str = str(seed_id)
-        frontier = {seed_str}
-        for hop in range(3):
-            next_frontier = set()
-            for tid in frontier:
-                relevant_ids.add(tid)
-                for fid in follow.get(tid, []):
-                    fid_str = str(fid)
-                    if fid_str not in relevant_ids:
-                        next_frontier.add(fid_str)
-                        relevant_ids.add(fid_str)
-            frontier = next_frontier
-
-    # If no seed or too few, start from random tracks
-    if len(relevant_ids) < 50:
-        all_ids = list(tracks.keys())
-        random.shuffle(all_ids)
-        for tid in all_ids[:100]:
-            relevant_ids.add(tid)
-            for fid in follow.get(tid, []):
-                relevant_ids.add(str(fid))
-
-    # Build COMPACT subset: only track name + follow list (no genre/bpm/energy per track)
-    # This keeps the payload small enough for a free LLM
-    compact_tracks = {}
-    subset_follow = {}
-    for tid in relevant_ids:
-        if tid in tracks:
-            compact_tracks[tid] = tracks[tid]["n"]  # Just the name
-        if tid in follow:
-            subset_follow[tid] = follow[tid]
-
-    msg = f"""Context: {json.dumps(context)}
-
-Tracks (id: "Artist - Title"):
-{json.dumps(compact_tracks, separators=(',', ':'))}
-
-Follow lists (each track's beat-compatible next tracks):
-{json.dumps(subset_follow, separators=(',', ':'))}
-
-Pick 25 tracks. Start from track {seed_id if seed_id else 'any track'}."""
-
-    return msg
-
-
-def call_llm(graph, state):
-    """Call the LLM to get a track queue."""
-    context = build_llm_context(graph, state)
-    user_msg = build_user_message(graph, context)
-
-    payload = {
-        "model": LLM_MODEL,
-        "messages": [
-            {"role": "system", "content": load_system_prompt()},
-            {"role": "user", "content": user_msg},
-        ],
-        "max_tokens": 512,
-        "temperature": 0.9,
-    }
-
-    data = json.dumps(payload).encode("utf-8")
-    req = urllib.request.Request(
-        GATEWAY_URL,
-        data=data,
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {GATEWAY_TOKEN}",
-        },
+        with open(DROPS_SCHEDULE_FILE) as f:
+            sched = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return
+    drop = sched.get(str(track_id))
+    if not isinstance(drop, dict):
+        return
+    utt = drop.get("utterances", [])
+    if not isinstance(utt, list):
+        return
+    text = " ".join(
+        u.get("text", "").strip()
+        for u in utt
+        if isinstance(u, dict) and u.get("text")
     )
-
+    if not text:
+        return
+    pos = drop.get("position", "end")
+    pending = DROP_POSITION_FILES.get(pos, DROP_POSITION_FILES["end"])
+    rec = {"dj": drop.get("dj", "arthur"), "text": text, "duck": 0.15}
     try:
-        with urllib.request.urlopen(req, timeout=LLM_TIMEOUT) as resp:
-            result = json.loads(resp.read().decode("utf-8"))
-
-        content = result["choices"][0]["message"]["content"].strip()
-        print(f"LLM response: {content[:200]}", file=sys.stderr)
-
-        # Extract JSON array from response (may have markdown fences or extra text)
-        # Strip markdown code fences first
-        content = re.sub(r'```(?:json)?\s*', '', content).strip()
-        match = re.search(r'\[[\d\s,]+\]', content)
-        if not match:
-            print("LLM response didn't contain a JSON array", file=sys.stderr)
-            return None
-
-        track_ids = json.loads(match.group())
-        return track_ids
-
-    except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError,
-            KeyError, TimeoutError, OSError) as e:
-        print(f"LLM call failed: {e}", file=sys.stderr)
-        return None
-
+        with open(pending, "w") as f:
+            json.dump(rec, f)
+        # Consume it from the schedule so it airs once.
+        del sched[str(track_id)]
+        with open(DROPS_SCHEDULE_FILE, "w") as f:
+            json.dump(sched, f)
+        print(f"DROP: staged {pos} clip for track {track_id} (dj={rec['dj']})",
+              file=sys.stderr)
+    except OSError as e:
+        print(f"DROP: failed to stage: {e}", file=sys.stderr)
 
 def validate_queue(track_ids, graph, state):
     """Validate and filter the LLM's track picks."""
@@ -556,22 +430,17 @@ def validate_queue(track_ids, graph, state):
 
 
 def refill_queue(graph, state):
-    """Refill the track queue using LLM or fallback."""
-    print("Refilling queue...", file=sys.stderr)
+    """Refill the track queue.
 
-    # Try LLM
-    track_ids = call_llm(graph, state)
-    if track_ids:
-        valid = validate_queue(track_ids, graph, state)
-        if valid:
-            # Clear seed after use
-            if state.get("seed"):
-                state["seed"] = None
-                save_state(state)
-            return valid
-
-    # Fallback: random walk on graph
-    print("Using fallback random walk", file=sys.stderr)
+    The queue is normally set OUT OF BAND by the Hermes/Opus director
+    (radio_set_playlist.py writes /state/radio-llm-queue.json directly). This
+    function is now ONLY the resilience fallback: when the director queue has
+    drained and no fresh show has been set, keep music flowing with a
+    beat-matched random walk. No per-track LLM call happens here any more —
+    that path (and its model cost + mismatched-prompt bug) is gone.
+    """
+    print("Queue empty, no director show staged — random-walk fallback",
+          file=sys.stderr)
     return fallback_walk(graph, state)
 
 
@@ -875,6 +744,10 @@ def main():
     state["session_position"] = state.get("session_position", 0) + 1
 
     save_state(state)
+
+    # If the Opus director staged a DJ drop for this track, stage it into the
+    # matching pending-clip file so air_pending_clip() plays it at the seam.
+    stage_drop_for(track_id)
 
     # The new track is chosen and about to begin — air any "start" clip so it
     # lands over the intro of this new track (front-announce).
