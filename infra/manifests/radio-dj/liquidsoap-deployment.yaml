@@ -35,7 +35,7 @@ spec:
           mountPath: /state
       containers:
       - name: liquidsoap
-        image: ghcr.io/binary64/liquidsoap:latest
+        image: ghcr.io/binary64/liquidsoap:83fe165
         ports:
         - containerPort: 1234
           protocol: TCP
