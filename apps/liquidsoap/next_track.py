@@ -17,10 +17,7 @@ import sys
 import random
 import re
 import subprocess  # nosec B404 - airs pending DJ clips via dj-commentary.sh (fixed argv)
-import urllib.request
-import urllib.error
 from datetime import datetime
-from pathlib import Path
 
 GRAPH_FILE = "/data/radio-track-graph.json"
 STATE_FILE = "/state/radio-selector-state.json"
