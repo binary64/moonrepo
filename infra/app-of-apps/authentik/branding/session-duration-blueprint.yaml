@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: authentik-session-duration-blueprint
+  namespace: authentik
+  labels:
+    argocd.argoproj.io/instance: authentik
+  annotations:
+    moonrepo.dev/skip-local: "true"
+data:
+  session-duration.yaml: |
+    # yaml-language-server: $schema=https://goauthentik.io/blueprints/schema.json
+    # Extends the default User Login stage to keep sessions alive longer so
+    # users (e.g. start.brandwhisper.cloud behind Tailscale + authentik) don't
+    # have to re-authenticate frequently. Service sits on the private tailnet,
+    # so a long session is an acceptable convenience/security trade-off.
+    version: 1
+    metadata:
+      name: Session Duration Override
+      labels:
+        blueprints.goauthentik.io/instantiate: "true"
+    entries:
+      - model: authentik_stages_user_login.userloginstage
+        identifiers:
+          name: default-authentication-login
+        attrs:
+          # timedelta-style string. "days=30" = stay logged in for 30 days.
+          session_duration: "days=30"
+          # Keep the session sliding: each visit refreshes the 30-day window.
+          remember_me_offset: "days=30"
