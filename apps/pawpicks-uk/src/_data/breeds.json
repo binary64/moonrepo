@@ -957,5 +957,71 @@
       "best dog food for yorkie sensitive stomach"
     ],
     "puppyGuide": "/best-food-for-yorkshire-terrier-puppies/"
+  },
+  {
+    "name": "Great Dane",
+    "slug": "great-danes",
+    "puppyGuide": "/best-food-for-great-dane-puppies/",
+    "ukPopularityRank": 21,
+    "sizeCategory": "giant",
+    "weightRange": "54-90kg",
+    "lifespan": "8-10 years",
+    "activityLevel": "moderate",
+    "commonHealthIssues": [
+      "hip and elbow dysplasia",
+      "bloat (gastric dilatation-volvulus / GDV)",
+      "dilated cardiomyopathy (DCM)",
+      "developmental orthopaedic disease (HOD, OCD, panosteitis)",
+      "wobbler syndrome",
+      "osteosarcoma (bone cancer)"
+    ],
+    "dietaryNeeds": {
+      "protein": "23-26% (high quality, not excessive)",
+      "fat": "12-16% (moderate — high fat drives over-fast growth)",
+      "caloriesPerDay": "2500-4000+ kcal (adult); puppy carefully controlled to growth chart",
+      "feedingAmount": "Split across 2-3 meals; never one large meal (bloat risk)",
+      "keyNutrients": [
+        "controlled calcium ~1.0-1.2% with Ca:P ratio 1.1-1.4:1",
+        "moderate fat to keep growth steady, not rapid",
+        "glucosamine/chondroitin and omega-3 for vulnerable joints",
+        "taurine and L-carnitine for the breed's high DCM risk"
+      ],
+      "commonSensitivities": [
+        "rapid growth from over-rich/over-fed diets",
+        "excess calcium supplementation",
+        "large single meals (bloat trigger)",
+        "grains",
+        "chicken"
+      ],
+      "breedSpecificNotes": "Great Danes are the textbook giant breed: a puppy grows from ~600g to potentially 70kg+ over 18-24 months, and that staggering growth must be kept SLOW and STEADY, never fast. The single biggest dietary mistake is over-feeding or feeding a too-rich, high-calcium diet that pushes growth faster than the skeleton can safely build — the direct cause of developmental orthopaedic disease (HOD, OCD, panosteitis) and lifelong joint problems. They need a large/giant-breed puppy or all-life-stage food carrying the AAFCO 'including growth of large size dogs (70lb+ as an adult)' statement, controlled calcium (~1-1.2%) with a tight Ca:P ratio, and NO calcium supplements. As a deep-chested giant they are at the highest bloat (GDV) risk of any breed — feed 2-3 smaller meals from a floor-level bowl, never one large meal, and rest after eating. They mature late: stay on growth food until ~18-24 months, far longer than any medium or small breed."
+    },
+    "topPicks": {
+      "bestOverall": {
+        "brand": "AVA Optimum Health Large Breed Puppy",
+        "why": "A genuinely large/giant-breed-specific recipe with controlled calcium (1.5%) and energy density to keep a Dane's growth steady rather than rapid — exactly the priority for a giant pup — plus added glucosamine, chondroitin and omega-3 for vulnerable joints and a larger kibble that slows fast eaters."
+      },
+      "bestForJoints": {
+        "brand": "Forthglade Cold Pressed",
+        "why": "Cold-pressed and gentle on digestion with omega-3 for joint support, and the all-life-stage formulation avoids an awkward diet switch as a Dane matures over two slow years. Moderate fat keeps growth measured."
+      },
+      "bestForSensitiveStomach": {
+        "brand": "Symply Fresh Turkey",
+        "why": "A single, gentle protein for a deep-chested breed where digestive upset and gas are concerns; feeding a highly digestible food in smaller meals helps reduce the bloating risk Danes are so prone to."
+      },
+      "bestForWeightControl": {
+        "brand": "Butternut Box",
+        "why": "Every meal is portioned to the dog's weight and target condition — invaluable for a giant breed where keeping a pup lean (body score ~4/9) is the single best protection against joint disease driven by over-fast growth."
+      },
+      "bestPremium": {
+        "brand": "Orijen",
+        "why": "Nutrient-dense, high named-meat recipes — but for a Dane choose the large-breed or all-life-stage line and watch calcium and calories carefully, because even premium food must keep a giant pup's growth slow and steady."
+      }
+    },
+    "targetKeywords": [
+      "best dog food for great danes uk",
+      "best food for great dane puppy uk",
+      "great dane food uk 2026",
+      "best giant breed dog food uk"
+    ]
   }
 ]
