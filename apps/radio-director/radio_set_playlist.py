@@ -10,7 +10,7 @@ as radio_tick.py), and writes dj-context.json to the host dir that backs the
 pod's /data/music.
 
 Subcommands (Hermes calls these via the `terminal` toolset):
-  candidates [--steer g,g] [--avoid g,g] [--limit N] [--seed ID]
+  candidates [--steer g,g] [--avoid g,g] [--limit N]
       Print a COMPACT candidate pool for Opus to choose from. Steer genres are
       boosted, avoid genres filtered out, results ranked by (affinity, steer
       match). Each line: id | "Artist - Title" | genres | bpm | af.
@@ -105,6 +105,18 @@ def _split(csv):
     return [s.strip().lower() for s in (csv or "").split(",") if s.strip()]
 
 
+def _load_json_file(path):
+    """Safely load a JSON file. Returns (data, ok). Never raises — a malformed
+    optional input must not crash a show whose queue is already live."""
+    if not path or not os.path.exists(path):
+        return None, False
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f), True
+    except (json.JSONDecodeError, OSError):
+        return None, False
+
+
 def cmd_candidates(args):
     graph = load_graph()
     tracks = graph["tracks"]
@@ -168,38 +180,54 @@ def cmd_set(args):
         print(f"ERROR: queue write failed: {r.stderr}", file=sys.stderr)
         return 4
 
-    # ── Stage DJ drops if provided ──
+    # ── Stage DJ drops if provided (tolerant of malformed input) ──
     n_drops = 0
-    if args.drops_file and os.path.exists(args.drops_file):
-        with open(args.drops_file, encoding="utf-8") as f:
-            drops = json.load(f)
+    drops, ok = _load_json_file(args.drops_file)
+    if ok and isinstance(drops, list):
         # Key by track id (string) so next_track.py can look up O(1) on pop.
+        # Validate each entry's shape — a bad drop must never crash the show.
         keyed = {}
         for d in drops:
+            if not isinstance(d, dict):
+                continue
             tid = str(d.get("after_track_id"))
-            if tid in tracks:
-                keyed[tid] = {"dj": d.get("dj", "arthur"),
-                              "position": d.get("position", "end"),
-                              "utterances": d.get("utterances", [])}
-        rd = kubectl_write(DROPS_POD, json.dumps(keyed), pod)
-        if rd.returncode != 0:
-            print(f"WARN: drops write failed: {rd.stderr}", file=sys.stderr)
-        else:
-            n_drops = len(keyed)
+            if tid not in tracks:
+                continue
+            utterances = d.get("utterances", [])
+            if not isinstance(utterances, list):
+                utterances = []
+            keyed[tid] = {"dj": d.get("dj", "arthur"),
+                          "position": d.get("position", "end"),
+                          "utterances": [u for u in utterances if isinstance(u, dict)]}
+        if keyed:
+            rd = kubectl_write(DROPS_POD, json.dumps(keyed), pod)
+            if rd.returncode != 0:
+                print(f"WARN: drops write failed: {rd.stderr}", file=sys.stderr)
+            else:
+                n_drops = len(keyed)
+    elif args.drops_file:
+        print("WARN: drops file missing or malformed — skipping drops", file=sys.stderr)
+
+    # ── Read context once (reused for the pod write AND the history entry) ──
+    ctx, ctx_ok = _load_json_file(args.context_file)
+    if not isinstance(ctx, dict):
+        ctx, ctx_ok = {}, False
 
     # ── Write context blob (host file backs pod /data/music) ──
     wrote_ctx = False
-    if args.context_file and os.path.exists(args.context_file):
-        with open(args.context_file, encoding="utf-8") as f:
-            ctx = json.load(f)
+    if ctx_ok:
         # Stamp a fresh UTC Z timestamp so the freshness gate accepts it.
         ctx.setdefault("ttl_minutes", 30)
         ctx["generated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        tmp = json.dumps(ctx)
-        with open(CONTEXT_HOST, "w", encoding="utf-8") as f:
-            f.write(tmp + "\n")
-        os.chmod(CONTEXT_HOST, 0o644)  # pod reads as uid 999; must be world-readable
-        wrote_ctx = True
+        try:
+            with open(CONTEXT_HOST, "w", encoding="utf-8") as f:
+                f.write(json.dumps(ctx) + "\n")
+            os.chmod(CONTEXT_HOST, 0o644)  # pod reads as uid 999; must be world-readable
+            wrote_ctx = True
+        except OSError as e:
+            print(f"WARN: context write failed: {e}", file=sys.stderr)
+    elif args.context_file:
+        print("WARN: context file missing or malformed — skipping context", file=sys.stderr)
 
     first = tracks[str(valid[0])].get("n", "")
     last = tracks[str(valid[-1])].get("n", "")
@@ -207,19 +235,12 @@ def cmd_set(args):
     # ── Append this aired show to the rolling history (anti-repeat memory) ──
     # Compact: track names + ids + mood/note so the next tick knows what just
     # played and can evolve rather than echo. Best-effort, never blocks.
-    ctx_for_hist = {}
-    if args.context_file and os.path.exists(args.context_file):
-        try:
-            with open(args.context_file, encoding="utf-8") as f:
-                ctx_for_hist = json.load(f)
-        except (json.JSONDecodeError, OSError):
-            ctx_for_hist = {}
     hist_entry = {
         "aired_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "ids": valid,
         "tracks": [tracks[str(i)].get("n", "") for i in valid],
-        "mood": ctx_for_hist.get("mood", ""),
-        "note": ctx_for_hist.get("note", ""),
+        "mood": ctx.get("mood", ""),
+        "note": ctx.get("note", ""),
     }
     wrote_hist = append_recent(hist_entry)
 
@@ -240,7 +261,6 @@ def main():
     pc.add_argument("--steer", default="")
     pc.add_argument("--avoid", default="")
     pc.add_argument("--limit", type=int, default=300)
-    pc.add_argument("--seed", default=None)
     pc.set_defaults(func=cmd_candidates)
 
     ps = sub.add_parser("set")

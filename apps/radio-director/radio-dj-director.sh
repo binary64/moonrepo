@@ -80,11 +80,20 @@ playlist tool. Work in this order:
 Output a one-line summary of the show you set (who is home, mood, first/last
 track, how many drops).'
 
-NO_COLOR=1 "$HERMES" -z "$PROMPT" \
+# Bound the call (timeout 12m < 15m cron cadence) so a hung Hermes can't hold
+# the flock and starve every future fire. Capture + log the exit code rather
+# than swallowing it — a failed run must not be logged as "complete".
+NO_COLOR=1 timeout 720 "$HERMES" -z "$PROMPT" \
   --provider anthropic -m claude-opus-4-8 \
   -t terminal,file,homeassistant,skills \
   --skills household-location,radio-music-curation \
   --yolo >>"$LOG" 2>&1
-
-log "director run complete"
+rc=$?
+if [ "$rc" -eq 124 ]; then
+  log "director run TIMED OUT after 720s (rc=124)"
+elif [ "$rc" -ne 0 ]; then
+  log "director run FAILED (rc=$rc)"
+else
+  log "director run complete"
+fi
 exit 0

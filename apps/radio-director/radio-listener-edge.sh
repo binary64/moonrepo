@@ -43,14 +43,19 @@ fi
 PREV="$("$PY" -c "import json;print(json.load(open('$STATE')).get('listeners',0))" 2>/dev/null || echo 0)"
 [ -z "$PREV" ] && PREV=0
 
-# Persist current count for next run.
-printf '{"listeners":%s,"ts":"%s"}\n' "$NOW" "$(date -u +%FT%TZ)" > "$STATE"
+# Persist current count for next run. If this write fails, PREV would stay
+# stale at 0 and the edge would re-fire the director every minute while
+# listeners are present — so fail fast rather than spam.
+if ! printf '{"listeners":%s,"ts":"%s"}\n' "$NOW" "$(date -u +%FT%TZ)" > "$STATE"; then
+  log "FATAL: state write to $STATE failed — exiting to avoid re-fire storm"
+  exit 1
+fi
 
-# Edge: nobody -> somebody. Fire the context builder immediately.
+# Edge: nobody -> somebody. Fire the director immediately.
 if [ "$PREV" -eq 0 ] && [ "$NOW" -gt 0 ]; then
-  log "EDGE 0->$NOW listeners — firing context builder now"
-  # radio-dj-context.sh re-gates internally, so this is safe & idempotent.
-  bash "$CONTEXT_SH" >>"$LOG" 2>&1 || log "context builder returned nonzero"
+  log "EDGE 0->$NOW listeners — firing director now"
+  # radio-dj-director.sh re-gates internally, so this is safe & idempotent.
+  bash "$CONTEXT_SH" >>"$LOG" 2>&1 || log "director returned nonzero"
   log "edge fire complete"
 fi
 
