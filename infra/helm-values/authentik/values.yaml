@@ -26,10 +26,17 @@ server:
     - name: branding-blueprint
       configMap:
         name: authentik-branding-blueprint
+    - name: session-duration-blueprint
+      configMap:
+        name: authentik-session-duration-blueprint
   volumeMounts:
     - name: branding-blueprint
       mountPath: /blueprints/custom/branding.yaml
       subPath: branding.yaml
+      readOnly: true
+    - name: session-duration-blueprint
+      mountPath: /blueprints/custom/session-duration.yaml
+      subPath: session-duration.yaml
       readOnly: true
 
 worker:
