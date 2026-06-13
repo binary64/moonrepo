@@ -82,7 +82,7 @@ def load_recent():
         with open(RECENT_HOST, encoding="utf-8") as f:
             data = json.load(f)
         return data if isinstance(data, list) else []
-    except (FileNotFoundError, json.JSONDecodeError, OSError):
+    except (json.JSONDecodeError, OSError):
         return []
 
 
