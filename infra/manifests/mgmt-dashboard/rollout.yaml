@@ -22,7 +22,7 @@ spec:
         kubernetes.io/hostname: vmi3137202
       containers:
         - name: mgmt-dashboard
-          image: ghcr.io/binary64/mgmt-dashboard:latest
+          image: ghcr.io/binary64/mgmt-dashboard:969f384
           ports:
             - name: http
               containerPort: 3000
