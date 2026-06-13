@@ -19,7 +19,6 @@ set -uo pipefail
 
 STATE="/mnt/arthur/.hermes/data/radio-listener-edge.json"
 CONTEXT_SH="/mnt/arthur/.hermes/scripts/radio-dj-director.sh"  # fire the Opus director on tune-in
-TICK="/mnt/arthur/.hermes/scripts/radio-tick/radio_tick.py"
 LOG="/mnt/arthur/.hermes/data/radio-listener-edge.log"
 PY="$(command -v python3)"
 export KUBECONFIG="${KUBECONFIG:-/mnt/arthur/.kube/config}"

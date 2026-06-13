@@ -10,7 +10,6 @@ set -uo pipefail
 
 PY="$(command -v python3)"
 TICK="/mnt/arthur/.hermes/scripts/radio-tick/radio_tick.py"
-DIRECTOR_PY="/mnt/arthur/.hermes/scripts/radio-director/radio_set_playlist.py"
 HERMES="/mnt/arthur/.local/bin/hermes"
 LOG="/mnt/arthur/.hermes/data/radio-director.log"
 export KUBECONFIG="${KUBECONFIG:-/mnt/arthur/.kube/config}"

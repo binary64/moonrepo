@@ -134,7 +134,7 @@ def cmd_candidates(args):
     return 0
 
 
-def cmd_recent(args):
+def cmd_recent(_args):
     """Print the last few aired shows so the director can avoid repeating
     tracks/moods and evolve the energy across ticks. Compact by design."""
     shows = load_recent()
