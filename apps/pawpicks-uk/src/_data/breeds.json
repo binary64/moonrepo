@@ -961,6 +961,7 @@
   {
     "name": "Great Dane",
     "slug": "great-danes",
+    "dcmProne": true,
     "puppyGuide": "/best-food-for-great-dane-puppies/",
     "ukPopularityRank": 21,
     "sizeCategory": "giant",
@@ -1022,6 +1023,71 @@
       "best food for great dane puppy uk",
       "great dane food uk 2026",
       "best giant breed dog food uk"
+    ]
+  },
+  {
+    "name": "Dobermann",
+    "slug": "dobermanns",
+    "dcmProne": true,
+    "ukPopularityRank": 28,
+    "sizeCategory": "large",
+    "weightRange": "32-45kg",
+    "lifespan": "10-13 years",
+    "activityLevel": "high",
+    "commonHealthIssues": [
+      "dilated cardiomyopathy (DCM) — the highest-risk breed of all",
+      "von Willebrand's disease (bleeding disorder)",
+      "hip dysplasia",
+      "wobbler syndrome (cervical spondylomyelopathy)",
+      "hypothyroidism",
+      "gastric dilatation-volvulus (bloat)"
+    ],
+    "dietaryNeeds": {
+      "protein": "26-30% (high-quality named animal protein)",
+      "fat": "14-18% (fuels a lean, athletic working dog)",
+      "caloriesPerDay": "1500-2100 kcal (adult, active)",
+      "feedingAmount": "300-400g dry per day, split across 2 meals",
+      "keyNutrients": [
+        "taurine and its precursors (methionine, cysteine) from meat-rich recipes",
+        "L-carnitine from red meat for heart-muscle energy",
+        "omega-3 (EPA/DHA) for cardiovascular and joint support",
+        "named animal protein over heavy legume loads"
+      ],
+      "commonSensitivities": [
+        "legume-heavy grain-free recipes (the DCM 'BEG' concern)",
+        "low-meat formulas that skimp on taurine precursors",
+        "grains",
+        "large single meals (bloat trigger in a deep-chested breed)"
+      ],
+      "breedSpecificNotes": "The Dobermann is the single breed most strongly associated with dilated cardiomyopathy (DCM) — studies put lifetime prevalence at well over 50%, the highest of any breed, and it is overwhelmingly GENETIC, not caused by diet. That said, nutrition is the one lever an owner can pull: feed a meat-rich diet that supplies taurine's building blocks (methionine and cysteine) and L-carnitine naturally, and steer clear of grain-free recipes that lean heavily on peas, lentils and chickpeas — the exact 'BEG' profile flagged in the FDA's DCM investigation. Diet does not prevent or cure genetic DCM, so this breed's owners should pair sensible feeding with periodic veterinary heart screening (echocardiography and Holter monitoring catch disease years before symptoms). As a lean, deep-chested athlete the Dobermann also needs higher fat to hold condition, and 2 smaller meals rather than one large bowl to reduce bloat risk."
+    },
+    "topPicks": {
+      "bestOverall": {
+        "brand": "Years",
+        "why": "Every Years recipe is grain- AND legume-free and formulated by a veterinary clinical nutrition specialist — which sidesteps the legume/'BEG' DCM concern entirely. For the breed with the highest DCM risk of all, that is exactly the profile to choose: meat-led nutrition without peas, lentils or chickpeas doing the heavy lifting."
+      },
+      "bestForHeartHealth": {
+        "brand": "Orijen Original",
+        "why": "85% animal ingredients including organ meats (heart, liver) — the richest natural sources of taurine and L-carnitine, the two nutrients tied to canine heart-muscle function. A high-meat recipe lets a Dobermann make its own taurine from quality protein rather than relying on supplements."
+      },
+      "bestForMuscle": {
+        "brand": "Eden Holistic Original Cuisine",
+        "why": "An 80/20 meat-to-veg recipe with salmon for omega-3 — high named-meat content supports the lean, athletic musculature of a working Dobermann while the marine oils support the cardiovascular system."
+      },
+      "bestForSensitiveStomach": {
+        "brand": "Canagan Free-Run Chicken",
+        "why": "60% meat with sweet potato rather than a heavy pulse load for carbohydrate — a sensible heart-conscious profile that keeps meat firmly in the lead and pulses minor, British-made and traceable."
+      },
+      "bestValue": {
+        "brand": "Forthglade Natural Lifestage Chicken",
+        "why": "Honest single-source meat at a fair price, gentle cold-pressed digestion and an all-life-stage formulation. Pair any value pick for this breed with periodic vet heart checks — diet supports the heart but genetics drive DCM."
+      }
+    },
+    "targetKeywords": [
+      "best dog food for dobermanns uk",
+      "best dog food for dobermann heart health",
+      "dobermann food uk 2026",
+      "best dog food for dcm prone breeds uk"
     ]
   }
 ]
