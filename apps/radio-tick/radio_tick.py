@@ -18,7 +18,7 @@ import re
 import subprocess  # nosec B404 - kubectl/curl orchestration; all calls use shell=False with fixed argv
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 NS = "radio-dj"
 GRAPH_HOST = "/mnt/arthur/clawd/data/radio-track-graph.json"
@@ -41,6 +41,14 @@ BUDGET_URL = "http://localhost:8877/budget"
 WHO_HOME = "/mnt/arthur/.hermes/scripts/who-is-home.sh"
 TICK_STATE = "/mnt/arthur/.hermes/data/radio-tick-state.json"
 LOOKAHEAD_N = 5  # 3x avg tick (~5min) of runway
+
+# ─── Durable utterance archive (host-side; survives pod restarts) ────────────
+# Every aired clip appends one JSONL line here (text + metadata), and the
+# rendered mp3 is copied out of the pod's /state into UTTERANCE_CLIP_DIR. This
+# is the ground-truth "what did the DJ actually say + how did it sound" log,
+# independent of the in-pod dj-recent-history.json (capped, volatile).
+UTTERANCE_LOG = "/mnt/arthur/clawd/data/music/dj-utterance-log.jsonl"
+UTTERANCE_CLIP_DIR = "/mnt/arthur/clawd/data/music/dj-clips"
 
 ARTHUR_VOICE = "b4e39673-3fec-446a-a965-6517b5e0ea52"
 CARA_VOICE = "7c45223a-60a8-45e5-9c74-0339f354ca81"
@@ -556,20 +564,9 @@ def cmd_context(_args):
     print("\n".join(lines))
 
 
-def cmd_speak(args):
-    """Air a clip. timing: asap (duck+now) | start (over next intro) |
-    end (over outro/tail) | seam (during the crossfade)."""
-    dj = args.dj.lower()
-    if dj not in ("arthur", "cara"):
-        sys.stderr.write("speak: dj must be arthur|cara\n")
-        sys.exit(2)
-
-    # budget guard
-    b = budget()
-    if b and b.get("month_pct", 0) >= 95:
-        print(json.dumps({"aired": False, "reason": "budget exhausted (>=95%)"}))
-        return
-
+def _resolve_speak_text(args):
+    """Resolve the utterance text from --text or --file. Returns the stripped
+    string, or None if absent/empty (caller reports the appropriate status)."""
     if args.text:
         text = args.text
     elif args.file:
@@ -584,8 +581,24 @@ def cmd_speak(args):
     else:
         sys.stderr.write("speak: need --text or --file\n")
         sys.exit(2)
+    return text.strip()
 
-    text = text.strip()
+
+def cmd_speak(args):
+    """Air a clip. timing: asap (duck+now) | start (over next intro) |
+    end (over outro/tail) | seam (during the crossfade)."""
+    dj = args.dj.lower()
+    if dj not in ("arthur", "cara"):
+        sys.stderr.write("speak: dj must be arthur|cara\n")
+        sys.exit(2)
+
+    # budget guard
+    b = budget()
+    if b and b.get("month_pct", 0) >= 95:
+        print(json.dumps({"aired": False, "reason": "budget exhausted (>=95%)"}))
+        return
+
+    text = _resolve_speak_text(args)
     if not text:
         print(json.dumps({"aired": False, "reason": "empty text"}))
         return
@@ -622,6 +635,7 @@ def cmd_speak(args):
                           "ts": int(time.time())})
         kubectl_write(path, rec, pod)
         _mark_spoke(text, dj)
+        _archive_utterance(text, dj, args.timing)
         print(json.dumps({"aired": status, "dj": dj, "duck": clip_duck,
                           "chars": len(text)}))
         return
@@ -634,6 +648,7 @@ def cmd_speak(args):
            timeout=90, check=True)
     ok = "Done" in r.stdout or r.returncode == 0
     _mark_spoke(text, dj)
+    _archive_utterance(text, dj, args.timing, clip_stdout=r.stdout)
     print(json.dumps({"aired": bool(ok), "dj": dj, "chars": len(text),
                       "duck": duck, "detail": r.stdout.strip()[-200:]}))
 
@@ -658,6 +673,69 @@ def _mark_spoke(text, dj="arthur"):
         existing = existing[-100:]  # persist 100
         kubectl_write("/state/dj-recent-history.json", json.dumps(existing),
                       pod, container="liquidsoap")
+
+
+def _archive_utterance(text, dj, timing, clip_stdout=""):
+    """Durably log every aired clip (text + metadata) to UTTERANCE_LOG, and copy
+    the rendered mp3 out of the pod into UTTERANCE_CLIP_DIR when available.
+
+    Best-effort: a failure here must NEVER break airing the DJ. The in-pod
+    dj-commentary.sh prints '... queued (dj-<epoch>-<rid>)'; that id maps to
+    /state/dj-<id>.mp3 inside the liquidsoap pod. Pending (end/start/seam) clips
+    are rendered later by next_track.py, so no mp3 exists at speak time — we log
+    the text and leave clip empty (the JSONL line is the durable record either way).
+    """
+    try:
+        np = now_playing()  # "Artist - Title"
+        artist, _, title = np.partition(" - ")
+        clip_id = ""
+        m = re.search(r"dj-\d+-\d+", clip_stdout or "")
+        if m:
+            clip_id = m.group(0)
+        clip_file = ""
+        if clip_id:
+            try:
+                os.makedirs(UTTERANCE_CLIP_DIR, exist_ok=True)
+                dest = os.path.join(UTTERANCE_CLIP_DIR, clip_id + ".mp3")
+                pod = liquidsoap_pod()
+                if pod:
+                    cp = sh(["kubectl", "cp", "-c", "liquidsoap",
+                             "%s/%s:/state/%s.mp3" % (NS, pod, clip_id), dest],
+                            timeout=30, check=False)
+                    if cp.returncode == 0 and os.path.exists(dest):
+                        clip_file = dest
+            except Exception:  # nosec B110 - archival is best-effort, never block air
+                clip_file = ""
+        rec = {
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "dj": dj, "timing": timing,
+            "artist": artist.strip() or "?", "title": title.strip() or np,
+            "chars": len(text), "clip_id": clip_id, "clip_file": clip_file,
+            "text": text,
+        }
+        os.makedirs(os.path.dirname(UTTERANCE_LOG), exist_ok=True)
+        with open(UTTERANCE_LOG, "a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except Exception:  # nosec B110 - logging is best-effort, never block air
+        pass
+
+
+def cmd_tail(args):
+    """Print the last N aired DJ utterances from the durable log (text + clip)."""
+    n = max(1, args.n)
+    try:
+        with open(UTTERANCE_LOG, encoding="utf-8") as f:
+            lines = f.read().splitlines()
+    except FileNotFoundError:
+        print(json.dumps({"utterances": [], "reason": "no log yet"}))
+        return
+    out = []
+    for ln in lines[-n:]:
+        try:
+            out.append(json.loads(ln))
+        except json.JSONDecodeError:
+            continue
+    print(json.dumps({"utterances": out}, ensure_ascii=False, indent=2))
 
 
 def cmd_queue(args):
@@ -731,10 +809,12 @@ def main():
     sp.add_argument("--file")
     qp = sub.add_parser("queue")
     qp.add_argument("--ids", required=True, help="comma-separated track IDs")
+    tp = sub.add_parser("tail", help="show last N aired DJ utterances (text + clip)")
+    tp.add_argument("-n", type=int, default=3, help="how many to show (default 3)")
     args = p.parse_args()
 
     {"gate": cmd_gate, "context": cmd_context,
-     "speak": cmd_speak, "queue": cmd_queue}[args.cmd](args)
+     "speak": cmd_speak, "queue": cmd_queue, "tail": cmd_tail}[args.cmd](args)
 
 
 if __name__ == "__main__":
