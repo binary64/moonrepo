@@ -49,6 +49,7 @@ LOOKAHEAD_N = 5  # 3x avg tick (~5min) of runway
 # independent of the in-pod dj-recent-history.json (capped, volatile).
 UTTERANCE_LOG = "/mnt/arthur/clawd/data/music/dj-utterance-log.jsonl"
 UTTERANCE_CLIP_DIR = "/mnt/arthur/clawd/data/music/dj-clips"
+HASURA_URL = "https://hasura.brandwhisper.cloud/v1/graphql"
 
 ARTHUR_VOICE = "b4e39673-3fec-446a-a965-6517b5e0ea52"
 CARA_VOICE = "7c45223a-60a8-45e5-9c74-0339f354ca81"
@@ -675,6 +676,42 @@ def _mark_spoke(text, dj="arthur"):
                       pod, container="liquidsoap")
 
 
+def _hasura_secret():
+    """Best-effort fetch of the Hasura admin secret from the running cluster.
+    The host running radio-tick has no secret in env, but it can read it from
+    the hasura deployment (same trust boundary as kubectl)."""
+    try:
+        r = sh(["kubectl", "-n", "hasura", "exec", "deploy/hasura", "-c",
+                "hasura", "--", "sh", "-c",
+                "echo $HASURA_GRAPHQL_ADMIN_SECRET"], timeout=15)
+        return r.stdout.strip()
+    except Exception:  # nosec B110 - best-effort; falls back to skipping the DB write
+        return ""
+
+
+def _push_utterance_to_hasura(rec):
+    """Insert one utterance into radio.dj_utterances so radio.brandwhisper.cloud
+    can surface it. Best-effort: never block airing on a DB hiccup."""
+    try:
+        secret = _hasura_secret()
+        if not secret:
+            return
+        mutation = (
+            "mutation($o: radio_dj_utterances_insert_input!) "
+            "{ insert_radio_dj_utterances_one(object: $o) { id } }"
+        )
+        obj = {k: rec[k] for k in
+               ("dj", "timing", "artist", "title", "chars", "clip_id", "text")}
+        obj["aired_at"] = rec["ts"]
+        payload = json.dumps({"query": mutation, "variables": {"o": obj}})
+        sh(["curl", "-s", "--max-time", "6", "-X", "POST", HASURA_URL,
+            "-H", "Content-Type: application/json",
+            "-H", "x-hasura-admin-secret: " + secret,
+            "-d", payload], timeout=10, check=False)
+    except Exception:  # nosec B110 - DB write is best-effort, never block air
+        pass
+
+
 def _archive_utterance(text, dj, timing, clip_stdout=""):
     """Durably log every aired clip (text + metadata) to UTTERANCE_LOG, and copy
     the rendered mp3 out of the pod into UTTERANCE_CLIP_DIR when available.
@@ -716,6 +753,7 @@ def _archive_utterance(text, dj, timing, clip_stdout=""):
         os.makedirs(os.path.dirname(UTTERANCE_LOG), exist_ok=True)
         with open(UTTERANCE_LOG, "a", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+        _push_utterance_to_hasura(rec)
     except Exception:  # nosec B110 - logging is best-effort, never block air
         pass
 

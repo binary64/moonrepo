@@ -28,3 +28,15 @@ subscription SubscribePlayHistory($limit: Int = 50) {
     track_id
   }
 }
+
+subscription SubscribeDjUtterances($limit: Int = 12) {
+  radio_dj_utterances(limit: $limit, order_by: { aired_at: desc }) {
+    id
+    dj
+    timing
+    artist
+    title
+    text
+    aired_at
+  }
+}
