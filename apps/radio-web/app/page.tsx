@@ -4,12 +4,15 @@ import { useQuery, useSubscription } from "@apollo/client/react";
 import { useEffect, useRef, useState } from "react";
 import RadioPlayer from "./components/RadioPlayer";
 import type {
+  Radio_Dj_Utterances,
   Radio_Listener_Snapshots,
   Radio_Play_History,
 } from "./graphql/generated/graphql";
 import {
+  GetDjUtterancesDocument,
   GetListenerCountDocument,
   GetPlayHistoryDocument,
+  SubscribeDjUtterancesDocument,
   SubscribeListenersDocument,
   SubscribeNowPlayingDocument,
   SubscribePlayHistoryDocument,
@@ -96,6 +99,32 @@ function HistoryTrack({ track, index }: { track: TrackEntry; index: number }) {
   );
 }
 
+function DjUtterance({ u }: { u: Radio_Dj_Utterances }) {
+  const name = u.dj === "cara" ? "Cara" : "Arthur";
+  const accent =
+    u.dj === "cara" ? "text-pink-300 bg-pink-500/10" : "text-sky-300 bg-sky-500/10";
+  return (
+    <div className="flex gap-3 px-4 py-3 rounded-xl bg-slate-900/40 border border-slate-800/30">
+      <span
+        className={`flex-shrink-0 h-fit text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md ${accent}`}
+      >
+        {name}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm text-slate-300 leading-relaxed">{u.text}</p>
+        <div className="text-[11px] text-slate-600 mt-1 flex gap-2">
+          {u.aired_at && <span>{formatTime(u.aired_at)}</span>}
+          {u.artist && u.title && (
+            <span className="truncate">
+              · over {u.artist} — {u.title}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LoadingSkeleton() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4">
@@ -126,12 +155,19 @@ export default function Home() {
     },
   );
   const { data: listenerSubData } = useSubscription(SubscribeListenersDocument);
+  const { data: utterancesSubData } = useSubscription(
+    SubscribeDjUtterancesDocument,
+    { variables: { limit: 12 } },
+  );
 
   // Initial query fallback (in case subscriptions aren't ready)
   const { data: historyQueryData, loading } = useQuery(GetPlayHistoryDocument, {
     variables: { limit: 50 },
   });
   const { data: listenerQueryData } = useQuery(GetListenerCountDocument);
+  const { data: utterancesQueryData } = useQuery(GetDjUtterancesDocument, {
+    variables: { limit: 12 },
+  });
 
   // Derive state from subscriptions with query fallback
   const playHistory: Radio_Play_History[] =
@@ -146,6 +182,11 @@ export default function Home() {
     listenerSubData?.radio_listener_snapshots?.[0] ||
     listenerQueryData?.radio_listener_snapshots?.[0] ||
     null;
+
+  const djUtterances: Radio_Dj_Utterances[] =
+    utterancesSubData?.radio_dj_utterances ||
+    utterancesQueryData?.radio_dj_utterances ||
+    [];
 
   const nowPlaying = nowPlayingRow
     ? {
@@ -334,6 +375,24 @@ export default function Home() {
       <div className="w-full max-w-2xl mt-6 mb-2">
         <RadioPlayer currentTrack={nowPlaying?.raw} />
       </div>
+
+      {/* DJ Booth — what Cara & Arthur have been saying on air */}
+      {djUtterances.length > 0 && (
+        <div className="w-full max-w-2xl mt-6">
+          <div className="flex items-center gap-2 mb-2 px-1">
+            <span className="text-xs text-slate-600 uppercase tracking-widest font-medium">
+              From the DJ Booth
+            </span>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            {djUtterances.map((u) => (
+              <div key={u.id} className="fade-in-up">
+                <DjUtterance u={u} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <div className="mt-8 text-xs text-slate-700 text-center">

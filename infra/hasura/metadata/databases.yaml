@@ -87,3 +87,16 @@
     table:
       name: tracks
       schema: radio
+  - insert_permissions:
+    - permission:
+        check: {}
+        columns: '*'
+      role: radio-ingest
+    select_permissions:
+    - permission:
+        columns: '*'
+        filter: {}
+      role: public
+    table:
+      name: dj_utterances
+      schema: radio

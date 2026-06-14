@@ -29,6 +29,18 @@ query GetListenerCount {
   }
 }
 
+query GetDjUtterances($limit: Int = 12) {
+  radio_dj_utterances(limit: $limit, order_by: { aired_at: desc }) {
+    id
+    dj
+    timing
+    artist
+    title
+    text
+    aired_at
+  }
+}
+
 query RadioState {
   radio_play_history(limit: 51, order_by: { played_at: desc }) {
     id
