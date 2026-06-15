@@ -55,11 +55,7 @@ const WaveformRing = ({ active }: { active: boolean }) => {
   );
 };
 
-export default function RadioPlayer({
-  currentTrack,
-}: {
-  currentTrack?: string;
-}) {
+const RadioPlayer = ({ currentTrack }: { currentTrack?: string }) => {
   const [state, setState] = useState<PlayerState>("idle");
   const [skipping, setSkipping] = useState(false);
   const [bufferSeconds, setBufferSeconds] = useState(0);
@@ -513,4 +509,6 @@ export default function RadioPlayer({
       </div>
     </div>
   );
-}
+};
+
+export default RadioPlayer;
