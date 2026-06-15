@@ -1,0 +1,46 @@
+# kubectl port-forward for SOCKS5 proxy, run on jupiter as the hermes user.
+#
+# Why: jupiter is a flannel worker but the socks-proxy pod runs on master with
+# hostNetwork=true, so its pod IP is master's eth0 — not routable from jupiter.
+# `kubectl port-forward` tunnels through the apiserver instead, giving us a
+# loopback-bound SOCKS5 endpoint backed by master's residential IP.
+#
+# Consumes: ~/.hermes/kubeconfig (0600, written by hermes/bootstrap-env.sh from
+# AWS Secrets Manager id `moonrepo/hermes-kubeconfig`).
+# RBAC: see infra/manifests/socks-proxy/rbac-portforward.yaml
+#
+# Install (as hermes on jupiter):
+#   mkdir -p ~/.config/systemd/user
+#   cp infra/systemd/hermes-socks-proxy.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now hermes-socks-proxy
+#   loginctl enable-linger hermes     # keep the user bus alive across logouts (run once as root if not already)
+#
+# Verify:
+#   curl --socks5-hostname localhost:1080 https://ifconfig.me
+#   # → should print the home residential IP (not the Contabo VPS IP).
+
+[Unit]
+Description=kubectl port-forward → socks-proxy (residential IP egress)
+# Drop the network-online targets: systemd's *user* manager doesn't
+# synthesize network-online.target (that's a system-only unit), so they'd be
+# no-ops. Restart=always below handles transient connectivity fine.
+
+[Service]
+Type=simple
+Environment=KUBECONFIG=%h/.hermes/kubeconfig
+# kubectl is installed by hermes/bootstrap-host.sh from the apt repo at
+# pkgs.k8s.io, which drops the binary at /usr/bin/kubectl.
+ExecStart=/usr/bin/kubectl port-forward \
+  --address 127.0.0.1 \
+  -n socks-proxy \
+  svc/socks-proxy \
+  1080:1080
+# port-forward dies on any apiserver hiccup; restart aggressively.
+Restart=always
+RestartSec=5
+# Don't let a stuck kubectl hold the port open.
+TimeoutStopSec=10
+
+[Install]
+WantedBy=default.target
