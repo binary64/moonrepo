@@ -17,8 +17,10 @@ COPY . .
 # Build-time env vars (replaced at build, public vars baked into client bundle)
 ARG NEXT_PUBLIC_HASURA_HTTP_URL
 ARG NEXT_PUBLIC_HASURA_WS_URL
+ARG NEXT_PUBLIC_STREAM_URL=https://stream.brandwhisper.cloud/stream.mp3
 ENV NEXT_PUBLIC_HASURA_HTTP_URL=${NEXT_PUBLIC_HASURA_HTTP_URL}
 ENV NEXT_PUBLIC_HASURA_WS_URL=${NEXT_PUBLIC_HASURA_WS_URL}
+ENV NEXT_PUBLIC_STREAM_URL=${NEXT_PUBLIC_STREAM_URL}
 
 # Clean any stale Next.js build cache to ensure fresh compilation
 RUN rm -rf .next
