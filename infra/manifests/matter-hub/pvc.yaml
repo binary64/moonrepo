@@ -9,6 +9,13 @@ metadata:
   namespace: matter-hub
   annotations:
     argocd.argoproj.io/sync-options: Prune=false
+    # Same wave as the Deployment (1), NOT the default 0. The local-path
+    # StorageClass is WaitForFirstConsumer, so this PVC only binds once its
+    # consuming pod is scheduled. Gating it in an earlier wave deadlocks ArgoCD:
+    # it waits for the PVC to be Healthy before creating the Deployment, but the
+    # PVC stays Pending until the Deployment's pod exists. Applying both together
+    # lets the pod schedule, which triggers the bind.
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   accessModes:
     - ReadWriteOnce
