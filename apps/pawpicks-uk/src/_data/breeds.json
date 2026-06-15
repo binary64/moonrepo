@@ -1089,5 +1089,72 @@
       "dobermann food uk 2026",
       "best dog food for dcm prone breeds uk"
     ]
+  },
+  {
+    "name": "Boxer",
+    "slug": "boxers",
+    "dcmProne": true,
+    "ukPopularityRank": 22,
+    "sizeCategory": "large",
+    "weightRange": "25-32kg",
+    "lifespan": "10-12 years",
+    "activityLevel": "high",
+    "commonHealthIssues": [
+      "arrhythmogenic right ventricular cardiomyopathy (ARVC) — 'Boxer cardiomyopathy', an inherited electrical heart disease",
+      "familial myocardial L-carnitine deficiency in some lines",
+      "aortic/subaortic stenosis (another inherited heart defect)",
+      "Boxer colitis (histiocytic ulcerative colitis) and a sensitive digestion",
+      "very high lifetime cancer risk (mast cell tumours, lymphoma)",
+      "gastric dilatation-volvulus (bloat) in a deep-chested breed",
+      "brachycephalic tendency — prone to overheating and weight gain"
+    ],
+    "dietaryNeeds": {
+      "protein": "26-30% (high-quality named animal protein, red meat emphasised)",
+      "fat": "14-18% (fuels a lean, athletic working dog without excess weight)",
+      "caloriesPerDay": "1400-2000 kcal (adult, active)",
+      "feedingAmount": "280-380g dry per day, split across 2 meals",
+      "keyNutrients": [
+        "L-carnitine from red meat — the Boxer's signature heart-energy nutrient",
+        "taurine and its precursors (methionine, cysteine) from meat-rich recipes",
+        "omega-3 (EPA/DHA) for cardiovascular and anti-inflammatory support",
+        "natural antioxidants given the breed's high cancer risk",
+        "named animal protein over heavy legume loads"
+      ],
+      "commonSensitivities": [
+        "legume-heavy grain-free recipes (the DCM 'BEG' concern)",
+        "rich or high-fat foods that upset the breed's notoriously sensitive gut",
+        "grains",
+        "large single meals (bloat trigger in a deep-chested breed)"
+      ],
+      "breedSpecificNotes": "The Boxer's heart story is genuinely its own. The breed's signature cardiac disease is not classic dilated cardiomyopathy but arrhythmogenic right ventricular cardiomyopathy (ARVC) — long known as 'Boxer cardiomyopathy' — an inherited electrical disease tied to a striatin gene mutation, where fibrofatty tissue replaces heart muscle and triggers dangerous rhythm disturbances (the classic sign is fainting). A commercial gene test and a 24-hour Holter monitor are the real screening tools; diet does not cause or cure ARVC. What makes the Boxer nutritionally distinct is L-carnitine: a documented family of Boxers had a myocardial L-carnitine deficiency (normal blood levels but low levels inside the heart muscle) and improved on supplementation. L-carnitine helps heart cells turn fat into energy and is found naturally in red meat — so a red-meat-rich, meat-led diet is the sensible everyday lever, while genetics and veterinary cardiac screening do the heavy lifting. Steer clear of legume-heavy grain-free 'BEG' recipes, support the heart with omega-3, lean on antioxidants given the breed's very high cancer rate, and respect a famously sensitive 'Boxer gut' (and Boxer colitis) by feeding gentle, named single proteins in two smaller meals rather than one large bowl. Any supplementation is a veterinary decision, not a DIY one."
+    },
+    "topPicks": {
+      "bestOverall": {
+        "brand": "Years",
+        "why": "Every Years recipe is grain- AND legume-free and formulated by a veterinary clinical nutrition specialist — which sidesteps the legume/'BEG' DCM concern entirely. For a heart-predisposed breed that also has a sensitive gut, meat-led nutrition without peas, lentils or chickpeas doing the heavy lifting is exactly the profile to choose."
+      },
+      "bestForHeartHealth": {
+        "brand": "Orijen Original",
+        "why": "85% animal ingredients including red meat and organ meats (heart, liver) — the richest natural sources of L-carnitine and taurine, the two nutrients most tied to Boxer heart-muscle energy. For the breed where a familial myocardial L-carnitine deficiency is documented, a red-meat-rich recipe is the everyday lever (genetic testing and vet heart screening do the rest)."
+      },
+      "bestForMuscle": {
+        "brand": "Eden Holistic Original Cuisine",
+        "why": "An 80/20 meat-to-veg recipe with salmon for omega-3 — high named-meat content supports the lean, powerful musculature of an athletic Boxer while the marine oils support the cardiovascular system and calm inflammation."
+      },
+      "bestForSensitiveStomach": {
+        "brand": "Canagan Free-Run Chicken",
+        "why": "60% meat with sweet potato rather than a heavy pulse load — a gentle, heart-conscious profile that suits the Boxer's notoriously delicate gut (and Boxer-colitis tendency), keeping meat firmly in the lead and pulses minor. British-made and traceable."
+      },
+      "bestValue": {
+        "brand": "Forthglade Natural Lifestage Chicken",
+        "why": "Honest single-source meat at a fair price, gentle cold-pressed digestion that sits well with a sensitive Boxer gut, and an all-life-stage formulation. Pair any value pick for this breed with ARVC gene testing and periodic vet heart checks — diet supports the heart but genetics drive the disease."
+      }
+    },
+    "targetKeywords": [
+      "best dog food for boxers uk",
+      "best dog food for boxer heart health",
+      "boxer food uk 2026",
+      "best dog food for boxer sensitive stomach"
+    ]
   }
 ]
