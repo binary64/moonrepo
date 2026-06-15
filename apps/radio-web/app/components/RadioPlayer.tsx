@@ -67,6 +67,9 @@ export default function RadioPlayer({
   const fetchControllerRef = useRef<AbortController | null>(null);
   const bufferedSecondsRef = useRef(0);
   const chunkQueueRef = useRef<Uint8Array[]>([]);
+  // Tracks whether we've already kicked off audio.play() for this stream so we
+  // don't spam play() on every updateend. Reset on each startStream/cleanup.
+  const playStartedRef = useRef(false);
 
   // Clear skipping state when track changes
   useEffect(() => {
@@ -107,6 +110,7 @@ export default function RadioPlayer({
     }
     chunkQueueRef.current = [];
     bufferedSecondsRef.current = 0;
+    playStartedRef.current = false;
     setBufferSeconds(0);
   }, []);
 
@@ -177,6 +181,7 @@ export default function RadioPlayer({
       cleanup();
       setState("buffering");
       bufferedSecondsRef.current = 0;
+      playStartedRef.current = false;
       setBufferSeconds(0);
       chunkQueueRef.current = [];
 
@@ -196,8 +201,20 @@ export default function RadioPlayer({
         sourceBufferRef.current = sourceBuffer;
 
         sourceBuffer.addEventListener("updateend", () => {
-          if (audio.readyState >= 3 && state === "buffering") {
-            setState("playing");
+          // Once the first buffer has been appended, actually start playback.
+          // Without this explicit play() call the MediaSource fills forever but
+          // the <audio> element never plays — the button appears dead.
+          if (!playStartedRef.current && bufferedSecondsRef.current > 0) {
+            playStartedRef.current = true;
+            const playPromise = audio.play();
+            if (playPromise) {
+              playPromise.catch((err: unknown) => {
+                console.error("audio.play() rejected:", err);
+                // Autoplay blocked or decode error — allow a retry on next gesture
+                playStartedRef.current = false;
+                handleError();
+              });
+            }
           }
           processBuffer();
         });
@@ -289,11 +306,16 @@ export default function RadioPlayer({
       window.addEventListener("online", handleOnline);
 
       audio.addEventListener("canplay", () => console.log("Audio can play"));
+      audio.addEventListener("playing", () => {
+        if (!mountedRef.current) return;
+        console.log("Audio playing");
+        setState("playing");
+      });
       audio.addEventListener("error", handleError);
       audio.addEventListener("stalled", handleStalled);
       audio.addEventListener("waiting", handleWaiting);
     },
-    [cleanup, processBuffer, state],
+    [cleanup, processBuffer],
   );
 
   const skip = useCallback(async () => {
