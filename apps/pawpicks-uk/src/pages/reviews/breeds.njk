@@ -19,6 +19,8 @@ eleventyComputed:
 
 <p>We've taken our full grain-free roundup and assessed each food specifically for {{ breed.name }} suitability. Whether you have a puppy or a senior {{ breed.name }}, here's what the breed needs — and which foods deliver it.</p>
 
+{% if breed.puppyGuide %}<p class="callout"><strong>Got a {{ breed.name }} puppy?</strong> Growth, joints and feeding routine need a different approach in the first two years — see our dedicated guide to the <a href="{{ breed.puppyGuide }}">best food for {{ breed.name }} puppies</a>.</p>{% endif %}
+
 <h2>What {{ breed.name }}s Need from Their Food</h2>
 
 <p>{{ breed.name }}s are a {{ breed.sizeCategory }} breed weighing {{ breed.weightRange }}, with a lifespan of {{ breed.lifespan }}. They have a {{ breed.activityLevel }} activity level, which shapes their nutritional needs:</p>
@@ -50,63 +52,51 @@ eleventyComputed:
 
 <h2>Our Top Picks for {{ breed.name }}s</h2>
 
-<h3>🏆 Best Overall: {{ breed.topPicks.bestOverall.brand }}</h3>
-<p>{{ breed.topPicks.bestOverall.why }}</p>
+{#
+  Render picks generically so every entry in breed.topPicks shows, regardless of
+  key. bestOverall is forced first; the rest follow in JSON order. A label/emoji
+  map gives known keys a friendly heading; unknown keys fall back to a
+  prettified key name. This avoids silently dropping picks like bestForEarHealth,
+  bestForWeightControl, bestForDentalHealth, etc.
+#}
+{% set pickLabels = {
+  "bestOverall": "🏆 Best Overall",
+  "bestForSensitiveStomach": "🌿 Best for Sensitive Stomachs",
+  "bestForSensitiveDigestion": "🌿 Best for Sensitive Digestion",
+  "bestForCoat": "✨ Best for Coat Health",
+  "bestForCurlyCoat": "✨ Best for Curly Coat",
+  "bestForSkinHealth": "🧴 Best for Skin Health",
+  "bestForSkinAllergies": "🧴 Best for Skin Allergies",
+  "bestForJoints": "🦴 Best for Joint Support",
+  "bestForSpineHealth": "🦴 Best for Spine Health",
+  "bestForDentalHealth": "🦷 Best for Dental Health",
+  "bestForEarHealth": "👂 Best for Ear Health",
+  "bestForWeightControl": "⚖️ Best for Weight Control",
+  "bestForMuscle": "💪 Best for Muscle Maintenance",
+  "bestForLeanMuscle": "💪 Best for Lean Muscle",
+  "bestForStableBloodSugar": "🩸 Best for Stable Blood Sugar",
+  "bestForActiveTerriers": "⚡ Best for Active Terriers",
+  "bestForActiveSpringers": "⚡ Best for Active Springers",
+  "bestForWorkingCollies": "🐑 Best for Working Collies",
+  "bestForPetCollies": "🏡 Best for Pet Collies",
+  "bestForSeniors": "🦴 Best for Seniors",
+  "bestValue": "💰 Best Value",
+  "bestBudget": "🏷️ Budget Pick",
+  "bestPremium": "⭐ Premium Choice"
+} %}
+
+{% set overall = breed.topPicks.bestOverall %}
+<h3>{{ pickLabels.bestOverall }}: {{ overall.brand }}</h3>
+<p>{{ overall.why }}</p>
 {% affiliateButton "", "Check Price on Amazon →" %}
 
-{% if breed.topPicks.bestForSensitiveStomach %}
-<h3>🌿 Best for Sensitive Stomachs: {{ breed.topPicks.bestForSensitiveStomach.brand }}</h3>
-<p>{{ breed.topPicks.bestForSensitiveStomach.why }}</p>
+{% for key, pick in breed.topPicks %}
+{% if key != "bestOverall" and pick %}
+<h3>{{ pickLabels[key] if pickLabels[key] else ("Best " + (key | replace("best", "") | replace("For", "for ") | capitalize)) }}: {{ pick.brand }}</h3>
+<p>{{ pick.why }}</p>
 {% affiliateButton "", "Check Price on Amazon →" %}
 {% endif %}
-
-{% if breed.topPicks.bestForSensitiveDigestion %}
-<h3>🌿 Best for Sensitive Digestion: {{ breed.topPicks.bestForSensitiveDigestion.brand }}</h3>
-<p>{{ breed.topPicks.bestForSensitiveDigestion.why }}</p>
-{% affiliateButton "", "Check Price on Amazon →" %}
-{% endif %}
-
-{% if breed.topPicks.bestForCoat %}
-<h3>✨ Best for Coat Health: {{ breed.topPicks.bestForCoat.brand }}</h3>
-<p>{{ breed.topPicks.bestForCoat.why }}</p>
-{% affiliateButton "", "Check Price on Amazon →" %}
-{% endif %}
-
-{% if breed.topPicks.bestForCurlyCoat %}
-<h3>✨ Best for Curly Coat: {{ breed.topPicks.bestForCurlyCoat.brand }}</h3>
-<p>{{ breed.topPicks.bestForCurlyCoat.why }}</p>
-{% affiliateButton "", "Check Price on Amazon →" %}
-{% endif %}
-
-{% if breed.topPicks.bestForSkinHealth %}
-<h3>🧴 Best for Skin Health: {{ breed.topPicks.bestForSkinHealth.brand }}</h3>
-<p>{{ breed.topPicks.bestForSkinHealth.why }}</p>
-{% affiliateButton "", "Check Price on Amazon →" %}
-{% endif %}
-
-{% if breed.topPicks.bestForJoints %}
-<h3>🦴 Best for Joint Support: {{ breed.topPicks.bestForJoints.brand }}</h3>
-<p>{{ breed.topPicks.bestForJoints.why }}</p>
-{% affiliateButton "", "Check Price on Amazon →" %}
-{% endif %}
-
-{% if breed.topPicks.bestValue %}
-<h3>💰 Best Value: {{ breed.topPicks.bestValue.brand }}</h3>
-<p>{{ breed.topPicks.bestValue.why }}</p>
-{% affiliateButton "", "Check Price on Amazon →" %}
-{% endif %}
-
-{% if breed.topPicks.bestBudget %}
-<h3>🏷️ Budget Pick: {{ breed.topPicks.bestBudget.brand }}</h3>
-<p>{{ breed.topPicks.bestBudget.why }}</p>
-{% affiliateButton "", "Check Price on Amazon →" %}
-{% endif %}
-
-{% if breed.topPicks.bestPremium %}
-<h3>⭐ Premium Choice: {{ breed.topPicks.bestPremium.brand }}</h3>
-<p>{{ breed.topPicks.bestPremium.why }}</p>
-{% affiliateButton "", "Check Price on Amazon →" %}
-{% endif %}
+{% endfor %}
 
 <h2>Feeding Guide for {{ breed.name }}s</h2>
 
