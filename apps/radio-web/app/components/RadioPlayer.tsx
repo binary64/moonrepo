@@ -193,6 +193,49 @@ export default function RadioPlayer({
       mediaSourceRef.current = mediaSource;
       audio.src = URL.createObjectURL(mediaSource);
 
+      // Define error/retry handlers BEFORE the sourceopen listener so they are
+      // never referenced before definition (DeepSource use-before-define).
+      const handleError = () => {
+        if (!mountedRef.current) return;
+        setState("buffering");
+        const nextDelay = Math.min(
+          retryDelayRef.current * RETRY_BACKOFF_MULTIPLIER,
+          MAX_RETRY_DELAY_MS,
+        );
+        retryDelayRef.current = nextDelay;
+        console.log(
+          `Radio retry #${retryCountRef.current} in ${Math.round(nextDelay / 1000)}s`,
+        );
+        retryRef.current = setTimeout(() => {
+          startStream(true);
+        }, nextDelay);
+      };
+
+      const handleStalled = () => {
+        if (stalledTimeoutRef.current !== null) {
+          clearTimeout(stalledTimeoutRef.current);
+          stalledTimeoutRef.current = null;
+        }
+        stalledTimeoutRef.current = setTimeout(() => {
+          stalledTimeoutRef.current = null;
+          if (audioRef.current && audioRef.current.readyState < 3) {
+            console.log("Stream stalled (readyState < 3), triggering retry");
+            handleError();
+          }
+        }, MAX_STALLED_TIMEOUT_MS);
+      };
+
+      const handleWaiting = () => {
+        console.log("Stream buffering (waiting event)");
+      };
+
+      const handleOnline = () => {
+        console.log("Network restored — retrying stream immediately");
+        if (retryRef.current) clearTimeout(retryRef.current);
+        retryDelayRef.current = INITIAL_RETRY_DELAY_MS;
+        startStream(true);
+      };
+
       mediaSource.addEventListener("sourceopen", async () => {
         if (!mountedRef.current) return;
 
@@ -262,52 +305,14 @@ export default function RadioPlayer({
         }
       });
 
-      const handleError = () => {
-        if (!mountedRef.current) return;
-        setState("buffering");
-        const nextDelay = Math.min(
-          retryDelayRef.current * RETRY_BACKOFF_MULTIPLIER,
-          MAX_RETRY_DELAY_MS,
-        );
-        retryDelayRef.current = nextDelay;
-        console.log(
-          `Radio retry #${retryCountRef.current} in ${Math.round(nextDelay / 1000)}s`,
-        );
-        retryRef.current = setTimeout(() => {
-          startStream(true);
-        }, nextDelay);
-      };
-
-      const handleStalled = () => {
-        if (stalledTimeoutRef.current !== null) {
-          clearTimeout(stalledTimeoutRef.current);
-          stalledTimeoutRef.current = null;
-        }
-        stalledTimeoutRef.current = setTimeout(() => {
-          stalledTimeoutRef.current = null;
-          if (audioRef.current && audioRef.current.readyState < 3) {
-            console.log("Stream stalled (readyState < 3), triggering retry");
-            handleError();
-          }
-        }, MAX_STALLED_TIMEOUT_MS);
-      };
-
-      const handleWaiting = () => {
-        console.log("Stream buffering (waiting event)");
-      };
-
-      const handleOnline = () => {
-        console.log("Network restored — retrying stream immediately");
-        if (retryRef.current) clearTimeout(retryRef.current);
-        retryDelayRef.current = INITIAL_RETRY_DELAY_MS;
-        startStream(true);
-      };
       onlineHandlerRef.current = handleOnline;
       window.addEventListener("online", handleOnline);
 
       audio.addEventListener("canplay", () => console.log("Audio can play"));
       audio.addEventListener("playing", () => {
         if (!mountedRef.current) return;
+        // skipcq: JS-0002 — intentional diagnostic log, consistent with the
+        // existing logging style throughout this player component
         console.log("Audio playing");
         setState("playing");
       });
