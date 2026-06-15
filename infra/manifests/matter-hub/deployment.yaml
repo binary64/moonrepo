@@ -1,0 +1,119 @@
+# Home-Assistant-Matter-Hub — exposes selected Home Assistant entities to
+# Google Home / Alexa / Apple Home as Matter devices, over the LOCAL network.
+#
+# Why this shape:
+#   * hostNetwork: true        — Matter REQUIRES host networking (the upstream
+#                                docs mandate `--network=host`). The Matter
+#                                protocol relies on mDNS + UDP multicast + IPv6
+#                                link-local/ULA reachability that a NAT'd pod
+#                                network cannot provide.
+#   * nodeSelector: master     — must run on the NUC (192.168.1.201), the only
+#                                node on the home LAN. The Nest speakers (which
+#                                act as Google's Matter hub) discover and talk
+#                                to this bridge via mDNS on that L2 segment. A
+#                                pod on the VPS worker is on a different network
+#                                and could never be commissioned.
+#   * dnsPolicy ClusterFirstWithHostNet — keep cluster DNS resolution while on
+#                                host network (so the HA cluster Service name
+#                                still resolves).
+#
+# Pre-flight (NOT done by this manifest — see PR description):
+#   UniFi APs filter mDNS via IGMP snooping. Disable IGMP snooping or enable the
+#   mDNS reflector on the UniFi side, or commissioning silently fails.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: matter-hub
+  namespace: matter-hub
+  labels:
+    app: matter-hub
+  annotations:
+    # Workload comes up after namespace (-1) and unsealed secret (0).
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  replicas: 1
+  strategy:
+    # Single Matter fabric identity bound to one PVC — never run two pods at
+    # once (a second would fight over the same Matter datastore). Recreate
+    # guarantees the old pod is gone before the new one starts.
+    type: Recreate
+  selector:
+    matchLabels:
+      app: matter-hub
+  template:
+    metadata:
+      labels:
+        app: matter-hub
+    spec:
+      # No Kubernetes API access required by the bridge; with hostNetwork on,
+      # not mounting the default SA token removes an avoidable privilege.
+      automountServiceAccountToken: false
+      nodeSelector:
+        node-role.kubernetes.io/master: "true"
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/control-plane
+          effect: NoSchedule
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+        - name: matter-hub
+          # Pinned by digest-less tag for now; bump deliberately. t0bst4r is the
+          # original author's image; riddix is the active community fork — both
+          # publish the same env contract. Using the upstream t0bst4r image.
+          image: ghcr.io/t0bst4r/home-assistant-matter-hub:3.0.4
+          args:
+            - "start"
+          env:
+            - name: HAMH_HOME_ASSISTANT_URL
+              # In-cluster Service DNS still resolves under
+              # ClusterFirstWithHostNet. HTTP (not HTTPS) avoids the HA host's
+              # outbound 443 firewall block, consistent with the radio stack.
+              value: "http://home-assistant.home-assistant.svc.cluster.local:8123/"
+            - name: HAMH_HOME_ASSISTANT_ACCESS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: matter-hub-secret
+                  key: ha-token
+            - name: HAMH_HTTP_PORT
+              value: "8482"
+            - name: HAMH_LOG_LEVEL
+              value: "info"
+            # Bind mDNS to the NUC's primary LAN interface so Matter
+            # advertisements go out the right NIC (not a cluster veth/CNI iface).
+            - name: HAMH_MDNS_NETWORK_INTERFACE
+              value: "enp2s0"
+          ports:
+            - name: http
+              containerPort: 8482
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 100m
+              memory: 192Mi
+            limits:
+              # No CPU limit — Matter commissioning + initial HA entity sync are
+              # bursty; a CPU cap would throttle them and slow/flake the pairing.
+              # Memory IS capped (Node heap can creep with entity count); 512Mi
+              # gives ~3x headroom over the ~120-180Mi steady-state prediction.
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8482
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8482
+            initialDelaySeconds: 10
+            periodSeconds: 10
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: matter-hub-data

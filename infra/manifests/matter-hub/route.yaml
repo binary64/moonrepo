@@ -1,0 +1,20 @@
+# Web UI for Home-Assistant-Matter-Hub — where you choose which HA entities to
+# expose as Matter devices and read commissioning QR/pairing codes.
+# Private-only: *.home.brandwhisper.cloud is internal (Tailscale/LAN) per repo
+# convention. The Matter data path itself does NOT go through this route — it's
+# local mDNS on the LAN; this is just the management console.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: matter-hub
+  namespace: matter-hub
+spec:
+  parentRefs:
+    - name: gateway
+      namespace: istio-system
+  hostnames:
+    - "matter-hub.home.brandwhisper.cloud"
+  rules:
+    - backendRefs:
+        - name: matter-hub
+          port: 8482

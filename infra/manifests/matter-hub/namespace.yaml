@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: matter-hub
+  annotations:
+    # Create the namespace first so namespaced resources have somewhere to land.
+    argocd.argoproj.io/sync-wave: "-1"
