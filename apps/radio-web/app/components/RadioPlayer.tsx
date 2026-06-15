@@ -17,6 +17,15 @@ const MAX_BUFFER_SECONDS = 60;
 
 const MAX_RETRIES = 0; // 0 = unlimited retries for weak signal resilience
 
+// Centralised diagnostic logging. These intentionally use console for
+// weak-signal/retry debugging in the browser; DeepSource JS-0002 ("avoid
+// console in browser code") is suppressed here once at the single sink rather
+// than at every call site.
+// skipcq: JS-0002
+const dlog = (...args: unknown[]) => console.log(...args);
+// skipcq: JS-0002
+const derr = (...args: unknown[]) => console.error(...args);
+
 type PlayerState = "idle" | "buffering" | "playing";
 
 function WaveformRing({ active }: { active: boolean }) {
@@ -134,7 +143,7 @@ export default function RadioPlayer({
 
     // Enforce hard cap to prevent unbounded memory growth
     if (totalSeconds > MAX_BUFFER_SECONDS) {
-      console.log(
+      dlog(
         `Buffer cap hit (${totalSeconds.toFixed(1)}s > ${MAX_BUFFER_SECONDS}s) — stopping fetch`,
       );
       return;
@@ -154,9 +163,9 @@ export default function RadioPlayer({
       sourceBufferRef.current.appendBuffer(merged);
       bufferedSecondsRef.current = totalSeconds;
       setBufferSeconds(totalSeconds);
-      console.log(`Buffer: appended ${Math.round(totalSeconds)}s of audio`);
+      dlog(`Buffer: appended ${Math.round(totalSeconds)}s of audio`);
     } catch (err) {
-      console.error("SourceBuffer append error:", err);
+      derr("SourceBuffer append error:", err);
     }
   }, []);
 
@@ -167,9 +176,7 @@ export default function RadioPlayer({
       if (isRetry) {
         retryCountRef.current += 1;
         if (MAX_RETRIES > 0 && retryCountRef.current > MAX_RETRIES) {
-          console.error(
-            `Radio player: exceeded ${MAX_RETRIES} retries, giving up`,
-          );
+          derr(`Radio player: exceeded ${MAX_RETRIES} retries, giving up`);
           setState("idle");
           return;
         }
@@ -203,7 +210,7 @@ export default function RadioPlayer({
           MAX_RETRY_DELAY_MS,
         );
         retryDelayRef.current = nextDelay;
-        console.log(
+        dlog(
           `Radio retry #${retryCountRef.current} in ${Math.round(nextDelay / 1000)}s`,
         );
         retryRef.current = setTimeout(() => {
@@ -219,18 +226,18 @@ export default function RadioPlayer({
         stalledTimeoutRef.current = setTimeout(() => {
           stalledTimeoutRef.current = null;
           if (audioRef.current && audioRef.current.readyState < 3) {
-            console.log("Stream stalled (readyState < 3), triggering retry");
+            dlog("Stream stalled (readyState < 3), triggering retry");
             handleError();
           }
         }, MAX_STALLED_TIMEOUT_MS);
       };
 
       const handleWaiting = () => {
-        console.log("Stream buffering (waiting event)");
+        dlog("Stream buffering (waiting event)");
       };
 
       const handleOnline = () => {
-        console.log("Network restored — retrying stream immediately");
+        dlog("Network restored — retrying stream immediately");
         if (retryRef.current) clearTimeout(retryRef.current);
         retryDelayRef.current = INITIAL_RETRY_DELAY_MS;
         startStream(true);
@@ -239,7 +246,7 @@ export default function RadioPlayer({
       mediaSource.addEventListener("sourceopen", async () => {
         if (!mountedRef.current) return;
 
-        console.log("MediaSource opened, creating SourceBuffer");
+        dlog("MediaSource opened, creating SourceBuffer");
         const sourceBuffer = mediaSource.addSourceBuffer("audio/mpeg");
         sourceBufferRef.current = sourceBuffer;
 
@@ -252,7 +259,7 @@ export default function RadioPlayer({
             const playPromise = audio.play();
             if (playPromise) {
               playPromise.catch((err: unknown) => {
-                console.error("audio.play() rejected:", err);
+                derr("audio.play() rejected:", err);
                 // Autoplay blocked or decode error — allow a retry on next gesture
                 playStartedRef.current = false;
                 handleError();
@@ -263,7 +270,7 @@ export default function RadioPlayer({
         });
 
         sourceBuffer.addEventListener("error", (e) => {
-          console.error("SourceBuffer error:", e);
+          derr("SourceBuffer error:", e);
           handleError();
         });
 
@@ -284,7 +291,7 @@ export default function RadioPlayer({
             try {
               const { done, value } = await reader.read();
               if (done) {
-                console.log("Stream ended — restarting");
+                dlog("Stream ended — restarting");
                 handleError();
                 return;
               }
@@ -293,14 +300,14 @@ export default function RadioPlayer({
               pump();
             } catch (err: unknown) {
               if (err instanceof Error && err.name === "AbortError") return;
-              console.error("Stream read error:", err);
+              derr("Stream read error:", err);
               handleError();
             }
           };
           pump();
         } catch (err: unknown) {
           if (err instanceof Error && err.name === "AbortError") return;
-          console.error("Fetch init error:", err);
+          derr("Fetch init error:", err);
           handleError();
         }
       });
@@ -308,12 +315,10 @@ export default function RadioPlayer({
       onlineHandlerRef.current = handleOnline;
       window.addEventListener("online", handleOnline);
 
-      audio.addEventListener("canplay", () => console.log("Audio can play"));
+      audio.addEventListener("canplay", () => dlog("Audio can play"));
       audio.addEventListener("playing", () => {
         if (!mountedRef.current) return;
-        // skipcq: JS-0002 — intentional diagnostic log, consistent with the
-        // existing logging style throughout this player component
-        console.log("Audio playing");
+        dlog("Audio playing");
         setState("playing");
       });
       audio.addEventListener("error", handleError);
@@ -336,7 +341,7 @@ export default function RadioPlayer({
       const res = await fetch("/api/skip", { method: "POST" });
       if (!res.ok) throw new Error(`Skip failed: ${res.status}`);
     } catch (err) {
-      console.error("Skip error:", err);
+      derr("Skip error:", err);
       if (skipTimeoutRef.current) {
         clearTimeout(skipTimeoutRef.current);
         skipTimeoutRef.current = null;
