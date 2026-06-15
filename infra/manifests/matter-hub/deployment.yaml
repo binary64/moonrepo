@@ -63,8 +63,11 @@ spec:
           # original author's image; riddix is the active community fork — both
           # publish the same env contract. Using the upstream t0bst4r image.
           image: ghcr.io/t0bst4r/home-assistant-matter-hub:3.0.4
-          args:
-            - "start"
+          # NO args/command override. The image's ENTRYPOINT is `node` and its
+          # built-in CMD is ["start"]. Passing args: ["start"] here REPLACES the
+          # CMD, yielding `node start` → "Cannot find module '/start'" crashloop.
+          # All runtime config is supplied via HAMH_* env vars below, so we just
+          # let the image's default CMD run.
           env:
             - name: HAMH_HOME_ASSISTANT_URL
               # In-cluster Service DNS still resolves under
