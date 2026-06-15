@@ -158,6 +158,13 @@ spec:
                       *)         sleep 2 ;;
                     esac
                   done
+                  # If the loop exhausted without reaching Succeeded, the worker
+                  # never confirmed a completed backup — fail loudly so the
+                  # CronJob does not record a false success.
+                  if [ "$PHASE" != "Succeeded" ]; then
+                    echo "  worker timed out after 120s in phase: $PHASE" >&2
+                    exit 1
+                  fi
 
                   echo "[5/5] Backup complete. cleanup() trap will scale app back to 1."
               volumeMounts:
