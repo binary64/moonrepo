@@ -1,0 +1,20 @@
+# ClusterIP Service for the Matter Hub web UI. NOTE: the pod runs on
+# hostNetwork, so this Service targets the host port 8482 on the NUC via the
+# pod selector. Used only by the HTTPRoute for the management console; the
+# Matter protocol path is direct LAN mDNS and does not use this Service.
+apiVersion: v1
+kind: Service
+metadata:
+  name: matter-hub
+  namespace: matter-hub
+  labels:
+    app: matter-hub
+spec:
+  type: ClusterIP
+  selector:
+    app: matter-hub
+  ports:
+    - name: http
+      port: 8482
+      targetPort: 8482
+      protocol: TCP

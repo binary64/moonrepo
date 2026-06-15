@@ -1,0 +1,18 @@
+# PVC for Home-Assistant-Matter-Hub state.
+# Holds Matter fabric credentials + the per-bridge commissioning data. This is
+# the device identity Google commissions against — losing it forces a re-pair of
+# the bridge in the Google Home app, so Prune=false protects it on app removal.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: matter-hub-data
+  namespace: matter-hub
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: local-path
