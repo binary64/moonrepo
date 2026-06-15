@@ -11,3 +11,7 @@ resources:
 
 commonAnnotations:
   moonrepo.dev/skip-local: "true"
+
+commonLabels:
+  app.kubernetes.io/name: matter-hub
+  app.kubernetes.io/part-of: home-automation

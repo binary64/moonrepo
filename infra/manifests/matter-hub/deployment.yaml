@@ -27,6 +27,9 @@ metadata:
   namespace: matter-hub
   labels:
     app: matter-hub
+  annotations:
+    # Workload comes up after namespace (-1) and unsealed secret (0).
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   replicas: 1
   strategy:
@@ -42,6 +45,9 @@ spec:
       labels:
         app: matter-hub
     spec:
+      # No Kubernetes API access required by the bridge; with hostNetwork on,
+      # not mounting the default SA token removes an avoidable privilege.
+      automountServiceAccountToken: false
       nodeSelector:
         node-role.kubernetes.io/master: "true"
       tolerations:
