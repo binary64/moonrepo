@@ -29,7 +29,22 @@ GROUP_ENTITY = "media_player.all_speakers"
 MEMBER_ENTITIES = ["media_player.nest_audio", "media_player.office_speaker"]
 RADIO_NS = "radio-dj"
 LIQ_LABEL = "app=liquidsoap"
+LIQ_DEPLOY = "liquidsoap"
 PAUSE_FILE = "/tmp/radio-paused"  # nosec B108 - shared flag with radio.sh, intentional
+
+# ─── Scale-to-zero (mirror of the host radio-watchdog.sh logic) ───
+# The host watchdog is the live scale-to-zero authority; this repo twin keeps
+# the SAME logic in version control (the "sync functionality with moonrepo"
+# requirement). When Icecast has reported 0 listeners for SCALE_DOWN_SECS
+# continuous seconds we scale the liquidsoap Deployment to 0 (Icecast stays up).
+# The timer is persisted to ZERO_SINCE_FILE so it survives across the discrete
+# cron fires this script runs under. We only ever scale DOWN, never up — wake
+# is owned by the wake paths (radio-cast.sh pre-warm + the nginx activator).
+ICECAST_STATUS = (
+    "http://icecast.radio-dj.svc.cluster.local:8100/status-json.xsl"
+)
+SCALE_DOWN_SECS = 600  # 10 continuous minutes at 0 listeners -> scale to 0
+ZERO_SINCE_FILE = "/tmp/radio-zero-since"  # nosec B108 - timer state, non-secret
 
 
 def kx(args, ns=HA_NS, pod=HA_POD, timeout=20):
@@ -120,12 +135,114 @@ def radio_is_on():
     return phase == "Running"
 
 
+def icecast_listeners():
+    """Total Icecast listeners on the source, or None if unreachable.
+
+    A missing source mount (liquidsoap already at 0) means 0 listeners by
+    definition, so we return 0 in that case rather than None.
+    """
+    try:
+        r = subprocess.run(  # nosec B603 B607 - fixed curl argv, no shell
+            ["curl", "-s", "--max-time", "5", ICECAST_STATUS],
+            capture_output=True, text=True, timeout=10, check=False,
+        )
+        d = json.loads(r.stdout)
+    except (subprocess.SubprocessError, OSError, ValueError):
+        return None
+    src = d.get("icestats", {}).get("source")
+    if src is None:
+        return 0
+    if isinstance(src, list):
+        return sum(int(s.get("listeners", 0) or 0) for s in src)
+    try:
+        return int(src.get("listeners", 0) or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def liq_replicas():
+    """Current liquidsoap Deployment spec replicas, or None if unknown."""
+    out = kubectl([
+        "get", "deployment", LIQ_DEPLOY, "-n", RADIO_NS,
+        "-o", "jsonpath={.spec.replicas}",
+    ])
+    try:
+        return int(out)
+    except (TypeError, ValueError):
+        return None
+
+
+def _read_zero_since():
+    try:
+        with open(ZERO_SINCE_FILE, encoding="utf-8") as fh:
+            return int(fh.read().strip())
+    except (OSError, ValueError):
+        return None
+
+
+def _write_zero_since(value):
+    """Persist (int epoch) or clear (None) the 0-listener-since timestamp."""
+    try:
+        if value is None:
+            if os.path.exists(ZERO_SINCE_FILE):
+                os.remove(ZERO_SINCE_FILE)
+        else:
+            with open(ZERO_SINCE_FILE, "w", encoding="utf-8") as fh:
+                fh.write(str(int(value)))
+    except OSError:
+        pass
+
+
+def scale_down_tick():
+    """Scale liquidsoap to 0 after SCALE_DOWN_SECS continuous 0-listener secs.
+
+    Idempotent and DOWN-only: never scales up, so it can never fight a wake.
+    Timer state persists in ZERO_SINCE_FILE across discrete cron fires.
+    """
+    listeners = icecast_listeners()
+    if listeners is None:
+        return  # transient Icecast blip — leave the timer untouched
+
+    if listeners > 0:
+        if _read_zero_since() is not None:
+            print(f"scale: {listeners} listener(s) — reset scale-down timer")
+        _write_zero_since(None)
+        return
+
+    replicas = liq_replicas()
+    if not replicas:  # 0 or None -> already down / unknown, idle the timer
+        _write_zero_since(None)
+        return
+
+    now = int(time.time())
+    since = _read_zero_since()
+    if since is None:
+        _write_zero_since(now)
+        print(f"scale: 0 listeners — starting {SCALE_DOWN_SECS}s countdown")
+        return
+
+    elapsed = now - since
+    if elapsed >= SCALE_DOWN_SECS:
+        print(
+            f"scale: 0 listeners for {elapsed}s (>= {SCALE_DOWN_SECS}s) "
+            f"-> scaling {LIQ_DEPLOY} to 0"
+        )
+        kubectl(["scale", "deployment", LIQ_DEPLOY, "-n", RADIO_NS,
+                 "--replicas=0"])
+        _write_zero_since(None)
+
+
 def main():
     """Check each speaker; re-cast the group if any has dropped out of sync."""
     # Respect intentional pause.
     if os.path.exists(PAUSE_FILE):
         print("paused — skipping")
         return 1
+
+    # Scale-to-zero runs FIRST, unconditionally (independent of speaker sync):
+    # it must keep counting down even when the radio is "off" so the encoder
+    # gets reclaimed. It only ever scales DOWN, never up.
+    scale_down_tick()
 
     if not radio_is_on():
         print("radio off (liquidsoap not running) — skipping")

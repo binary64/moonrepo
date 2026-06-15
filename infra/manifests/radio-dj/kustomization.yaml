@@ -16,3 +16,10 @@ resources:
 - dj-brain-service.yaml
 - radio-llm-prompt-configmap.yaml
 - litellm-gateway-key-secret.yaml
+- radio-activator-rbac.yaml
+- radio-activator-deployment.yaml
+# Activator HTTP server. Source of truth is apps/radio-activator/activator.py
+# (readable/reviewable); the deployed copy is embedded inline in this ConfigMap
+# because kustomize/ArgoCD LoadRestrictionsRootOnly forbids generating from a
+# file outside this dir. Same pattern as radio-dj.liq + dj-watcher-script.
+- radio-activator-configmap.yaml

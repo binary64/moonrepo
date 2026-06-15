@@ -68,6 +68,9 @@ spec:
         - name: music
           mountPath: /data/music
           readOnly: true
+        - name: muzak
+          mountPath: /data/muzak
+          readOnly: true
         - name: music-index
           mountPath: /data/music-index
           readOnly: true
@@ -98,6 +101,14 @@ spec:
         hostPath:
           path: /mnt/arthur/clawd/data/music
           type: Directory
+      - name: muzak
+        hostPath:
+          # Cheesy cold-start muzak loop. Deploy step: drop a royalty-free
+          # elevator-muzak mp3 at this host path named cheesy-muzak.mp3
+          # (see PR description). DirectoryOrCreate so the pod still schedules
+          # if the file/dir is not present yet — the .liq degrades to silence.
+          path: /mnt/arthur/clawd/data/muzak
+          type: DirectoryOrCreate
       - name: music-index
         hostPath:
           path: /mnt/arthur/clawd/data/music-index

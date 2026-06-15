@@ -5,6 +5,15 @@ metadata:
   namespace: radio-dj
 data:
   default.conf: |    # Default server — catches IP-based access and unknown hostnames
+    # ─── Cold-start activator wiring ───
+    # When liquidsoap is scaled to zero, Icecast has no /stream mount and a cold
+    # listener would get a 404 (never registering as a listener — so we can't
+    # use listener-count to wake). Instead every /stream hit fires a
+    # non-blocking subrequest to the always-on radio-activator service, which
+    # scales liquidsoap 0->1. The activator returns 200 immediately (wake is
+    # async), so the listener's own client retry/buffering rides through the
+    # ~seconds of cold start while the cold-start muzak covers the handover.
+    # mirror=on duplicates the request without blocking the main proxy.
     server {
         listen 80 default_server;
         server_name _;
@@ -14,7 +23,20 @@ data:
         proxy_hide_header Expires;
         proxy_hide_header Pragma;
 
+        # Internal location that pings the activator's /wake endpoint.
+        location = /__wake {
+            internal;
+            proxy_pass http://radio-activator.radio-dj.svc.cluster.local:8080/wake;
+            proxy_set_header Host $host;
+            proxy_connect_timeout 2s;
+            proxy_read_timeout 3s;
+        }
+
         location /stream {
+            # Fire-and-forget wake subrequest on every stream hit (idempotent;
+            # the activator no-ops when liquidsoap is already up).
+            mirror /__wake;
+            mirror_request_body off;
             proxy_pass http://icecast.radio-dj.svc.cluster.local:8100/stream;
             proxy_http_version 1.1;
             proxy_set_header Host $host;
@@ -34,6 +56,8 @@ data:
         }
 
         location = /stream.mp3 {
+            mirror /__wake;
+            mirror_request_body off;
             proxy_pass http://icecast.radio-dj.svc.cluster.local:8100/stream;
             proxy_http_version 1.1;
             proxy_set_header Host $host;
@@ -91,7 +115,18 @@ data:
         proxy_hide_header Expires;
         proxy_hide_header Pragma;
 
+        # Cold-start activator subrequest target (see notes on the default server).
+        location = /__wake {
+            internal;
+            proxy_pass http://radio-activator.radio-dj.svc.cluster.local:8080/wake;
+            proxy_set_header Host $host;
+            proxy_connect_timeout 2s;
+            proxy_read_timeout 3s;
+        }
+
         location /stream {
+            mirror /__wake;
+            mirror_request_body off;
             proxy_pass http://icecast.radio-dj.svc.cluster.local:8100/stream;
             proxy_http_version 1.1;
             proxy_set_header Host $host;
@@ -111,6 +146,8 @@ data:
         }
 
         location = /stream.mp3 {
+            mirror /__wake;
+            mirror_request_body off;
             proxy_pass http://icecast.radio-dj.svc.cluster.local:8100/stream;
             proxy_http_version 1.1;
             proxy_set_header Host $host;

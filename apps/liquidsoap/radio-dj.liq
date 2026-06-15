@@ -34,6 +34,26 @@ end)
 # Silence fallback
 silence = blank(id="silence")
 
+# ─── Cheesy cold-start muzak ───
+# After a scale-from-zero wake the selector (next_track.py / request.dynamic)
+# takes a few seconds to resolve its first real track. To avoid a dead-air gap
+# (or a cold listener hitting silence) we play a single looped royalty-free
+# elevator-muzak file during that handover ONLY. The `cold` ref below starts
+# true and is flipped to false the instant the first real track airs (see the
+# TRACK on_metadata handler), after which the muzak is never heard again.
+# The file is mounted at /data/muzak/cheesy-muzak.mp3 (see liquidsoap-deployment
+# .yaml). If it is missing we degrade gracefully to silence via mksafe.
+cold = ref(true)
+muzak_path = "/data/muzak/cheesy-muzak.mp3"
+muzak =
+  if file.exists(muzak_path) then
+    log("MUZAK: cold-start loop armed (#{muzak_path})")
+    amplify(0.7, single(id="cold_start_muzak", muzak_path))
+  else
+    log("MUZAK: #{muzak_path} not found — cold start will use silence")
+    blank(id="muzak_missing")
+  end
+
 # Current song title ref — updated by on_metadata, read by insert_metadata
 current_song = ref("Arthur Radio")
 
@@ -47,6 +67,9 @@ music = source.on_metadata(music, fun (m) -> begin
 
   if fn != "" then
     log("TRACK: #{fn} (BPM: #{actual_bpm})")
+    # First real track has aired — end the cold-start muzak handover for good.
+    if cold() then log("MUZAK: first real track aired — handing over, muzak off") end
+    cold := false
     file.write(data=fn, "/state/current-track-path")
     file.write(data=actual_bpm, "/state/current-track-bpm")
     ignore(process.run("/radio/announce-track.sh &"))
@@ -207,6 +230,19 @@ end)
 
 # Video sidecar FIFO removed — no /stream-fifo volume mounted
 
+# ─── Cold-start handover switch ───
+# While `cold` is true (scale-from-zero wake, before the first real track has
+# aired) we broadcast the cheesy muzak loop so a cold listener / cast hears
+# something instead of dead air. The instant the first real track airs the
+# TRACK handler flips cold:=false and this switch hands over to the real radio
+# mix permanently. track_sensitive=false lets it cut over mid-track. mksafe
+# keeps the broadcast infallible even if the muzak file is absent.
+broadcast = switch(id="cold_start_switch", track_sensitive=false, [
+  ({cold()}, muzak),
+  ({true}, radio)
+])
+broadcast = mksafe(broadcast)
+
 # Output to Icecast
 output.icecast(
   %mp3(bitrate=192),
@@ -219,7 +255,7 @@ output.icecast(
   genre="Mixed",
   fallible=true,
   encoding="UTF-8",
-  radio
+  broadcast
 )
 
 

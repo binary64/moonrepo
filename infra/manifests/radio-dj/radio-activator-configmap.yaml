@@ -1,0 +1,130 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: radio-activator-script
+  namespace: radio-dj
+data:
+  # SOURCE OF TRUTH: apps/radio-activator/activator.py
+  # This inline copy is what actually deploys (kustomize's default
+  # LoadRestrictionsRootOnly — which ArgoCD also enforces — forbids a
+  # configMapGenerator reading a file from outside this directory, so we cannot
+  # generate it from apps/). Keep the two in sync; the apps/ copy is the
+  # readable/reviewable canonical version. Same pattern as radio-dj.liq.
+  activator.py: |
+    #!/usr/bin/env python3
+    """Arthur Radio cold-start activator.
+
+    A tiny always-on HTTP service that wakes the liquidsoap encoder when a cold
+    listener hits the stream while it is scaled to zero.
+
+    When liquidsoap is scaled to 0 (no listeners for 10 continuous minutes),
+    Icecast has NO /stream source mount, so a cold listener gets a 404 and NEVER
+    registers as a listener. That means "listeners > 0" can't be the wake
+    trigger. The always-on nginx player proxies cold stream hits here
+    (GET /wake) so the activator itself can scale liquidsoap 0 -> 1.
+
+    Endpoints:
+      GET /wake     Idempotent: if liquidsoap.spec.replicas == 0, patch it to 1.
+                    Always returns 200. Body is a small JSON status.
+      GET /healthz  200 OK liveness/readiness.
+
+    Talks to the Kubernetes API in-cluster via the mounted ServiceAccount token;
+    RBAC (radio-activator-rbac.yaml) grants get/patch on deployments/scale in
+    the radio-dj namespace ONLY.
+    """
+    import json
+    import os
+    import ssl
+    import urllib.error
+    import urllib.request
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+    NAMESPACE = os.environ.get("RADIO_NS", "radio-dj")
+    DEPLOYMENT = os.environ.get("LIQ_DEPLOY", "liquidsoap")
+    API = "https://kubernetes.default.svc"
+    SA = "/var/run/secrets/kubernetes.io/serviceaccount"
+    LISTEN_PORT = int(os.environ.get("PORT", "8080"))
+
+
+    def _token():
+        with open(f"{SA}/token", encoding="utf-8") as fh:
+            return fh.read().strip()
+
+
+    def _ctx():
+        return ssl.create_default_context(cafile=f"{SA}/ca.crt")
+
+
+    def _api(method, path, body=None, content_type="application/json"):
+        url = f"{API}{path}"
+        data = body.encode() if isinstance(body, str) else body
+        req = urllib.request.Request(url, data=data, method=method)
+        req.add_header("Authorization", f"Bearer {_token()}")
+        req.add_header("Accept", "application/json")
+        if body is not None:
+            req.add_header("Content-Type", content_type)
+        with urllib.request.urlopen(req, context=_ctx(), timeout=10) as resp:
+            return resp.status, json.loads(resp.read() or "{}")
+
+
+    def _scale_path():
+        return (
+            f"/apis/apps/v1/namespaces/{NAMESPACE}"
+            f"/deployments/{DEPLOYMENT}/scale"
+        )
+
+
+    def current_replicas():
+        _, obj = _api("GET", _scale_path())
+        return int(obj.get("spec", {}).get("replicas", 0) or 0)
+
+
+    def wake():
+        """Scale to 1 only if currently 0. Returns (woke, replicas)."""
+        replicas = current_replicas()
+        if replicas > 0:
+            return False, replicas
+        patch = json.dumps({"spec": {"replicas": 1}})
+        _api("PATCH", _scale_path(), body=patch,
+             content_type="application/merge-patch+json")
+        return True, 1
+
+
+    class Handler(BaseHTTPRequestHandler):
+        def _send(self, code, payload):
+            body = json.dumps(payload).encode()
+            self.send_response(code)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def do_GET(self):  # noqa: N802
+            if self.path.startswith("/healthz"):
+                self._send(200, {"ok": True})
+                return
+            if self.path.startswith("/wake"):
+                try:
+                    woke, replicas = wake()
+                    self._send(200, {
+                        "woke": woke, "replicas": replicas,
+                        "deployment": DEPLOYMENT, "namespace": NAMESPACE,
+                    })
+                except (urllib.error.URLError, OSError, ValueError) as exc:
+                    self._send(200, {"woke": False, "error": str(exc)})
+                return
+            self._send(404, {"error": "not found"})
+
+        def log_message(self, format, *args):  # noqa: A002,N802
+            print("activator: " + (format % args))
+
+
+    def main():
+        server = ThreadingHTTPServer(("0.0.0.0", LISTEN_PORT), Handler)
+        print(f"activator: listening on :{LISTEN_PORT} -> "
+              f"{NAMESPACE}/{DEPLOYMENT}")
+        server.serve_forever()
+
+
+    if __name__ == "__main__":
+        main()
