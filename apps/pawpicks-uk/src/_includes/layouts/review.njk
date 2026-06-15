@@ -31,7 +31,11 @@ ogType: article
             "ratingValue": "{{ product.rating }}",
             "bestRating": "5"
           },
-          "author": { "@type": "Organization", "name": "{{ site.name }}" }
+          "author": {
+            "@type": "Organization",
+            "name": "{{ site.name }}",
+            "url": "{{ site.url }}/how-we-test/"
+          }
         },
         "offers": {
           "@type": "Offer",
@@ -142,5 +146,7 @@ ogType: article
   </details>
   {% endfor %}
   {% endif %}
+
+  {% include "partials/how-we-test-cta.njk" %}
 </article>
 {% endblock %}

@@ -1,7 +1,14 @@
 [
   { "label": "Home", "title": "Home", "url": "/" },
   { "label": "Grain-Free Food", "title": "Grain-Free Food", "url": "/best-grain-free-dog-food-uk/" },
+  { "label": "Puppy Food", "title": "Puppy Food", "url": "/best-puppy-food-uk/" },
+  { "label": "Senior Dogs", "title": "Senior Dogs", "url": "/best-senior-dog-food-uk/" },
+  { "label": "Sensitive Stomachs", "title": "Sensitive Stomachs", "url": "/best-dog-food-sensitive-stomach-uk/" },
+  { "label": "Heart Health", "title": "Heart Health", "url": "/best-dog-food-heart-health-dcm-uk/" },
+  { "label": "Fresh Food", "title": "Fresh Food", "url": "/best-fresh-dog-food-uk/" },
+  { "label": "Wet Food", "title": "Wet Food", "url": "/best-grain-free-wet-dog-food-uk/" },
   { "label": "Comparisons", "title": "Comparisons", "url": "/comparisons/" },
   { "label": "Guides", "title": "Guides", "url": "/guides/" },
+  { "label": "How We Test", "title": "How We Test", "url": "/how-we-test/" },
   { "label": "About", "title": "About", "url": "/about/" }
 ]

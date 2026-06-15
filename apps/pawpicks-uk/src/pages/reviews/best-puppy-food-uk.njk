@@ -1,0 +1,204 @@
+---
+layout: layouts/review.njk
+title: "Best Puppy Food UK (2026) — Tested & Compared"
+description: "The right food in a puppy's first year shapes growth, joints and lifelong digestion. We compare the best UK puppy foods for 2026 — Forthglade, Butternut Box, Pooch & Mutt, Years and Pure Pet Food — on AADF rating, meat content, life-stage suitability and price per day, informed by feeding our own dog Milo from puppyhood."
+category: "Puppy Food"
+lastUpdated: "2026-06-08"
+readTime: "13"
+tags: ["roundup", "puppy"]
+priority: 10
+permalink: "/best-puppy-food-uk/"
+faqs:
+  - q: "What is the best puppy food in the UK?"
+    a: "Our top pick is Forthglade. Its cold-pressed dry food is rated 73–75% by All About Dog Food and its wet trays 77–88% — among the highest puppy scores in the UK — and uniquely it's all-life-stage, so the same grain-free recipe carries from weaning right through to senior with no stressful diet switches as your pup grows. For fresh feeding, Butternut Box (93–94% AADF) and Years (95% AADF) lead on nutrition; Pooch & Mutt is the best-value grain-free kibble."
+  - q: "How is puppy food different from adult dog food?"
+    a: "Puppies grow fast and need more energy, protein, calcium and phosphorus per kilo than adults, plus DHA for brain and eye development. Reputable puppy and all-life-stage foods are formulated to FEDIAF/AAFCO growth standards. Large and giant breeds especially need carefully balanced calcium and controlled calorie density, because overfeeding and rapid growth raise the risk of joint and skeletal problems. Always check the food states it's suitable for growth or all life stages."
+  - q: "How much should I feed my puppy and how often?"
+    a: "Follow the feeding guide on the pack for your puppy's age and expected adult weight, and split it across more meals than an adult: roughly four meals a day to around 4 months, three meals to about 6 months, then two meals from there. Puppies have small stomachs and fast metabolisms, so little and often is best. Weigh portions rather than eyeballing them — steady growth beats fast growth, particularly for larger breeds."
+  - q: "When should I switch my puppy to adult food?"
+    a: "It depends on size. Small breeds typically move to adult food around 9–12 months, medium breeds around 12 months, and large or giant breeds not until 18–24 months because they keep growing for longer. The simplest route is an all-life-stage food like Forthglade or a fresh brand that adjusts portions automatically — then there's no abrupt switch at all. When you do change, transition over 7–10 days."
+  - q: "Is grain-free food safe for puppies?"
+    a: "Grain-free is fine for most puppies, but it's worth understanding the nuance. The heart-health concern raised in recent years (dilated cardiomyopathy) has been linked to some grain-free recipes that lean heavily on peas, lentils and other pulses as replacements — it's the legume load and recipe balance under scrutiny, not the absence of grain itself. Choosing a well-formulated brand matters more than the grain-free label. Years, for example, is both grain- and legume-free. If your puppy has no diagnosed grain sensitivity, a quality wholegrain food is also perfectly healthy — ask your vet if unsure."
+  - q: "Should I feed my puppy wet, dry or fresh food?"
+    a: "All three can support healthy growth if they meet growth nutritional standards. Dry kibble is cheapest and convenient; cold-pressed dry (like Forthglade) is gentler on digestion than standard extruded kibble. Wet and fresh foods are more palatable and hydrating — useful for fussy or teething pups — but cost more. Many owners do a mix. The most important factors are that the food is complete for growth, suits your puppy's breed size, and that you control portions to avoid overfeeding."
+  - q: "How much does feeding a puppy cost per day?"
+    a: "It varies widely with breed size and food type. Grain-free kibble like Pooch & Mutt can be around £0.45/day for a small pup; cold-pressed Forthglade from roughly £0.70/day; air-dried Pure Pet Food from about £0.89/day; and chilled fresh Butternut Box around £2.40/day for a small growing pup, rising with size. Buying dry food in larger bags or fresh food on subscription usually lowers the per-day cost."
+  - q: "Why does portion control matter so much for puppies?"
+    a: "Because how fast a puppy grows affects its joints for life. Overfeeding — especially large and giant breeds — drives rapid growth that's linked to hip and elbow dysplasia and other skeletal problems. Lean, steady growth is healthier. This is one reason we rate the fresh subscriptions (Butternut Box, Years, Pure) for puppies: they pre-portion meals to your pup's current weight and growth target and adjust as they grow, taking the guesswork out."
+---
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "{{ title }}",
+  "description": "{{ description }}",
+  "numberOfItems": {{ products.puppyFood | length }},
+  "itemListElement": [
+    {% for product in products.puppyFood %}
+    {
+      "@type": "ListItem",
+      "position": {{ loop.index }},
+      "item": {
+        "@type": "Product",
+        "name": "{{ product.name }}",
+        "brand": { "@type": "Brand", "name": "{{ product.brand }}" },
+        "description": "{{ product.summary }}",
+        "review": {
+          "@type": "Review",
+          "reviewRating": { "@type": "Rating", "ratingValue": "{{ product.rating }}", "bestRating": "5" },
+          "author": { "@type": "Organization", "name": "{{ site.name }}", "url": "{{ site.url }}/how-we-test/" }
+        }
+      }
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
+
+<p>A puppy's first year is the most important feeding window of its whole life. The right food fuels healthy growth, brain and joint development and sets up lifelong digestion — and with large breeds especially, getting the balance and the <em>portions</em> right genuinely protects their joints for years to come.</p>
+
+<p>This guide cuts through the marketing. Our recommendations are informed by raising and feeding our own dog — <strong>Milo, now a 12-year-old Labrador/Lurcher rescue who's wheat-sensitive</strong>, fed from puppyhood — alongside published nutritional data and independent All About Dog Food (AADF) ratings. Below are the UK puppy foods we rate most highly for 2026, ranked, compared and explained.</p>
+
+<h2>Best Puppy Food at a Glance</h2>
+
+<div class="comparison-table-wrapper"><table class="comparison-table">
+  <thead>
+    <tr>
+      <th>Brand</th>
+      <th>Format</th>
+      <th>AADF</th>
+      <th>Price/Day</th>
+      <th>Best For</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for product in products.puppyFood %}
+    <tr>
+      <td><strong>{{ product.brand }}</strong>{% if product.topPick %} <span class="tag tag-top">🏆 Top Pick</span>{% endif %}{% if product.bestValue %} <span class="tag tag-top">💰 Best Value</span>{% endif %}</td>
+      <td>{{ product.type }}</td>
+      <td>{{ product.aadf }}</td>
+      <td>{{ product.pricePerDay }}</td>
+      <td>{{ product.bestFor | first }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<p class="meta"><em>Prices are typical starting points per day for a small-to-medium pup and rise with breed size — larger bags and subscriptions usually cost less per unit.</em></p>
+
+<h2>What Makes a Good Puppy Food</h2>
+
+<ul>
+  <li><strong>Formulated for growth</strong> — The food must state it's suitable for growth or all life stages (FEDIAF/AAFCO complete). Adult-only recipes don't carry the protein, calcium and DHA a growing pup needs.</li>
+  <li><strong>Balanced calcium &amp; controlled energy</strong> — Especially for large and giant breeds, where excess calcium or over-rich food drives rapid growth linked to joint and skeletal problems.</li>
+  <li><strong>High, named meat content</strong> — Real, named meat over vague "meat and animal derivatives". Forthglade, Butternut Box and Years all lead here.</li>
+  <li><strong>Gentle on developing digestion</strong> — Hypoallergenic, no artificial additives, and ideally grain-free or wholegrain rather than cheap cereal fillers. Cold-pressed and fresh formats are gentler than standard extruded kibble.</li>
+  <li><strong>The right size and texture</strong> — Small pellets or soft, rehydrated/wet food suit tiny mouths and teething pups.</li>
+  <li><strong>Portion control built in</strong> — The fresh subscriptions pre-portion to your pup's weight and growth target, which removes the single biggest feeding mistake: overfeeding.</li>
+</ul>
+
+<h2>Our Top Picks for Puppy Food</h2>
+
+<div class="product-grid">
+  {% for product in products.puppyFood %}
+  <div class="product-card" id="{{ product.slug }}">
+    {% if product.topPick %}<span class="badge badge--top">🏆 Top Pick</span>{% endif %}
+    {% if product.bestValue %}<span class="badge badge--value">💰 Best Value</span>{% endif %}
+    <h3>{{ product.name }}</h3>
+    <div class="rating">{{ product.rating | stars }} ({{ product.rating }}/5)</div>
+    <p class="meta">{{ product.brand }} · {{ product.type }} · AADF {{ product.aadf }} · {{ product.pricePerDay }}</p>
+    <p>{{ product.summary }}</p>
+    <div class="pros-cons">
+      <ul class="pros">
+        {% for pro in product.pros %}
+        <li>{{ pro }}</li>
+        {% endfor %}
+      </ul>
+      <ul class="cons">
+        {% for con in product.cons %}
+        <li>{{ con }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    <p><strong>Best for:</strong> {{ product.bestFor | join(", ") }}</p>
+    <a href="{{ product.affiliateUrl }}" class="cta" rel="nofollow sponsored" target="_blank">{{ product.ctaText }} →</a>
+  </div>
+  {% endfor %}
+</div>
+
+<h2>Size-Specific Picks: Toy and Large-Breed Puppies</h2>
+
+<p>Our picks above are all-breed foods that suit the vast majority of puppies. But the two extremes of the size scale have genuinely different needs, and sometimes a <strong>size-specific</strong> food is the better answer:</p>
+
+<ul>
+  <li><strong>Large &amp; giant breeds</strong> grow for 15–24 months and are vulnerable to <em>rapid</em> growth, which is the single biggest dietary driver of hip and elbow problems. They benefit from controlled calcium and energy density plus a larger kibble — so growth stays steady and joints are protected.</li>
+  <li><strong>Toy &amp; extra-small breeds</strong> mature fast (often done by ~10 months), burn energy at a high rate, and frequently <em>can't physically eat</em> a normal-sized kibble. A micro kibble built for a tiny jaw is often the deciding factor.</li>
+</ul>
+
+<div class="product-grid">
+  {% for product in products.puppyFoodSizeSpecialist %}
+  <div class="product-card" id="{{ product.slug }}">
+    <span class="badge">{% if product.sizeClass == 'large' %}🦴 Large-Breed Specialist{% else %}🐭 Toy-Breed Specialist{% endif %}</span>
+    <h3>{{ product.name }}</h3>
+    <div class="rating">{{ product.rating | stars }} ({{ product.rating }}/5)</div>
+    <p class="meta">{{ product.brand }} · {{ product.type }} · AADF {{ product.aadf }} · {{ product.pricePerDay }}</p>
+    <p>{{ product.summary }}</p>
+    <div class="pros-cons">
+      <ul class="pros">
+        {% for pro in product.pros %}
+        <li>{{ pro }}</li>
+        {% endfor %}
+      </ul>
+      <ul class="cons">
+        {% for con in product.cons %}
+        <li>{{ con }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    <p><strong>Best for:</strong> {{ product.bestFor | join(", ") }}</p>
+    <a href="{{ product.affiliateUrl }}" class="cta" rel="nofollow sponsored" target="_blank">{{ product.ctaText }} →</a>
+  </div>
+  {% endfor %}
+</div>
+
+<p class="meta"><em>A size-specific food isn't compulsory — a high-quality all-breed puppy food fed in correctly-weighed portions works well for most dogs. These two earn their place where size makes a practical difference: protecting a big pup's joints, or simply being small enough for a toy pup to eat.</em></p>
+
+<h2>How to Choose the Right Food for Your Puppy</h2>
+
+<p>There's no single winner — the best choice depends on your puppy, your budget and how you want to feed:</p>
+
+<ul>
+  <li><strong>Want the best all-rounder?</strong> <a href="#forthglade-cold-pressed-puppy">Forthglade</a> tops our list: high AADF scores plus all-life-stage recipes, so no diet switch as your pup grows up.</li>
+  <li><strong>After the highest nutrition?</strong> <a href="#years-puppy">Years</a> (95% AADF) and <a href="#butternut-box-puppy">Butternut Box</a> (93–94%) are about as good as puppy food gets — fresh, gently cooked and grain-free.</li>
+  <li><strong>On a budget?</strong> <a href="#pooch-and-mutt-puppy">Pooch &amp; Mutt</a> is the value pick — quality grain-free kibble at the lowest per-day cost.</li>
+  <li><strong>No freezer space but want fresh quality?</strong> <a href="#years-puppy">Years</a> (shelf-stable) and <a href="#pure-pet-food-puppy">Pure Pet Food</a> (air-dried) both deliver fresh-grade nutrition from the cupboard.</li>
+  <li><strong>Worried about overfeeding a big-breed pup?</strong> The fresh subscriptions pre-portion to your puppy's weight and growth — the easiest way to keep growth lean and protect developing joints.</li>
+  <li><strong>Fussy or teething pup?</strong> Soft wet trays (Forthglade) or rehydrated air-dried (Pure) are the most tempting on sore gums.</li>
+  <li><strong>Torn between our top two?</strong> Read our head-to-head: <a href="/forthglade-vs-butternut-box-puppy/">Forthglade vs Butternut Box for puppies</a> — cupboard convenience and cost vs fresh nutrition and hands-off portion control.</li>
+  <li><strong>Got a large or giant-breed pup?</strong> Growth rate and portion control matter most of all — see our breed-specific guides to the <a href="/best-food-for-labrador-puppies/">best food for Labrador puppies</a>, <a href="/best-food-for-golden-retriever-puppies/">Golden Retriever puppies</a> (where coat and a high cancer risk add extra angles) and <a href="/best-food-for-german-shepherd-puppies/">German Shepherd puppies</a> (where sensitive digestion and bloat risk add extra rules), all built around lean growth that protects developing joints.</li>
+  <li><strong>Got a giant-breed pup (Great Dane, Mastiff, Newfoundland)?</strong> The brief goes to the size extreme — see our <a href="/best-food-for-great-dane-puppies/">best food for Great Dane puppies</a> guide, built around keeping a giant's growth slow and steady with controlled calcium, a bloat-safe little-and-often routine, and a patient two-year puppyhood.</li>
+  <li><strong>Got a Cocker Spaniel pup?</strong> The brief shifts from joints to <a href="/best-food-for-cocker-spaniel-puppies/">ears, coat and steady weight</a> — see our breed-specific Cocker Spaniel puppy guide.</li>
+  <li><strong>Got a French Bulldog pup?</strong> The brief shifts again — to <a href="/best-food-for-french-bulldog-puppies/">gut, skin and small mouths</a>: highly-digestible, low-flatulence, skin-supporting food a flat face can actually eat.</li>
+  <li><strong>Got a Dachshund pup?</strong> The brief shifts to the spine — see our <a href="/best-food-for-dachshund-puppies/">best food for Dachshund puppies</a> guide, built around lean growth and balanced minerals to protect a long back whose discs start hardening in the very first year.</li>
+  <li><strong>Got a Border Collie pup?</strong> The brief shifts again — to <a href="/best-food-for-border-collie-puppies/">the brain and the engine</a>: DHA-rich, calorie-dense food to build a clever pup's mind and fuel a tireless body, where the risk is under-feeding, not over-feeding.</li>
+  <li><strong>Got a toy-breed pup (Yorkie, Chihuahua, Pomeranian)?</strong> The brief flips to the opposite extreme — see our <a href="/best-food-for-yorkshire-terrier-puppies/">best food for Yorkshire Terrier puppies</a> guide, built around hypoglycaemia-proof little-and-often feeding, a micro kibble a tiny jaw can manage, and protecting notoriously fragile toy-breed teeth.</li>
+</ul>
+
+<h2>Wet vs Dry vs Fresh for Puppies</h2>
+
+<p>Each format can support healthy growth — what matters is that it's complete for growth and portioned correctly:</p>
+
+<ul>
+  <li><strong>Dry food (kibble)</strong> — Cheapest and most convenient. Cold-pressed dry (Forthglade) is gentler on digestion than standard extruded kibble. See our <a href="/best-grain-free-dog-food-uk/">best grain-free dry food guide</a>.</li>
+  <li><strong>Wet food</strong> — High moisture and very palatable, ideal for teething or fussy pups, but pricier per calorie. See our <a href="/best-grain-free-wet-dog-food-uk/">best grain-free wet food guide</a>.</li>
+  <li><strong>Fresh food</strong> — Gently cooked whole ingredients, the biggest step up in quality, with portions tailored to growth. See our <a href="/best-fresh-dog-food-uk/">best fresh dog food guide</a>.</li>
+  <li><strong>All-life-stage</strong> — A food like Forthglade that suits puppy through senior means no stressful diet switch as your dog matures.</li>
+</ul>
+
+<h2>Feeding and Transitioning a Puppy</h2>
+
+<p>Feed little and often — roughly four meals a day to around 4 months, three to about 6 months, then two from there. Always weigh portions against the pack guide for your pup's age and expected adult weight; steady growth beats fast growth, especially for larger breeds. When switching foods (or moving to adult food later — around 12 months for small/medium breeds, 18–24 months for large/giant), transition over <strong>7–10 days</strong>, mixing increasing amounts of the new food each day to avoid tummy upset. As your dog ages, our <a href="/best-senior-dog-food-uk/">best senior dog food guide</a> picks up where this one leaves off. If appetite, weight or toileting changes noticeably and doesn't settle, book a vet check.</p>
+
+<p class="meta" style="margin-top:2rem;"><em>About our testing: recommendations on this page are informed by raising and feeding our own dog, Milo (12, Labrador/Lurcher, wheat-sensitive), from puppyhood, alongside published nutritional data and independent AADF ratings. We update this guide as products and pricing change. Some links are affiliate links — see our disclosure above.</em></p>
