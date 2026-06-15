@@ -96,7 +96,10 @@ spec:
               cpu: 100m
               memory: 192Mi
             limits:
-              cpu: "1"
+              # No CPU limit — Matter commissioning + initial HA entity sync are
+              # bursty; a CPU cap would throttle them and slow/flake the pairing.
+              # Memory IS capped (Node heap can creep with entity count); 512Mi
+              # gives ~3x headroom over the ~120-180Mi steady-state prediction.
               memory: 512Mi
           livenessProbe:
             httpGet:
