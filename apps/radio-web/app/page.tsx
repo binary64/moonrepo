@@ -102,7 +102,9 @@ function HistoryTrack({ track, index }: { track: TrackEntry; index: number }) {
 function DjUtterance({ u }: { u: Radio_Dj_Utterances }) {
   const name = u.dj === "cara" ? "Cara" : "Arthur";
   const accent =
-    u.dj === "cara" ? "text-pink-300 bg-pink-500/10" : "text-sky-300 bg-sky-500/10";
+    u.dj === "cara"
+      ? "text-pink-300 bg-pink-500/10"
+      : "text-sky-300 bg-sky-500/10";
   return (
     <div className="flex gap-3 px-4 py-3 rounded-xl bg-slate-900/40 border border-slate-800/30">
       <span
