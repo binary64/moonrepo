@@ -99,6 +99,7 @@ function HistoryTrack({ track, index }: { track: TrackEntry; index: number }) {
   );
 }
 
+// skipcq: JS-0067 — top-level component declaration, consistent with EQBars/HistoryTrack/LoadingSkeleton in this file
 function DjUtterance({ u }: { u: Radio_Dj_Utterances }) {
   const name = u.dj === "cara" ? "Cara" : "Arthur";
   const accent =
