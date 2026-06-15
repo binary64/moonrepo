@@ -2,8 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+const DEFAULT_STREAM_URL = "https://stream.brandwhisper.cloud/stream.mp3";
+// Use a trimmed truthy check (not ??) so an empty/whitespace NEXT_PUBLIC_STREAM_URL
+// build arg falls through to the working HTTPS default instead of disabling it.
 const STREAM_URL =
-  process.env.NEXT_PUBLIC_STREAM_URL ?? "http://192.168.1.201:30100/stream";
+  process.env.NEXT_PUBLIC_STREAM_URL?.trim() || DEFAULT_STREAM_URL;
 const INITIAL_RETRY_DELAY_MS = 500;
 const MAX_RETRY_DELAY_MS = 60000;
 const RETRY_BACKOFF_MULTIPLIER = 1.5;
