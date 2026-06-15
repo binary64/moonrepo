@@ -28,8 +28,9 @@ const derr = (...args: unknown[]) => console.error(...args);
 
 type PlayerState = "idle" | "buffering" | "playing";
 
-// skipcq: JS-0067 — top-level component declaration, consistent with WaveformRing/RadioPlayer style and page.tsx
-function WaveformRing({ active }: { active: boolean }) {
+// Arrow-function component (assigned to a const) rather than a global function
+// declaration — satisfies DeepSource JS-0067 directly instead of suppressing it.
+const WaveformRing = ({ active }: { active: boolean }) => {
   if (!active) return null;
   // CSS-driven pulsing ring bars — no Web Audio needed
   return (
@@ -52,7 +53,7 @@ function WaveformRing({ active }: { active: boolean }) {
       ))}
     </div>
   );
-}
+};
 
 export default function RadioPlayer({
   currentTrack,
