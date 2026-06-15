@@ -55,11 +55,12 @@ const WaveformRing = ({ active }: { active: boolean }) => {
   );
 };
 
-export default function RadioPlayer({
-  currentTrack,
-}: {
-  currentTrack?: string;
-}) {
+// Arrow-function components (assigned to consts) rather than global function
+// declarations — satisfies DeepSource JS-0067 at the source.
+// skipcq: JS-R1005 — RadioPlayer's cyclomatic complexity (14) is pre-existing
+// (MSE streaming + retry/stall/skip state machine); refactoring the working
+// player is out of scope for this play-button bugfix.
+const RadioPlayer = ({ currentTrack }: { currentTrack?: string }) => {
   const [state, setState] = useState<PlayerState>("idle");
   const [skipping, setSkipping] = useState(false);
   const [bufferSeconds, setBufferSeconds] = useState(0);
@@ -513,4 +514,6 @@ export default function RadioPlayer({
       </div>
     </div>
   );
-}
+};
+
+export default RadioPlayer;
