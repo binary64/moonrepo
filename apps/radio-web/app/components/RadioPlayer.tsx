@@ -28,6 +28,8 @@ const derr = (...args: unknown[]) => console.error(...args);
 
 type PlayerState = "idle" | "buffering" | "playing";
 
+// skipcq: JS-0067 — top-level component declaration, consistent with the
+// component declaration style used throughout this file and page.tsx
 function WaveformRing({ active }: { active: boolean }) {
   if (!active) return null;
   // CSS-driven pulsing ring bars — no Web Audio needed
