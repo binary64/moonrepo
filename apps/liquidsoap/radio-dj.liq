@@ -190,7 +190,18 @@ last_pushed = ref("")
 
 # Register a server command to push metadata updates
 server.register("meta.update", usage="meta.update <title>", description="Update stream metadata", fun (s) -> begin
-  radio.insert_metadata([("title", s), ("song", s)])
+  # Split on the FIRST " - " to mirror announce-track.sh (PRETTY_NAME = "Artist - Title").
+  # Keep title/song as the full "Artist - Title" string (preserves player display); only ADD artist.
+  sep = " - "
+  idx = string.index(substring=sep, s)
+  meta =
+    if idx >= 0 then
+      artist = string.sub(s, start=0, length=idx)
+      [("title", s), ("song", s), ("artist", artist)]
+    else
+      [("title", s), ("song", s)]
+    end
+  radio.insert_metadata(meta)
   "OK: #{s}"
 end)
 
