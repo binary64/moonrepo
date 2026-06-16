@@ -17,25 +17,28 @@ data:
     A tiny always-on HTTP service that wakes the liquidsoap encoder when a cold
     listener hits the stream while it is scaled to zero.
 
-    When liquidsoap is scaled to 0 (no listeners for 10 continuous minutes),
-    Icecast has NO /stream source mount, so a cold listener gets a 404 and NEVER
-    registers as a listener. That means "listeners > 0" can't be the wake
-    trigger. The always-on nginx player proxies cold stream hits here
-    (GET /wake) so the activator itself can scale liquidsoap 0 -> 1.
+    Why this exists
+    ---------------
+    When liquidsoap is scaled to 0 (no listeners for 10 continuous minutes), Icecast
+    has NO `/stream` source mount, so a cold listener gets a 404 and NEVER registers
+    as a listener. That means "listeners > 0" can't be the wake trigger. The
+    always-on nginx player proxies cold stream hits here (`GET /wake`) so the
+    activator itself can scale liquidsoap 0 -> 1.
 
-    Endpoints:
-      GET /wake     Idempotent: if liquidsoap.spec.replicas == 0, patch it to 1.
-                    Always returns 200. Body is a small JSON status.
-      GET /healthz  200 OK liveness/readiness.
+    Endpoints
+    ---------
+      GET /wake    Idempotent: if liquidsoap.spec.replicas == 0, patch it to 1.
+                   Always returns 200 (so nginx's auth_request lets the muzak
+                   fallback play). Body is a small JSON status.
+      GET /healthz 200 OK liveness/readiness.
 
-    Talks to the Kubernetes API in-cluster via the mounted ServiceAccount token;
-    RBAC (radio-activator-rbac.yaml) grants get/patch on deployments/scale in
-    the radio-dj namespace ONLY.
+    It talks to the Kubernetes API in-cluster using the mounted ServiceAccount
+    token; RBAC (see radio-activator-rbac.yaml) grants get/patch on
+    deployments/scale in the radio-dj namespace ONLY.
     """
     import json
     import os
     import ssl
-    import urllib.error
     import urllib.request
     from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -63,7 +66,7 @@ data:
         req.add_header("Accept", "application/json")
         if body is not None:
             req.add_header("Content-Type", content_type)
-        with urllib.request.urlopen(req, context=_ctx(), timeout=10) as resp:
+        with urllib.request.urlopen(req, context=_ctx(), timeout=10) as resp:  # nosec B310 - fixed in-cluster API host
             return resp.status, json.loads(resp.read() or "{}")
 
 
@@ -80,7 +83,7 @@ data:
 
 
     def wake():
-        """Scale to 1 only if currently 0. Returns (woke, replicas)."""
+        """Scale to 1 only if currently 0. Returns (woke: bool, replicas: int)."""
         replicas = current_replicas()
         if replicas > 0:
             return False, replicas
@@ -99,7 +102,7 @@ data:
             self.end_headers()
             self.wfile.write(body)
 
-        def do_GET(self):  # noqa: N802
+        def do_GET(self):  # noqa: N802 - BaseHTTPRequestHandler API
             if self.path.startswith("/healthz"):
                 self._send(200, {"ok": True})
                 return
@@ -110,17 +113,18 @@ data:
                         "woke": woke, "replicas": replicas,
                         "deployment": DEPLOYMENT, "namespace": NAMESPACE,
                     })
-                except (urllib.error.URLError, OSError, ValueError) as exc:
+                except (OSError, ValueError) as exc:
+                    # Still 200 so the muzak fallback always plays; report the error.
                     self._send(200, {"woke": False, "error": str(exc)})
                 return
             self._send(404, {"error": "not found"})
 
-        def log_message(self, format, *args):  # noqa: A002,N802
+        def log_message(self, format, *args):  # noqa: A002,N802 - match base signature  # skipcq: PYL-W0622
             print("activator: " + (format % args))
 
 
     def main():
-        server = ThreadingHTTPServer(("0.0.0.0", LISTEN_PORT), Handler)
+        server = ThreadingHTTPServer(("0.0.0.0", LISTEN_PORT), Handler)  # nosec B104 - in-cluster service
         print(f"activator: listening on :{LISTEN_PORT} -> "
               f"{NAMESPACE}/{DEPLOYMENT}")
         server.serve_forever()

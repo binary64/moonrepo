@@ -364,11 +364,9 @@ const RadioPlayer = ({ currentTrack }: { currentTrack?: string }) => {
       // Fire-and-forget: the startStream() retry/buffering loop below rides
       // through the few seconds of cold start (cold-start muzak covers audio),
       // so we don't await this and ignore any failure.
-      try {
-        void fetch(STREAM_URL, { method: "HEAD", cache: "no-store" }).catch(
-          () => {},
-        );
-      } catch (_) {}
+      fetch(STREAM_URL, { method: "HEAD", cache: "no-store" }).catch(() => {
+        // best-effort wake ping; a failure here is harmless (startStream retries)
+      });
       startStream();
     }
   }, [state, cleanup, startStream]);

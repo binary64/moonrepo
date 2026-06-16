@@ -26,7 +26,6 @@ deployments/scale in the radio-dj namespace ONLY.
 import json
 import os
 import ssl
-import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -101,13 +100,13 @@ class Handler(BaseHTTPRequestHandler):
                     "woke": woke, "replicas": replicas,
                     "deployment": DEPLOYMENT, "namespace": NAMESPACE,
                 })
-            except (urllib.error.URLError, OSError, ValueError) as exc:
+            except (OSError, ValueError) as exc:
                 # Still 200 so the muzak fallback always plays; report the error.
                 self._send(200, {"woke": False, "error": str(exc)})
             return
         self._send(404, {"error": "not found"})
 
-    def log_message(self, format, *args):  # noqa: A002,N802 - match base signature
+    def log_message(self, format, *args):  # noqa: A002,N802 - match base signature  # skipcq: PYL-W0622
         print("activator: " + (format % args))
 
 
