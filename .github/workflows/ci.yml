@@ -45,6 +45,23 @@ jobs:
       - name: Check Types
         run: moon run :type-check
 
+  liquidsoap-check:
+    name: Liquidsoap Syntax Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install liquidsoap
+        # ubuntu-latest (24.04) ships liquidsoap 2.2.4 via apt — same major.minor
+        # as the deployed apps/liquidsoap Dockerfile (FROM ubuntu:24.04 + apt).
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq liquidsoap
+          liquidsoap --version | head -1
+      - name: Check radio-dj.liq parses
+        run: liquidsoap --check apps/liquidsoap/radio-dj.liq
+
   security:
     name: Security Scan (Trivy)
     runs-on: ubuntu-latest
