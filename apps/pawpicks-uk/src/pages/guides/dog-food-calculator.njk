@@ -42,6 +42,17 @@ faqs:
       <div style="display:grid;grid-template-columns:1fr;gap:1rem;">
 
         <label style="display:block;font-weight:600;">
+          Quick start: pick a breed <span style="font-weight:normal;font-size:0.85em;color:var(--color-text-light);">(optional)</span>
+          <select id="dfBreed" style="display:block;width:100%;margin-top:0.35rem;padding:0.5rem;border:1px solid var(--color-border,#ccc);border-radius:6px;font-size:1rem;">
+            <option value="" selected>— choose to prefill a typical adult weight —</option>
+            {%- for breed in breeds | sort(false, false, 'name') %}
+            <option value="{{ breed.slug }}" data-mid="{{ breed.weightRange }}">{{ breed.name }} ({{ breed.weightRange }})</option>
+            {%- endfor %}
+          </select>
+          <span style="font-weight:normal;font-size:0.85em;color:var(--color-text-light);">Fills the typical <strong>adult</strong> midpoint weight below — adjust to your own dog, and for a puppy enter its current weight instead.</span>
+        </label>
+
+        <label style="display:block;font-weight:600;">
           Your dog's weight
           <div style="display:flex;gap:0.5rem;margin-top:0.35rem;align-items:center;">
             <input id="dfWeight" type="number" min="0.5" max="120" step="0.1" value="15" inputmode="decimal"
@@ -237,6 +248,47 @@ faqs:
     if (foodSel.value === 'custom') { foodCustom.focus(); }
     render();
   });
+
+  // Breed quick-start: prefill the typical adult midpoint weight from the breed's range.
+  var breedSel = $('dfBreed');
+  function midpointKg(range) {
+    if (!range) { return NaN; }
+    var nums = String(range).match(/[0-9]+(?:\.[0-9]+)?/g);
+    if (!nums || !nums.length) { return NaN; }
+    if (nums.length === 1) { return parseFloat(nums[0]); }
+    var lo = parseFloat(nums[0]);
+    var hi = parseFloat(nums[1]);
+    return (lo + hi) / 2;
+  }
+  if (breedSel) {
+    breedSel.addEventListener('change', function () {
+      var opt = breedSel.options[breedSel.selectedIndex];
+      if (!opt || !opt.value) { return; }
+      var mid = midpointKg(opt.getAttribute('data-mid'));
+      if (isFinite(mid) && mid > 0) {
+        $('dfUnit').value = 'kg';
+        // Round to a sensible step: 0.1 for toy dogs, whole kg otherwise.
+        $('dfWeight').value = mid < 5 ? Math.round(mid * 10) / 10 : Math.round(mid);
+        // A breed preset is an adult-dog assumption; default the factor to typical neutered adult.
+        $('dfFactor').value = '1.6';
+        render();
+      }
+    });
+    // Optional deep-link: /dog-food-calculator/?breed=labradors prefills on load.
+    try {
+      var qs = new URLSearchParams(window.location.search);
+      var pre = qs.get('breed');
+      if (pre) {
+        for (var i = 0; i < breedSel.options.length; i++) {
+          if (breedSel.options[i].value === pre) {
+            breedSel.selectedIndex = i;
+            breedSel.dispatchEvent(new Event('change'));
+            break;
+          }
+        }
+      }
+    } catch (e) { /* URLSearchParams unsupported — ignore */ }
+  }
 
   ['dfWeight', 'dfUnit', 'dfFactor', 'dfMeals', 'dfFoodCustom'].forEach(function (id) {
     var el = $(id);
