@@ -1,0 +1,249 @@
+---
+layout: layouts/base.njk
+title: "Dog Food Calculator (UK) — How Many Grams Per Day?"
+description: "Free UK dog food calculator. Enter your dog's weight, life stage and food type to get an estimated daily calorie need and how many grams of kibble, wet or fresh food that is — using the vet RER × activity-factor maths, worked out instantly."
+permalink: "/dog-food-calculator/"
+lastUpdated: "2026-06-18"
+readTime: "6"
+faqs:
+  - q: "How does this dog food calculator work?"
+    a: "It uses the same two-step maths vets use. First it estimates your dog's resting energy requirement (RER = 70 × bodyweight in kg ^ 0.75) — the calories burned just existing. Then it multiplies that by an activity/life-stage factor (roughly 1.2–1.4 for a steady senior, ~1.6 for a typical neutered adult, up to ~3.0 for a young puppy) to get the daily calorie need. Finally it divides those calories by your food's energy density (kcal per 100g) to convert the answer into grams per day. Every figure is an evidence-based starting point to test against your dog's body condition, not a fixed prescription."
+  - q: "What weight should I enter — current or adult?"
+    a: "For an adult or senior dog, enter its current healthy weight. For a puppy, enter its CURRENT weight, not its expected adult weight — a growing dog is fed on what it weighs today, and you recalculate as it grows. If your dog is overweight, ask your vet for a target weight and calculate from that rather than the current number, so you feed for the dog you want, not the one you have."
+  - q: "How accurate is the grams-per-day figure?"
+    a: "Treat it as a well-grounded starting point, not gospel. The calorie formula is the standard veterinary one, but real dogs vary by 20% or more in metabolism, neuter status, breed, coat, temperament and activity. Feed at the calculated level for 2–3 weeks, then judge by body condition — you should feel the ribs easily but not see them, and see a waist from above. Adjust the portion up or down by about 10% from there. Your dog's shape is the real answer; the calculator just gets you close fast."
+  - q: "Why does wet or fresh food give a much bigger gram figure than kibble?"
+    a: "Because it is mostly water. Dry kibble packs roughly 350–380 kcal per 100g, while wet food holds only about 80–120 kcal per 100g because around 75% of its weight is moisture. So for the same daily calories your dog needs a far greater WEIGHT of wet or fresh food — that's why it looks like 'more' in the bowl even though the energy is identical. The calculator handles this automatically when you pick the food type."
+  - q: "Does this work for puppies?"
+    a: "Yes — choose one of the puppy life-stage options. Puppies use the same RER formula but a much higher growth factor (about 3.0 under four months, easing to 2.0 then 1.6 as they approach adult size), and you enter their current weight and recalculate as they grow. For the full explanation of how puppy feeding changes month by month, see our how-much-to-feed-a-puppy guide; for older dogs, the how-much-to-feed-a-senior-dog guide covers the same maths from the other end of life."
+  - q: "Should I include treats in the daily amount?"
+    a: "Yes. Treats, chews and training rewards are calories too, and they should stay under about 10% of the daily total. The calculator shows you that 10% treat allowance alongside the meal figure — if you feed treats, subtract their calories from the meal portion rather than adding them on top, or an otherwise-correct portion quietly becomes a surplus."
+  - q: "Is this a substitute for veterinary advice?"
+    a: "No. This is an educational estimate to help you feed sensibly and spot when a portion is badly off. It cannot diagnose anything. Any sudden change in weight or appetite, any known health condition (kidney disease, diabetes, pancreatitis), pregnancy or nursing, or an overweight dog needing a structured diet all warrant a conversation with your vet, who can tailor the numbers to your individual dog."
+---
+
+<article class="article-content">
+  <nav class="breadcrumbs">
+    <a href="/">Home</a> › <a href="/guides/">Guides</a> › Dog Food Calculator
+  </nav>
+
+  <h1>Dog Food Calculator</h1>
+
+  <p class="meta" style="color: var(--color-text-light); margin-bottom: 1.5rem;">
+    Last updated: June 2026 · 6 min read
+  </p>
+
+  <p>How much should you actually put in the bowl? Enter your dog's weight, pick its life stage and the type of food you feed, and this calculator estimates the <strong>daily calories</strong> your dog needs and converts that into <strong>grams per day</strong> — using the same RER × activity-factor maths a vet uses. It's the interactive version of the per-weight tables in our <a href="/how-much-to-feed-puppy/">puppy</a> and <a href="/how-much-to-feed-senior-dog/">senior</a> portion guides.</p>
+
+  <p><em>This is an educational starting point, not veterinary advice. Feed at the result for a couple of weeks, then fine-tune by body condition (more on that below).</em></p>
+
+  <div class="calc-card" style="background:var(--color-bg-alt,#f6f6f6);border:1px solid var(--color-border,#e2e2e2);border-radius:10px;padding:1.25rem 1.25rem 1.5rem;margin:1.5rem 0;">
+    <form id="dogFoodCalc" onsubmit="return false;">
+      <div style="display:grid;grid-template-columns:1fr;gap:1rem;">
+
+        <label style="display:block;font-weight:600;">
+          Your dog's weight
+          <div style="display:flex;gap:0.5rem;margin-top:0.35rem;align-items:center;">
+            <input id="dfWeight" type="number" min="0.5" max="120" step="0.1" value="15" inputmode="decimal"
+              style="flex:1;padding:0.5rem;border:1px solid var(--color-border,#ccc);border-radius:6px;font-size:1rem;">
+            <select id="dfUnit" style="padding:0.5rem;border:1px solid var(--color-border,#ccc);border-radius:6px;font-size:1rem;">
+              <option value="kg" selected>kg</option>
+              <option value="lb">lb</option>
+            </select>
+          </div>
+          <span style="font-weight:normal;font-size:0.85em;color:var(--color-text-light);">For a puppy, enter its <strong>current</strong> weight. For an overweight dog, use the vet's target weight.</span>
+        </label>
+
+        <label style="display:block;font-weight:600;">
+          Life stage &amp; activity
+          <select id="dfFactor" style="display:block;width:100%;margin-top:0.35rem;padding:0.5rem;border:1px solid var(--color-border,#ccc);border-radius:6px;font-size:1rem;">
+            <optgroup label="Puppy (enter current weight)">
+              <option value="3.0">Puppy — under 4 months (×3.0)</option>
+              <option value="2.0">Puppy — 4 months to adult size (×2.0)</option>
+              <option value="1.6">Puppy — nearly grown / young adult (×1.6)</option>
+            </optgroup>
+            <optgroup label="Adult">
+              <option value="1.8">Adult — active or entire (×1.8)</option>
+              <option value="1.6" selected>Adult — typical neutered (×1.6)</option>
+              <option value="1.4">Adult — inactive / weight-prone (×1.4)</option>
+            </optgroup>
+            <optgroup label="Senior">
+              <option value="1.4">Senior — still sprightly (×1.4)</option>
+              <option value="1.3">Senior — typical (×1.3)</option>
+              <option value="1.2">Senior — sedentary (×1.2)</option>
+            </optgroup>
+            <optgroup label="Weight management">
+              <option value="1.0">Weight loss (vet-supervised) (×1.0)</option>
+            </optgroup>
+          </select>
+        </label>
+
+        <label style="display:block;font-weight:600;">
+          Food type (energy density)
+          <select id="dfFood" style="display:block;width:100%;margin-top:0.35rem;padding:0.5rem;border:1px solid var(--color-border,#ccc);border-radius:6px;font-size:1rem;">
+            <option value="365" selected>Dry kibble — typical (~365 kcal/100g)</option>
+            <option value="380">Air-dried / cold-pressed (~380 kcal/100g)</option>
+            <option value="140">Fresh-cooked (~140 kcal/100g)</option>
+            <option value="95">Wet food (~95 kcal/100g)</option>
+            <option value="custom">Custom — enter kcal/100g from the label…</option>
+          </select>
+          <input id="dfFoodCustom" type="number" min="30" max="600" step="1" placeholder="kcal per 100g (see label)" inputmode="numeric"
+            style="display:none;width:100%;margin-top:0.5rem;padding:0.5rem;border:1px solid var(--color-border,#ccc);border-radius:6px;font-size:1rem;">
+        </label>
+
+        <label style="display:block;font-weight:600;">
+          Meals per day
+          <select id="dfMeals" style="display:block;width:100%;margin-top:0.35rem;padding:0.5rem;border:1px solid var(--color-border,#ccc);border-radius:6px;font-size:1rem;">
+            <option value="1">1 meal</option>
+            <option value="2" selected>2 meals</option>
+            <option value="3">3 meals</option>
+            <option value="4">4 meals (young pup)</option>
+          </select>
+        </label>
+      </div>
+    </form>
+
+    <div id="dfResult" aria-live="polite" style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--color-border,#ddd);">
+      <!-- populated by JS -->
+    </div>
+    <p id="dfFallback" style="margin-top:1rem;font-size:0.9em;color:var(--color-text-light);">
+      This calculator needs JavaScript. If you see this message, use the per-weight tables in our
+      <a href="/how-much-to-feed-puppy/">puppy</a> and <a href="/how-much-to-feed-senior-dog/">senior</a> portion guides instead.
+    </p>
+  </div>
+
+  <h2>What the Numbers Mean</h2>
+
+  <p>The calculator runs two simple steps. First it works out your dog's <strong>resting energy requirement</strong> — the calories burned just being alive — with the standard veterinary formula <code>RER = 70 × (weight in kg)<sup>0.75</sup></code>. Then it multiplies by an <strong>activity / life-stage factor</strong> to reach the daily maintenance need, and divides by your food's energy density to give grams. Notice the calorie need climbs <em>slower</em> than weight, because the <code>^0.75</code> exponent reflects how metabolism scales — a 40kg dog doesn't eat eight times a 5kg dog's portion.</p>
+
+  <p>The life-stage factor is where most of the variation lives. A young puppy burns at up to three times its resting rate to fuel growth; a steady neutered adult sits near 1.6; an older or sedentary dog drops toward 1.2–1.4. That's the same reason the <a href="/how-much-to-feed-puppy/">puppy guide</a> and the <a href="/how-much-to-feed-senior-dog/">senior guide</a> reach opposite conclusions from one formula — the multiplier moves, and the bowl moves with it.</p>
+
+  <h2>The Real Test: Body Condition</h2>
+
+  <p>Every figure here is a hypothesis to check against the dog in front of you. After 2–3 weeks at the calculated portion, score body condition: you should be able to <strong>feel the ribs easily with light pressure but not see them</strong>, see a <strong>waist tuck</strong> from above, and a <strong>belly tuck</strong> from the side. Ribs vanishing under fat? Cut the portion ~10%. Ribs and spine sharply visible? Increase it — and, in an older dog, book a vet check, since unexplained weight loss can flag illness. The calculator gets you close in seconds; your dog's shape does the fine-tuning.</p>
+
+  <h2>A Few Honest Caveats</h2>
+
+  <ul>
+    <li><strong>It's a starting point, not a prescription.</strong> Real metabolism varies ±20% with breed, neuter status, coat and temperament.</li>
+    <li><strong>Treats count.</strong> Keep them under ~10% of the daily total (the result shows that allowance) and subtract them from meals, don't add them on top — the same <a href="/food-topper-without-overfeeding/">displace-don't-add</a> logic that governs wet and fresh toppers.</li>
+    <li><strong>Special cases need a vet.</strong> Pregnancy, nursing, diabetes, kidney disease, pancreatitis or a structured weight-loss plan should be calculated with your vet, not a generic tool.</li>
+    <li><strong>Check your own label.</strong> The food-type figures are representative; the kcal/100g on your bag or pouch is the accurate one — use the Custom option to enter it.</li>
+  </ul>
+
+  <p>Ready to choose the food itself? Browse our <a href="/best-puppy-food-uk/">best puppy food</a>, <a href="/best-senior-dog-food-uk/">best senior dog food</a>, <a href="/best-grain-free-wet-dog-food-uk/">best wet food</a> and <a href="/best-fresh-dog-food-uk/">best fresh food</a> roundups — then come back here to work out the portion.</p>
+
+  <h2>Frequently Asked Questions</h2>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {% for faq in faqs %}
+      {
+        "@type": "Question",
+        "name": "{{ faq.q }}",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "{{ faq.a }}"
+        }
+      }{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ]
+  }
+  </script>
+
+  {% for faq in faqs %}
+  <details class="faq-item">
+    <summary>{{ faq.q }}</summary>
+    <p>{{ faq.a }}</p>
+  </details>
+  {% endfor %}
+
+  {% include "partials/how-we-test-cta.njk" %}
+
+</article>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var fallback = $('dfFallback');
+  if (fallback) { fallback.style.display = 'none'; }
+
+  var foodSel = $('dfFood');
+  var foodCustom = $('dfFoodCustom');
+
+  function fmt(n) { return Math.round(n).toLocaleString('en-GB'); }
+
+  function foodDensity() {
+    if (foodSel.value === 'custom') {
+      var v = parseFloat(foodCustom.value);
+      return (isFinite(v) && v > 0) ? v : NaN;
+    }
+    return parseFloat(foodSel.value);
+  }
+
+  function render() {
+    var weight = parseFloat($('dfWeight').value);
+    var unit = $('dfUnit').value;
+    var factor = parseFloat($('dfFactor').value);
+    var meals = parseInt($('dfMeals').value, 10);
+    var kcal100 = foodDensity();
+    var out = $('dfResult');
+
+    if (!isFinite(weight) || weight <= 0) {
+      out.innerHTML = '<p style="margin:0;color:var(--color-text-light);">Enter a weight to see the result.</p>';
+      return;
+    }
+    var kg = unit === 'lb' ? weight * 0.453592 : weight;
+    if (kg < 0.4 || kg > 120) {
+      out.innerHTML = '<p style="margin:0;color:var(--color-text-light);">That weight looks out of range — double-check the number and unit.</p>';
+      return;
+    }
+
+    var rer = 70 * Math.pow(kg, 0.75);
+    var mer = rer * factor;
+    var treat = mer * 0.10;
+
+    var gramsLine = '';
+    if (isFinite(kcal100) && kcal100 > 0) {
+      var grams = mer / kcal100 * 100;
+      var perMeal = grams / meals;
+      gramsLine =
+        '<div style="font-size:1.6rem;font-weight:700;color:var(--color-primary,#2a7);margin:0.25rem 0;">' +
+          '≈ ' + fmt(grams) + ' g of food per day' +
+        '</div>' +
+        '<p style="margin:0.25rem 0 0;">That\'s about <strong>' + fmt(perMeal) + ' g per meal</strong> across ' + meals + ' meal' + (meals > 1 ? 's' : '') + '.</p>';
+    } else {
+      gramsLine = '<p style="margin:0.25rem 0;color:#b00;">Enter the kcal/100g from your food\'s label to get grams per day.</p>';
+    }
+
+    out.innerHTML =
+      '<p style="margin:0 0 0.35rem;font-weight:600;">Estimated daily need</p>' +
+      '<div style="font-size:1.25rem;font-weight:700;margin:0 0 0.5rem;">' + fmt(mer) + ' kcal/day</div>' +
+      gramsLine +
+      '<p style="margin:0.75rem 0 0;font-size:0.9em;color:var(--color-text-light);">' +
+        'Resting need (RER) ' + fmt(rer) + ' kcal · activity factor ×' + factor + ' · ' +
+        'treat allowance ≈ <strong>' + fmt(treat) + ' kcal</strong> (keep treats under 10% and subtract from meals).' +
+      '</p>' +
+      '<p style="margin:0.5rem 0 0;font-size:0.85em;color:var(--color-text-light);">' +
+        'A starting point — feed for 2–3 weeks, then adjust ±10% by body condition. Not veterinary advice.' +
+      '</p>';
+  }
+
+  foodSel.addEventListener('change', function () {
+    foodCustom.style.display = (foodSel.value === 'custom') ? 'block' : 'none';
+    if (foodSel.value === 'custom') { foodCustom.focus(); }
+    render();
+  });
+
+  ['dfWeight', 'dfUnit', 'dfFactor', 'dfMeals', 'dfFoodCustom'].forEach(function (id) {
+    var el = $(id);
+    el.addEventListener('input', render);
+    el.addEventListener('change', render);
+  });
+
+  render();
+})();
+</script>
