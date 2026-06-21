@@ -28,6 +28,18 @@ spec:
   postgresql:
     pg_hba:
       - host all all all scram-sha-256
+    # authentik 2025.10 removed Redis: caching, the embedded proxy outpost, and
+    # websockets now all run on Postgres, raising connection usage ~50% (see
+    # https://docs.goauthentik.io/releases/2025.10/). The CNPG default of 100
+    # connections was being exhausted, starving the readiness probe and
+    # crash-looping authentik-server (FATAL: remaining connection slots are
+    # reserved for SUPERUSER). authentik holds session-stable LISTEN/advisory-lock
+    # connections, so a transaction-mode pooler is unsafe here — give it direct
+    # headroom instead. Node has ample RAM (50Gi, no pod limits).
+    parameters:
+      max_connections: "200"
+      shared_buffers: "256MB"
+      effective_cache_size: "1GB"
 
   bootstrap:
     initdb:
