@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: radio-activator
+  namespace: radio-dj
+---
+# Scoped RBAC: the activator may ONLY read and scale the liquidsoap Deployment
+# in radio-dj. resourceNames pins it to that one Deployment; deployments/scale
+# is the subresource the /scale API patch targets.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: radio-activator-scaler
+  namespace: radio-dj
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    resourceNames: ["liquidsoap"]
+    verbs: ["get"]
+  - apiGroups: ["apps"]
+    resources: ["deployments/scale"]
+    resourceNames: ["liquidsoap"]
+    verbs: ["get", "patch", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: radio-activator-scaler
+  namespace: radio-dj
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: radio-activator-scaler
+subjects:
+  - kind: ServiceAccount
+    name: radio-activator
+    namespace: radio-dj

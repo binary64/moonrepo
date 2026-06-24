@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: radio-activator
+  namespace: radio-dj
+  labels:
+    app: radio-activator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: radio-activator
+  template:
+    metadata:
+      labels:
+        app: radio-activator
+    spec:
+      serviceAccountName: radio-activator
+      containers:
+        - name: activator
+          # Stock python image; the activator is a stdlib-only HTTP server
+          # mounted from the radio-activator-script ConfigMap (no image build).
+          image: python:3.12-alpine
+          command: ["python3", "/app/activator.py"]
+          ports:
+            - containerPort: 8080
+          env:
+            - name: RADIO_NS
+              value: radio-dj
+            - name: LIQ_DEPLOY
+              value: liquidsoap
+            - name: PORT
+              value: "8080"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          volumeMounts:
+            - name: script
+              mountPath: /app
+              readOnly: true
+      volumes:
+        - name: script
+          configMap:
+            name: radio-activator-script
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: radio-activator
+  namespace: radio-dj
+spec:
+  selector:
+    app: radio-activator
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
