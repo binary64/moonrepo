@@ -1,0 +1,41 @@
+# Virtual framebuffer (Xvfb :99) for hermes agent-browser running Brave headed.
+#
+# Headless Chromium is fingerprinted by most anti-bot services (Cloudflare,
+# DataDome, etc.) via `navigator.webdriver`, missing WebGL extensions, and
+# HeadlessChrome in the UA string. Running Brave "headed" under Xvfb dodges
+# all three — the browser thinks it has a real display.
+#
+# DISPLAY=:99 is exported into ~/.hermes/.env by hermes/bootstrap-env.sh so
+# agent-browser (and any child process) picks it up.
+#
+# Install (as hermes on jupiter):
+#   mkdir -p ~/.config/systemd/user
+#   cp infra/systemd/hermes-xvfb.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now hermes-xvfb
+#
+# Verify:
+#   DISPLAY=:99 xdpyinfo | head -5     # should print display details, not error
+#
+# Troubleshooting:
+#   - `Xvfb: server is already active` → another Xvfb is on :99; check
+#     `pgrep -af Xvfb` and stop the stray process.
+#   - Brave complains about auth cookie → install xauth (bootstrap-host.sh
+#     handles this).
+
+[Unit]
+Description=Xvfb virtual display :99 for hermes agent-browser (headed Brave)
+After=default.target
+
+[Service]
+Type=simple
+# -screen 0 1920x1080x24  → 1080p, 24-bit colour (matches typical viewport).
+# -nolisten tcp           → refuse TCP, loopback Unix socket only (security).
+# -ac                     → disable host-based access control; harmless because
+#                           the socket is in /tmp/.X11-unix owned by hermes.
+ExecStart=/usr/bin/Xvfb :99 -screen 0 1920x1080x24 -nolisten tcp -ac
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target

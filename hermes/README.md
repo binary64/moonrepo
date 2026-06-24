@@ -21,6 +21,8 @@ VPN needed.
 |------|---------|
 | `skills/` | Hermes skills committed to IaC (source of truth). Synced into `~/.hermes/skills/` by `bootstrap-env.sh`. |
 | `bootstrap-env.sh` | Host-side bootstrap: pulls secrets from AWS Secrets Manager, writes a 0600 env file, and symlinks skills. Idempotent. |
+| `bootstrap-host.sh` | OS-level bootstrap (run **as root via sudo**): installs `kubectl` (for the socks-proxy port-forward), `brave-browser`, and `xvfb` + X11 runtime deps. Idempotent. |
+| `agent-browser.json` | agent-browser CLI config — routes Brave through loopback SOCKS5 so outbound traffic exits via the home residential IP instead of Contabo's datacenter range. Symlinked into `~/.hermes/`. |
 | `env.template` | Reference list of env vars hermes consumes. |
 
 ## Secret flow (current: host-side)
@@ -67,6 +69,41 @@ under `infra/secrets/sealed/` once generated).
    ```bash
    cd ~/moonrepo && git pull && ./hermes/bootstrap-env.sh
    ```
+
+## Browser automation (Brave + SOCKS5 + Xvfb)
+
+Hermes runs the agent-browser CLI which, on jupiter, drives a real
+**Brave** binary (not the bundled Playwright Chromium) through a loopback
+SOCKS5 proxy. This gives us:
+
+- Residential-IP egress (via `socks-proxy` on master), so sites that block
+  datacenter ranges (Cloudflare, DataDome, Coinbase, ASDA, etc.) let us in.
+- Non-headless browser under **Xvfb :99**, which dodges the `HeadlessChrome`
+  UA sniff and `navigator.webdriver=true` checks that flag headless
+  Chromium.
+- Real Brave fingerprint (user-agent, shields-off by default), chosen for
+  stealth over vanilla Chromium.
+
+Pieces:
+
+- `hermes/bootstrap-host.sh` → installs `kubectl`, `brave-browser`, `xvfb` (run as root)
+- `hermes/agent-browser.json` → Brave path + headed flag (symlinked into `~/.hermes/`). SOCKS5 goes via `ALL_PROXY` env var because agent-browser's `proxy` field only accepts HTTP proxies — see `hermes/agent-browser.md`.
+- `infra/systemd/hermes-xvfb.service` → virtual display `:99`
+- `infra/systemd/hermes-socks-proxy.service` → loopback SOCKS5 on `127.0.0.1:1080`
+- `infra/manifests/socks-proxy/rbac-portforward.yaml` → least-privilege
+  ServiceAccount for the port-forward
+
+Verify end-to-end after setup:
+
+```bash
+curl --socks5-hostname 127.0.0.1:1080 https://ifconfig.me
+# → prints the home residential IP, NOT the Contabo VPS IP
+
+DISPLAY=:99 xdpyinfo | head -3
+# → prints display details
+
+hermes agent # any browser_navigate will now go through Brave + residential IP
+```
 
 ## Connectivity reference
 
