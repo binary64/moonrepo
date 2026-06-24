@@ -7,6 +7,7 @@ resources:
 - icecast-deployment.yaml
 - icecast-service.yaml
 - liquidsoap-secret.yaml
+- hasura-admin-sealedsecret.yaml
 - liquidsoap-deployment.yaml
 - liquidsoap-service.yaml
 - dj-watcher-script-configmap.yaml
