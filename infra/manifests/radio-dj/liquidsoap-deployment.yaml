@@ -62,6 +62,16 @@ spec:
               name: liquidsoap-secret
               key: openai-api-key
               optional: true
+        # Hasura play-history logging (announce-track.sh). Without these the
+        # insert mutation is unauthenticated -> "no mutations exist" (403) and
+        # silently dropped, freezing the radio site's history + now-playing.
+        - name: HASURA_URL
+          value: http://hasura.hasura.svc.cluster.local:8080/v1/graphql
+        - name: HASURA_ADMIN_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: hasura-admin-secret
+              key: secret
         - name: TZ
           value: Europe/London
         volumeMounts:
