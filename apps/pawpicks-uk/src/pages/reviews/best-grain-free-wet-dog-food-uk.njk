@@ -1,0 +1,161 @@
+---
+layout: layouts/review.njk
+title: "Best Grain-Free Wet Dog Food UK (2026) — Tested & Compared"
+description: "Grain-free wet dog food is higher in moisture, more palatable and gentler on sensitive tummies than dry kibble. We compare the best UK grain-free wet dog foods for 2026 (Forthglade, Nature's Menu, Canagan, Lily's Kitchen, Wainwright's) on meat content, AADF rating and price per tray, informed by feeding our own dog Milo."
+category: "Wet Food"
+lastUpdated: "2026-06-03"
+readTime: "12"
+tags: ["roundup", "wet"]
+priority: 9
+permalink: "/best-grain-free-wet-dog-food-uk/"
+faqs:
+  - q: "Is grain-free wet dog food better than dry food?"
+    a: "It depends on your dog. Wet food is much higher in moisture (around 75-80%), which aids hydration and kidney function and makes it far more tempting — a real advantage for fussy or senior dogs. The best grain-free wet foods also use high percentages of named meat rather than cereal fillers. Dry food is cheaper per calorie, better for dental abrasion and easier to store, so many owners feed a mix. If your dog struggles with appetite, hydration or dental wear, wet food is usually the better choice; for cost and convenience, kibble still wins."
+  - q: "What is the best grain-free wet dog food in the UK?"
+    a: "Our top pick is Forthglade Complete Grain Free Wet. It pairs 75% single-source protein with a 77–82% All About Dog Food rating depending on recipe (adult 77%, senior 82%, puppy 84%) — among the highest scores for any wet food — and has been voted Best Wet Food by Your Dog Magazine readers six years running. It's grain- and gluten-free, hypoallergenic, gentle on sensitive stomachs and comes in trays for every life stage. For the highest meat content, Nature's Menu Country Hunter cans use 80% real meat with novel proteins."
+  - q: "How much does grain-free wet dog food cost?"
+    a: "Prices vary widely by brand and pack size. Pets at Home's Wainwright's grain-free cans are the value pick at around £1.80 per 395g can. Forthglade trays run roughly £1.26-1.48 each in larger packs. Premium brands cost more: Canagan cans are about £3.69-3.99 each, Lily's Kitchen tins around £2.71, and Nature's Menu Country Hunter 600g cans £4.49. Buying in larger multipacks or on subscription usually brings the per-unit cost down."
+  - q: "Is grain-free wet food good for dogs with sensitive stomachs?"
+    a: "Often, yes. Grain-free wet foods avoid wheat, maize and other common cereal triggers, and the better brands are hypoallergenic with single, named protein sources — which makes them well suited to elimination diets and dogs with grain sensitivities. The high moisture is also gentle on digestion. Forthglade and Wainwright's both use single-source proteins specifically for this. That said, grain-free isn't automatically healthier for every dog; if your dog has ongoing digestive issues, rule out specific allergies with your vet first."
+  - q: "Can I feed wet food as a topper instead of a full meal?"
+    a: "Absolutely — using wet food as a topper over kibble is a popular and economical approach. It adds moisture, aroma and palatability to dry food without the full cost of feeding wet alone, which is great for tempting fussy or senior dogs. Canagan and Forthglade both market their wet ranges as toppers or standalone meals. If you mix, adjust portions so you don't overfeed, and make sure the combined ration still meets your dog's daily calorie needs."
+  - q: "Does grain-free wet food need refrigeration?"
+    a: "Unopened cans and trays are shelf-stable and store in the cupboard — that's the whole point of wet food's long shelf life. Once opened, an unused portion should be covered and refrigerated, then used within about two days. Larger formats like Nature's Menu's 600g cans are more likely to leave leftovers needing the fridge; smaller 150-400g trays and cans are easier to serve in one sitting for small and medium dogs."
+  - q: "Is wet food good for senior dogs?"
+    a: "Yes — wet food is often ideal for seniors. The high moisture supports hydration and kidney function, the soft texture suits dogs with worn or missing teeth, and the stronger aroma tempts fading appetites. Our own senior dog, Milo (12), eats well when his food is moist and grain-free. Forthglade and Lily's Kitchen both offer senior-suitable grain-free wet recipes. See our dedicated best senior dog food guide for the full picture."
+---
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "{{ title }}",
+  "description": "{{ description }}",
+  "numberOfItems": {{ products.wetDogFood | length }},
+  "itemListElement": [
+    {% for product in products.wetDogFood %}
+    {
+      "@type": "ListItem",
+      "position": {{ loop.index }},
+      "item": {
+        "@type": "Product",
+        "name": "{{ product.name }}",
+        "brand": { "@type": "Brand", "name": "{{ product.brand }}" },
+        "description": "{{ product.summary }}",
+        "review": {
+          "@type": "Review",
+          "reviewRating": { "@type": "Rating", "ratingValue": "{{ product.rating }}", "bestRating": "5" },
+          "author": { "@type": "Organization", "name": "{{ site.name }}", "url": "{{ site.url }}/how-we-test/" }
+        }
+      }
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
+
+<p>Wet dog food has come a long way from the cheap, jelly-filled tins of old. Today's best grain-free wet foods are built around high percentages of real, named meat, with the moisture, aroma and palatability that tempt fussy eaters and suit senior dogs — all without the wheat, maize and cereal fillers that upset sensitive tummies.</p>
+
+<p>This guide cuts through the marketing. Our recommendations are informed by feeding our own dog — <strong>Milo, a 12-year-old Labrador/Lurcher rescue who's wheat-sensitive</strong> — alongside published nutritional data and independent All About Dog Food (AADF) ratings. Below are the grain-free wet dog foods we rate most highly in the UK for 2026, ranked, compared and explained.</p>
+
+<h2>Grain-Free Wet Dog Food at a Glance</h2>
+
+<div class="comparison-table-wrapper"><table class="comparison-table">
+  <thead>
+    <tr>
+      <th>Brand</th>
+      <th>Format</th>
+      <th>Meat</th>
+      <th>AADF</th>
+      <th>Price</th>
+      <th>Best For</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for product in products.wetDogFood %}
+    <tr>
+      <td><strong>{{ product.brand }}</strong>{% if product.topPick %} <span class="tag tag-top">🏆 Top Pick</span>{% endif %}{% if product.bestValue %} <span class="tag tag-top">💰 Best Value</span>{% endif %}</td>
+      <td>{{ product.type }}</td>
+      <td>{{ product.meatContent }}</td>
+      <td>{{ product.aadf }}</td>
+      <td>{{ product.pricePerTray }}</td>
+      <td>{{ product.bestFor | first }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<p class="meta"><em>Prices are typical starting points per tray/can and vary with pack size and retailer — larger multipacks and subscriptions usually cost less per unit.</em></p>
+
+<h2>What Makes a Good Grain-Free Wet Food</h2>
+
+<ul>
+  <li><strong>High, named meat content</strong> — Look for a high percentage of real, named meat (Forthglade and Nature's Menu lead here) rather than vague "meat and animal derivatives".</li>
+  <li><strong>No cereal fillers</strong> — Genuinely grain-free recipes skip wheat, maize and barley, using sweet potato or vegetables for carbohydrate instead.</li>
+  <li><strong>Single or novel proteins</strong> — Single-source recipes suit elimination diets; novel proteins like venison and duck help dogs reacting to chicken or beef.</li>
+  <li><strong>Hypoallergenic and additive-free</strong> — The best brands skip artificial colours, flavours and preservatives, and avoid common allergens like dairy and soya.</li>
+  <li><strong>Independent validation</strong> — AADF ratings are a useful sense-check. The brands below score well above mainstream supermarket tins.</li>
+  <li><strong>Format that fits your dog</strong> — Trays portion neatly for small and medium dogs; larger cans suit big dogs but leave leftovers needing the fridge.</li>
+</ul>
+
+<h2>Our Top Picks for Grain-Free Wet Food</h2>
+
+<div class="product-grid">
+  {% for product in products.wetDogFood %}
+  <div class="product-card" id="{{ product.slug }}">
+    {% if product.topPick %}<span class="badge badge--top">🏆 Top Pick</span>{% endif %}
+    {% if product.bestValue %}<span class="badge badge--value">💰 Best Value</span>{% endif %}
+    <h3>{{ product.name }}</h3>
+    <div class="rating">{{ product.rating | stars }} ({{ product.rating }}/5)</div>
+    <p class="meta">{{ product.brand }} · {{ product.type }} · {{ product.meatContent }} meat · AADF {{ product.aadf }} · {{ product.pricePerTray }}</p>
+    <p>{{ product.summary }}</p>
+    <div class="pros-cons">
+      <ul class="pros">
+        {% for pro in product.pros %}
+        <li>{{ pro }}</li>
+        {% endfor %}
+      </ul>
+      <ul class="cons">
+        {% for con in product.cons %}
+        <li>{{ con }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    <p><strong>Best for:</strong> {{ product.bestFor | join(", ") }}</p>
+    <a href="{{ product.url }}" class="cta" rel="nofollow sponsored" target="_blank">{{ product.ctaText }} →</a>
+  </div>
+  {% endfor %}
+</div>
+
+<h2>How to Choose the Right Wet Food for Your Dog</h2>
+
+<p>There's no single winner — the best choice depends on your dog, your budget and how you feed:</p>
+
+<ul>
+  <li><strong>Want the best all-rounder?</strong> <a href="#forthglade-grain-free-wet">Forthglade</a> tops our list: a 77–82% AADF rating (recipe-dependent), 75% single-source protein and recipes for every life stage.</li>
+  <li><strong>After the highest meat content?</strong> <a href="#natures-menu-country-hunter">Nature's Menu Country Hunter</a> uses 80% real meat with novel proteins — great for dogs reacting to chicken or beef.</li>
+  <li><strong>On a budget?</strong> <a href="#wainwrights-grain-free-wet">Wainwright's</a> from Pets at Home is the value pick at around £1.80 a can, still grain-free and single-protein.</li>
+  <li><strong>Feeding a topper?</strong> <a href="#canagan-country-game-wet">Canagan</a> mirrors its popular kibble and adds joint-supporting green-lipped mussel, ideal mixed over dry food.</li>
+  <li><strong>Want supermarket convenience?</strong> <a href="#lilys-kitchen-grain-free-wet">Lily's Kitchen</a> is the most widely stocked genuinely-natural option, B Corp certified and well-liked by fussy dogs.</li>
+  <li><strong>Sensitive stomach or grain allergy?</strong> Forthglade and Wainwright's both use single, named proteins — the route we'd take with wheat-sensitive Milo.</li>
+  <li><strong>Torn between the two premium cans?</strong> See our <a href="/canagan-vs-lilys-kitchen-wet/">Canagan vs Lily's Kitchen head-to-head</a> — meat content vs supermarket convenience, compared in full.</li>
+  <li><strong>Premium vs value?</strong> Our <a href="/forthglade-vs-wainwrights-wet/">Forthglade vs Wainwright's head-to-head</a> weighs our top pick against the best-value can on quality-per-£.</li>
+</ul>
+
+<h2>Wet vs Dry vs Fresh: Which Should You Feed?</h2>
+
+<p>Each format has a place, and many owners mix:</p>
+
+<ul>
+  <li><strong>Wet food</strong> — High moisture (~75-80%), strong aroma and soft texture. Best for hydration, fussy eaters and seniors with dental wear, but pricier per calorie than kibble.</li>
+  <li><strong>Dry food (kibble)</strong> — Cheapest per calorie, easy to store and better for dental abrasion. See our <a href="/best-grain-free-dog-food-uk/">best grain-free dry food guide</a>.</li>
+  <li><strong>Fresh food</strong> — Gently cooked whole ingredients delivered by subscription; the biggest step up in quality, at a premium. See our <a href="/best-fresh-dog-food-uk/">best fresh dog food guide</a>.</li>
+  <li><strong>Mixed feeding</strong> — Wet food over kibble combines moisture and palatability with the cost and convenience of dry. A grain-free wet topper is the easiest way to upgrade a dry diet.</li>
+</ul>
+
+<h2>Transitioning to Wet Food</h2>
+
+<p>Switch over <strong>7-10 days</strong>, mixing increasing amounts of the new wet food into the old food each day. Wet food is richer and more moisture-dense than kibble, so a sudden change can cause loose stools — go slower if you see any upset. Once opened, cover and refrigerate unused portions and use within about two days. As always, if your dog's appetite, weight or toileting changes noticeably and doesn't settle, book a vet check.</p>
+
+<p class="meta" style="margin-top:2rem;"><em>About our testing: recommendations on this page are informed by feeding our own dog, Milo (12, Labrador/Lurcher, wheat-sensitive), alongside published nutritional data and independent AADF ratings. We update this guide as products and pricing change. Some links are affiliate links — see our disclosure above.</em></p>
