@@ -1,0 +1,126 @@
+---
+layout: layouts/review.njk
+title: "Best Food for Senior Whippets UK (2026) — Keeping Condition on a Lean Sighthound"
+description: "Older Whippets face the opposite problem to most senior dogs: keeping weight ON, not off. We compare the best foods for senior Whippets in the UK for 2026 — calorie-dense, gentle and easy to eat for an ageing sighthound with thin cover, worn teeth and a fast metabolism."
+category: "Senior Dogs"
+lastUpdated: "2026-06-25"
+readTime: "12"
+tags: ["roundup", "senior", "breed"]
+priority: 9
+permalink: "/best-food-for-senior-whippets/"
+faqs:
+  - q: "When is a Whippet considered senior?"
+    a: "Whippets are long-lived for their size — many reach 12–15 years — so they cross into 'senior' later than most breeds, usually around 9–10. As a lean, athletic sighthound they often stay sprightly well into old age, so don't go by a birthday: watch for a greying muzzle, a slower recovery after a run, stiffer mornings, and — the one to catch early in this breed — a creeping loss of muscle and condition over the topline and hindquarters. Because a Whippet carries so little spare fat, that condition slips away faster and more visibly than in a stockier dog."
+  - q: "How much should I feed a senior Whippet per day?"
+    a: "Often about the same as — or even slightly more, per kilo, than — you might expect, because the senior risk in this breed is under-feeding, not over. An adult Whippet (9–19kg) eats roughly 180–280g of dry food a day; a calmer senior burns a little less, but a fast metabolism and thin fat reserves mean you rarely need to cut as hard as you would for a Labrador. As a rough June-2026 guide, feeding a 14kg senior as its sole diet costs about £0.55–0.95/day on quality grain-free kibble, £0.85–1.30/day air-dried, or £1.40–2.30/day on fresh-cooked subscription. Judge by condition, not the chart: you should always see a hint of the last ribs and a tucked waist — but the muscle over the spine and hips should stay full."
+  - q: "My senior Whippet is losing weight — should I worry?"
+    a: "Some loss of muscle over the topline and back legs is normal ageing (sarcopenia), and a Whippet shows it sooner because there's no fat to hide it. But sudden or ongoing weight loss in an older dog is a red flag worth a vet visit — dental pain, kidney or heart disease, and several other senior conditions all cause it, and a sighthound's lean baseline means there's little margin. Once a vet has ruled out illness, the dietary answer is calorie density and palatability: a richer, highly-digestible food fed in a volume a narrow chest can handle, split across the day, so an ageing dog with a smaller appetite still takes in enough."
+  - q: "What should I look for in food for an older Whippet?"
+    a: "Five things, and the priorities flip from a typical senior guide. First, calorie density and quality fat — a small, rich meal maintains condition without forcing big volumes onto a deep, narrow chest. Second, generous named-meat protein (aim for 28%+) to fight the muscle loss that's so visible on a lean frame; the 'less protein for old dogs' line is an outdated myth unless a vet has diagnosed kidney disease. Third, easy digestibility for a fast gut that's often sensitive. Fourth, omega-3 for the thin, low-cover skin and coat — and ageing joints. Fifth, a soft or small-kibble texture, because Whippets are prone to dental disease and worn or missing teeth make crunchy biscuit a chore."
+  - q: "Why is keeping weight ON the goal for a senior Whippet, when most senior advice is about slimming down?"
+    a: "Because most senior-dog advice is written for breeds that gain weight easily — Labradors, Cockers, retrievers — where the ageing risk is obesity stressing arthritic joints. A Whippet is the inverse: built like a sprinter with almost no body fat, it's a breed where owners are routinely told their healthy dog 'looks too thin', and where genuine under-condition in old age is the real danger. Feeding guidance written for stockier dogs will under-feed a senior Whippet. The job here is to hold lean muscle and a little reserve, not to strip it away — while still keeping the dog truly lean by sighthound standards (ribs faintly visible, waist tucked)."
+  - q: "Do senior Whippets have dental problems that affect feeding?"
+    a: "Yes — Whippets, like many fine-boned breeds, are prone to dental disease, and by old age many have worn, loose or missing teeth. That makes a hard, dry kibble uncomfortable and can quietly suppress appetite, which is dangerous in a breed with no fat reserve. Softer formats — fresh-cooked, air-dried rehydrated with warm water, or a wet topper over kibble — are easier and more tempting for sore senior mouths. Keep up dental care, and mention any drooling, dropped food or reluctance to eat to your vet."
+  - q: "Are there senior Whippet health quirks that affect food or medication?"
+    a: "Two worth knowing, though neither is strictly dietary. Sighthounds are sensitive to anaesthesia (low body fat changes how drugs are distributed), which matters for any senior dental or surgical procedure — flag the breed to your vet. And many herding/sighthound lines carry the MDR1 gene variant affecting how certain drugs are processed; it doesn't change feeding, but it's a senior-health detail worth a test if you've never done one. On the food side, keep meals warm and draught-free in winter: a thin-coated, low-fat senior feels the cold badly and burns extra calories staying warm."
+---
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "{{ title }}",
+  "description": "{{ description }}",
+  "numberOfItems": {{ products.freshDogFood | length }},
+  "itemListElement": [
+    {% for product in products.freshDogFood %}
+    {
+      "@type": "ListItem",
+      "position": {{ loop.index }},
+      "item": {
+        "@type": "Product",
+        "name": "{{ product.name }}",
+        "brand": { "@type": "Brand", "name": "{{ product.brand }}" },
+        "description": "{{ product.summary }}",
+        "review": {
+          "@type": "Review",
+          "reviewRating": { "@type": "Rating", "ratingValue": "{{ product.rating }}", "bestRating": "5" },
+          "author": { "@type": "Organization", "name": "{{ site.name }}" }
+        }
+      }
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
+
+<p>Feeding an older Whippet is where almost every "senior dog" rule turns on its head. Open any guide to ageing dogs and the message is the same: cut the calories, watch the waistline, fight the creeping weight that wrecks old joints. None of that is the Whippet's problem. A sighthound is built like a sprinter — long, narrow and carrying barely any body fat — so the danger in old age isn't getting fat, it's <strong>losing the condition and muscle it never had much of to spare</strong>. The senior brief for a Whippet is, quietly, the opposite of the one everyone else gets.</p>
+
+<p>This guide is written from the inside. Our own dog <strong>Milo is a 12-year-old Labrador/Lurcher rescue</strong> — half sighthound himself — so we've spent years learning how a lean, fast-metabolising old dog holds condition, copes with worn teeth and tempts a smaller appetite, and a lot of that translates directly to an ageing Whippet. Below are the foods we'd point a senior-Whippet owner towards in the UK for 2026, across fresh, air-dried and grain-free kibble, with the reasoning for each — and why "keep weight on, not off" changes which features matter.</p>
+
+<h2>What a Senior Whippet Actually Needs</h2>
+
+<ul>
+  <li><strong>Calorie density and quality fat</strong> — A deep, narrow chest can't comfortably hold big meals, and a fast metabolism burns through them, so a senior Whippet does best on a rich, energy-dense food fed in modest volume. This is the headline difference from a typical senior guide: you're concentrating calories, not cutting them. Split the day's food across two or three meals so an older, smaller appetite still takes in enough.</li>
+  <li><strong>Generous, high-quality protein</strong> — Muscle loss (sarcopenia) shows fast on a lean frame, draining the topline and hindquarters. Good named-meat protein — aim for at least 28% crude protein — is the lever that holds that muscle. The old "less protein for old dogs" idea is a myth for a healthy senior; only restrict if a vet has diagnosed kidney disease.</li>
+  <li><strong>Easy digestibility</strong> — Whippets often have a sensitive, fast-moving gut, and grains, chicken and artificial additives are common triggers. A highly-digestible, grain-free recipe with a named single protein keeps stools firm and gets more nutrition out of every gram — which matters when you're trying to maintain condition.</li>
+  <li><strong>Omega-3 for skin, coat and joints</strong> — A thin, short, low-cover coat offers little protection, so omega-3 (from fish oil) supports skin and coat, while also easing the arthritis that age brings to an athletic dog that's spent a life sprinting and turning.</li>
+  <li><strong>A soft or small-kibble texture</strong> — Dental disease is common in fine-boned breeds, and by old age many Whippets have worn or missing teeth that make hard biscuit a chore and can quietly suppress appetite. Gently-cooked fresh, rehydrated air-dried or a wet topper is kinder to a sore senior mouth — and the warmth and aroma tempt a fading appetite.</li>
+</ul>
+
+<h2>Our Top Picks for Senior Whippets</h2>
+
+<h3>Best Overall (and Best for Sensitive Tummies): Years</h3>
+
+<p>Years is where we'd send most senior-Whippet owners first. It's gently steam-cooked fresh food that's <strong>grain- and legume-free</strong> — ideal for a breed with a sensitive sighthound gut — and holds the <strong>highest-ever AADF rating (96%)</strong> for a whole-food meal. That high digestibility means more nutrition absorbed from a small volume, exactly what a narrow-chested dog that struggles with big meals needs to hold condition. The soft texture suits worn senior teeth, and being legume-free it sidesteps the grain-free/DCM concern. Crucially, you set the portion to a <em>maintenance or condition</em> goal rather than weight-loss — run their plan calculator with your Whippet's exact weight and tell it you want to keep weight stable; trials start from around £7.</p>
+
+<h3>Best Fresh Cooked (Premium): Butternut Box</h3>
+
+<p>Butternut Box is the best-known UK fresh brand and the gold standard for palatability — freshly cooked, frozen meals portioned precisely to your dog's profile. For a senior Whippet that's gone a bit picky or is dropping condition, the strong aroma, high moisture and soft texture are hard to beat, and the recipes can be tailored around the chicken and grain sensitivities many Whippets show. Because a Whippet eats a modest volume, the cost caveat that makes Butternut a tough sell for a big breed barely applies. Set the plan to maintain — not reduce — weight, and it's an excellent way to keep an older sighthound eating well and holding muscle.</p>
+
+<h3>Best Value Fresh Alternative: Pure Pet Food</h3>
+
+<p>Pure Pet Food is air-dried — you add warm water before serving — which delivers fresh feeding's benefits (digestibility, named ingredients, a soft rehydrated texture that suits worn senior teeth, a warm aroma that tempts appetite) at a lower price and with cupboard storage. From around £0.89/day for a small dog it's genuinely affordable for a Whippet-sized senior. The concentrated, rehydrating format is a neat answer to the narrow-chest problem: nutrient-dense, easy to eat, and you control how much water to keep it tempting.</p>
+
+<h3>Best Tailored Option: tails.com</h3>
+
+<p>tails.com blends a kibble (and optional wet food) to your dog's life stage, weight goal and sensitivities and posts it through the door — cupboard-stored and convenient. For a senior Whippet the useful trick is setting the goal to <em>maintain</em> condition and choosing a calorie-dense, grain-free blend, with a wet option added for palatability and moisture. It's more mainstream than the boutique fresh brands (it's a Nestlé Purina company), but for hands-off, condition-managed senior feeding with a softer wet element for ageing teeth, it's a solid choice.</p>
+
+<h3>Best Gentle Kibble: Forthglade Grain-Free Cold-Pressed</h3>
+
+<p>If you'd rather stick with a bag, Forthglade's cold-pressed grain-free range is our senior-Whippet kibble pick — and the breed's classic value choice. Cold-pressing breaks down more gently in the stomach than high-temperature extruded food, suiting a sensitive sighthound gut, and the clean grain-free recipe avoids common Whippet triggers. One honest note for this breed specifically: a senior Whippet trying to <em>hold</em> condition may need a slightly larger portion of a moderate-fat kibble than the bag suggests, or a little wet/fresh topper added — it's easy to top up, and that flexibility is part of why it earns its place here. Softening the kibble with warm water helps worn teeth.</p>
+
+<h2>Quick Comparison Table</h2>
+
+{# Single source of truth: products.freshDogFood (folded into _data/products.json).
+   Forthglade is a kibble pick not in the fresh dataset, so it's passed as an extra row. #}
+{% set tableProducts = products.freshDogFood %}
+{% set tableExtraRows = [
+  { name: "Forthglade Cold-Pressed", type: "Grain-free kibble", grainFree: "✅ Yes", storage: "Cupboard", priceFrom: "~£7.50/kg", bestFor: "Gentle grain-free kibble, easy to top up for condition" }
+] %}
+{% include "partials/fresh-food-table.njk" %}
+
+<p class="meta"><em>Prices are starting points and vary with your dog's weight — for a 9–19kg Whippet, always run the brand's plan calculator for an accurate figure, and set it to maintain condition rather than lose weight.</em></p>
+
+<h2>How to Choose for Your Senior Whippet</h2>
+
+<p>There's no single winner — it depends on your dog, your budget and your kitchen:</p>
+
+<ul>
+  <li><strong>Dropping condition or muscle?</strong> Prioritise calorie density, generous protein and palatability — Years, Butternut Box and Pure all pack a lot into a small, easy-to-eat volume. Set subscription plans to <em>maintain</em>, not reduce, and split into smaller, more frequent meals. (Rule out illness with a vet first if the loss is sudden.)</li>
+  <li><strong>Worn or missing teeth?</strong> Fresh or rehydrated air-dried wins on soft texture and tempting aroma — Years, Butternut Box and Pure are kindest to a sore senior mouth; soften Forthglade kibble with warm water.</li>
+  <li><strong>Sensitive, fast gut?</strong> Stick to grain-free, single named-protein recipes (turkey or fish over chicken if your dog reacts) — all our picks are grain-free, and the gently-cooked options are gentlest.</li>
+  <li><strong>Stiff or arthritic from a lifetime of sprinting?</strong> Lean on omega-3 and keep muscle full to support the joints; fresh and cold-pressed recipes plus fish oil help, alongside your vet's advice on supplements.</li>
+  <li><strong>Feeling the cold (thin coat, low fat)?</strong> Warm, higher-calorie meals and a cosy, draught-free feeding spot help an ageing sighthound that burns extra energy staying warm.</li>
+  <li><strong>On a budget?</strong> Pure Pet Food or Forthglade grain-free give excellent senior nutrition without the premium frozen-fresh price.</li>
+</ul>
+
+<h2>Senior Whippets vs Adult Whippets: What Changes</h2>
+
+<p>For most breeds the senior shift means fewer calories. For a Whippet it's more about <strong>holding the line</strong>. The lifelong sighthound brief — calorie-dense, high-protein, grain-free, omega-rich, judged by visible-ribs-and-tucked-waist condition rather than a chart — stays exactly as it was. What's added in old age is a tilt toward <em>even easier eating</em>: softer texture for worn teeth, smaller and more frequent meals for a narrower appetite, a little extra fish oil for joints, and a closer eye on condition because muscle slips away faster and more visibly than on a stockier dog. The one thing you almost never need to do is slim a healthy senior Whippet down. We dig into the wider senior value question in our <a href="/senior-dog-food-cost-value/">senior dog food cost vs value guide</a>. For the full breed picture, see our <a href="/best-dog-food-for-whippets/">best dog food for Whippets guide</a>; and for the wider senior view across breeds, our <a href="/best-senior-dog-food-uk/">best senior dog food guide</a> goes deeper on the science. A sensitive-gutted senior may also find our <a href="/best-dog-food-sensitive-stomach-uk/">sensitive stomach &amp; skin guide</a> useful.</p>
+
+<h2>How Much to Feed — and Transitioning a Senior Whippet</h2>
+
+<p>Feed calories, not cupfuls — but for this breed the goal is to put in <em>enough</em>, not to cut back. Our <a href="/how-much-to-feed-senior-dog/">how much to feed a senior dog guide</a> turns calorie needs into grams of kibble, wet or fresh, and the <a href="/dog-food-calculator/?breed=whippets">dog food calculator</a> will prefill a typical Whippet weight for you — set the goal to maintenance, and remember a sighthound's healthy weight looks lean by normal-dog standards. When you change foods, switch over <strong>7–10 days</strong>, mixing increasing amounts of the new food into the old, and slow down if you see loose stools — a sensitive Whippet gut doesn't like sudden change. Weigh meals on a scale, count treats in the daily total, and run a hand over the spine and hips weekly so any loss of muscle is caught early. And whenever a senior Whippet's weight, appetite or energy drops noticeably and doesn't bounce back, book a vet check — in a breed with no fat to spare, condition is an early warning worth heeding.</p>
+
+<p class="meta" style="margin-top:2rem;"><em>About our testing: recommendations on this page are informed by years of feeding our own senior Lab/Lurcher, Milo (12, wheat-sensitive, part sighthound), alongside published nutritional data and independent All About Dog Food (AADF) ratings. We update this guide as products and pricing change. Some links are affiliate links — see our disclosure above.</em></p>
