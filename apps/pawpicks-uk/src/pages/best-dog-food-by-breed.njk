@@ -1,0 +1,77 @@
+---
+layout: layouts/base.njk
+title: "Best Dog Food by Breed UK (2026) — Every Breed Guide in One Place"
+description: "Browse our breed-by-breed dog food guides for the UK. Find the best food for your breed's specific needs, plus puppy and senior feeding guides where available."
+permalink: "/best-dog-food-by-breed/"
+---
+
+{% set sizeGroups = [
+  { key: "small", title: "Toy &amp; Small Breeds", blurb: "Small mouths, fast metabolisms and a tendency to put on weight — portion control and the right kibble size matter most here." },
+  { key: "small-medium", title: "Small-Medium Breeds", blurb: "Crossbreeds and in-betweeners that sit between the small and medium feeding briefs." },
+  { key: "medium", title: "Medium Breeds", blurb: "The biggest group of UK favourites — active, varied, and each with its own dietary quirks." },
+  { key: "large", title: "Large Breeds", blurb: "Joint protection and lean growth are the headline concerns; some carry heart-health risks too." },
+  { key: "giant", title: "Giant Breeds", blurb: "Controlled, slow growth and careful calcium balance protect developing joints — and appetites are huge." }
+] %}
+
+<h1>Best Dog Food by Breed</h1>
+<p>Every breed has its own dietary brief — the ear infections a Cocker Spaniel is prone to, the lean growth a Labrador puppy needs, the heart-health watch on a Dobermann. We've reviewed the UK's most popular breeds one by one. Find yours below, grouped by size, with links to puppy and senior feeding guides wherever we've written them.</p>
+
+<p>Not sure where to start? Every breed page recommends specific UK foods for that breed's needs. If you've got a puppy or an older dog, jump straight to the dedicated <strong>Puppy</strong> or <strong>Senior</strong> guide next to the breed — the feeding brief changes a lot at both ends of life.</p>
+
+{% for group in sizeGroups %}
+  {% set groupBreeds = [] %}
+  {% for breed in breeds %}
+    {% if breed.sizeCategory == group.key %}{% set groupBreeds = (groupBreeds.push(breed), groupBreeds) %}{% endif %}
+  {% endfor %}
+  {% if groupBreeds.length > 0 %}
+<h2 id="{{ group.key }}">{{ group.title | safe }}</h2>
+<p>{{ group.blurb | safe }}</p>
+<div class="article-list">
+  {% for breed in groupBreeds %}
+  <div class="article-card">
+    <h3><a href="/best-dog-food-for-{{ breed.slug }}/">Best Dog Food for {{ breed.name }}s</a></h3>
+    <p>{{ breed.name }}s ({{ breed.weightRange }}, {{ breed.activityLevel }} energy) — key dietary watch-points include {{ breed.commonHealthIssues[0] }}{% if breed.commonHealthIssues[1] %} and {{ breed.commonHealthIssues[1] }}{% endif %}.</p>
+    <p>
+      <a href="/best-dog-food-for-{{ breed.slug }}/" class="cta">Breed Guide →</a>
+      {% if breed.puppyGuide %} &nbsp;·&nbsp; <a href="{{ breed.puppyGuide }}">Puppy guide</a>{% endif %}
+      {% if breed.seniorGuide %} &nbsp;·&nbsp; <a href="{{ breed.seniorGuide }}">Senior guide</a>{% endif %}
+    </p>
+  </div>
+  {% endfor %}
+</div>
+  {% endif %}
+{% endfor %}
+
+<h2 id="cant-find">Can't Find Your Breed?</h2>
+<p>We're adding breeds steadily, prioritising the UK's most popular. If yours isn't here yet, the closest starting point is the food brief for the same size and activity level — or browse our category hubs by need:</p>
+<ul>
+  <li><a href="/best-grain-free-dog-food-uk/">Best grain-free dog food</a> — the roundup every breed page draws from</li>
+  <li><a href="/best-dog-food-sensitive-stomach-uk/">Best food for sensitive stomachs &amp; skin allergies</a></li>
+  <li><a href="/best-puppy-food-uk/">Best puppy food</a> and <a href="/best-senior-dog-food-uk/">best senior dog food</a></li>
+  <li><a href="/dog-food-calculator/">Dog food calculator</a> — get a portion estimate for any breed by weight</li>
+</ul>
+
+{% block head %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": "Best Dog Food by Breed UK",
+  "description": "Breed-by-breed dog food guides for the UK, grouped by size.",
+  "url": "https://pawpicks.co.uk/best-dog-food-by-breed/",
+  "mainEntity": {
+    "@type": "ItemList",
+    "itemListElement": [
+      {%- for breed in breeds -%}
+      {
+        "@type": "ListItem",
+        "position": {{ loop.index }},
+        "name": "Best Dog Food for {{ breed.name }}s",
+        "url": "https://pawpicks.co.uk/best-dog-food-for-{{ breed.slug }}/"
+      }{% if not loop.last %},{% endif %}
+      {%- endfor -%}
+    ]
+  }
+}
+</script>
+{% endblock %}
