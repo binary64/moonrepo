@@ -14,9 +14,22 @@
       "meatContent": "60%",
       "mainIngredient": "Freshly prepared deboned chicken (26%), dried chicken (25%)",
       "summary": "Premium British-made grain-free kibble with 60% chicken content. Includes joint-supporting glucosamine and MSM, plus sweet potato for slow-release energy. One of the most popular grain-free options in the UK.",
-      "pros": ["60% chicken content — genuinely high meat", "UK-made with traceable ingredients", "Includes glucosamine + MSM for joints", "Sweet potato instead of white potato"],
-      "cons": ["Premium price — £8.33/kg", "Only one protein source (chicken)", "Some dogs dislike the small kibble size"],
-      "bestFor": ["Adult dogs", "Chicken lovers", "Joint support"],
+      "pros": [
+        "60% chicken content — genuinely high meat",
+        "UK-made with traceable ingredients",
+        "Includes glucosamine + MSM for joints",
+        "Sweet potato instead of white potato"
+      ],
+      "cons": [
+        "Premium price — £8.33/kg",
+        "Only one protein source (chicken)",
+        "Some dogs dislike the small kibble size"
+      ],
+      "bestFor": [
+        "Adult dogs",
+        "Chicken lovers",
+        "Joint support"
+      ],
       "url": "https://www.amazon.co.uk/dp/B00CFFLEDA",
       "amazonAsin": "B00CFFLEDA",
       "bestValue": false
@@ -35,9 +48,22 @@
       "meatContent": "85%",
       "mainIngredient": "Fresh chicken meat (13%), fresh turkey meat (7%), fresh whole eggs (7%)",
       "summary": "The gold standard of grain-free dog food. 85% quality animal ingredients with multiple protein sources mimicking a natural diet. WholePrey ratios include organs and cartilage for complete nutrition without synthetic supplements.",
-      "pros": ["85% animal ingredients — highest on this list", "Multiple protein sources (chicken, turkey, fish)", "WholePrey ratios include organs for natural nutrition", "No synthetic amino acid supplements needed"],
-      "cons": ["Very expensive — £13.33/kg", "Rich formula may cause loose stools initially", "Strong fish smell some owners dislike"],
-      "bestFor": ["Active dogs", "Multi-protein diet", "Premium nutrition"],
+      "pros": [
+        "85% animal ingredients — highest on this list",
+        "Multiple protein sources (chicken, turkey, fish)",
+        "WholePrey ratios include organs for natural nutrition",
+        "No synthetic amino acid supplements needed"
+      ],
+      "cons": [
+        "Very expensive — £13.33/kg",
+        "Rich formula may cause loose stools initially",
+        "Strong fish smell some owners dislike"
+      ],
+      "bestFor": [
+        "Active dogs",
+        "Multi-protein diet",
+        "Premium nutrition"
+      ],
       "url": "https://www.amazon.co.uk/dp/B06XNBWL48",
       "amazonAsin": "B06XNBWL48",
       "bestValue": false
@@ -47,7 +73,7 @@
       "brand": "Lily's Kitchen",
       "slug": "lilys-kitchen-chicken-duck",
       "rating": 4.5,
-      "price": 55.00,
+      "price": 55,
       "weight": "7kg",
       "pricePerKg": 7.86,
       "protein": "28%",
@@ -56,9 +82,22 @@
       "meatContent": "50%",
       "mainIngredient": "Freshly prepared chicken (25%), freshly prepared duck (10%)",
       "summary": "Well-known premium British brand offering natural grain-free recipes with 50% freshly prepared meat. Certified B Corp with ethical sourcing. Popular choice with good availability in supermarkets and pet shops.",
-      "pros": ["Widely available in UK supermarkets", "B Corp certified — ethical production", "No artificial preservatives, fillers, or derivatives", "Good range of flavours and sizes"],
-      "cons": ["Lower meat content than competitors (50%)", "Contains potato starch as filler", "Premium price for the meat percentage"],
-      "bestFor": ["Convenience seekers", "Ethical buyers", "Fussy eaters"],
+      "pros": [
+        "Widely available in UK supermarkets",
+        "B Corp certified — ethical production",
+        "No artificial preservatives, fillers, or derivatives",
+        "Good range of flavours and sizes"
+      ],
+      "cons": [
+        "Lower meat content than competitors (50%)",
+        "Contains potato starch as filler",
+        "Premium price for the meat percentage"
+      ],
+      "bestFor": [
+        "Convenience seekers",
+        "Ethical buyers",
+        "Fussy eaters"
+      ],
       "url": "https://www.amazon.co.uk/dp/B00BSSMLT6",
       "amazonAsin": "B00BSSMLT6",
       "bestValue": false
@@ -77,9 +116,22 @@
       "meatContent": "50%",
       "mainIngredient": "Freshly prepared turkey (30%), dried turkey (20%)",
       "summary": "Outstanding value grain-free option from a well-regarded UK brand. Uses freshly prepared turkey as the sole protein — ideal for dogs with chicken sensitivities. Sweet potato and pea-based carbohydrates.",
-      "pros": ["Excellent value at £6.33/kg", "Single protein source — great for allergies", "UK-made with high-quality turkey", "No chicken or common allergens"],
-      "cons": ["Lower protein than premium brands", "Limited flavour range", "Less well-known brand"],
-      "bestFor": ["Budget-conscious buyers", "Allergy-prone dogs", "Turkey-only diets"],
+      "pros": [
+        "Excellent value at £6.33/kg",
+        "Single protein source — great for allergies",
+        "UK-made with high-quality turkey",
+        "No chicken or common allergens"
+      ],
+      "cons": [
+        "Lower protein than premium brands",
+        "Limited flavour range",
+        "Less well-known brand"
+      ],
+      "bestFor": [
+        "Budget-conscious buyers",
+        "Allergy-prone dogs",
+        "Turkey-only diets"
+      ],
       "url": "https://www.amazon.co.uk/dp/B0CB21P5W7",
       "amazonAsin": "B0CB21P5W7",
       "bestValue": true
@@ -91,16 +143,29 @@
       "rating": 4.7,
       "price": 59.99,
       "weight": "6kg",
-      "pricePerKg": 10.00,
+      "pricePerKg": 10,
       "protein": "36%",
       "fat": "18%",
       "fibre": "3%",
       "meatContent": "80%",
       "mainIngredient": "Freshly prepared chicken (30%), freshly prepared salmon (14%), dried chicken (12%)",
       "summary": "Exceptional 80/20 formula from a small-batch UK manufacturer. Gently prepared at low temperatures to preserve nutrients. Six animal proteins in one recipe for a varied, biologically appropriate diet.",
-      "pros": ["80% meat content — outstanding", "Six different protein sources", "Small-batch UK production", "Low-temperature preparation preserves nutrients"],
-      "cons": ["Not widely available in shops", "Multiple proteins = not ideal for elimination diets", "Price increase over last year"],
-      "bestFor": ["Multi-protein fans", "Quality-focused owners", "Active/working dogs"],
+      "pros": [
+        "80% meat content — outstanding",
+        "Six different protein sources",
+        "Small-batch UK production",
+        "Low-temperature preparation preserves nutrients"
+      ],
+      "cons": [
+        "Not widely available in shops",
+        "Multiple proteins = not ideal for elimination diets",
+        "Price increase over last year"
+      ],
+      "bestFor": [
+        "Multi-protein fans",
+        "Quality-focused owners",
+        "Active/working dogs"
+      ],
       "url": "https://www.amazon.co.uk/dp/B00SYH7MC0",
       "amazonAsin": "B00SYH7MC0",
       "bestValue": false
@@ -110,18 +175,31 @@
       "brand": "Harringtons",
       "slug": "harringtons-grain-free-turkey",
       "rating": 4.2,
-      "price": 20.00,
+      "price": 20,
       "weight": "10kg",
-      "pricePerKg": 2.00,
+      "pricePerKg": 2,
       "protein": "22%",
       "fat": "10%",
       "fibre": "3%",
       "meatContent": "30%",
       "mainIngredient": "Turkey (30%), potato, peas",
       "summary": "The most affordable grain-free option in the UK, widely available in supermarkets. Good entry point for dogs transitioning to grain-free. Lower meat content than premium options but genuine value for money.",
-      "pros": ["Incredible value at £2.00/kg", "Available everywhere — Tesco, Asda, Pets at Home", "No artificial colours, flavours, or preservatives", "Good for transitioning to grain-free"],
-      "cons": ["Only 30% meat — lowest on our list", "Potato-heavy recipe", "Basic nutritional profile"],
-      "bestFor": ["Budget buyers", "Grain-free starters", "Multi-dog households"],
+      "pros": [
+        "Incredible value at £2.00/kg",
+        "Available everywhere — Tesco, Asda, Pets at Home",
+        "No artificial colours, flavours, or preservatives",
+        "Good for transitioning to grain-free"
+      ],
+      "cons": [
+        "Only 30% meat — lowest on our list",
+        "Potato-heavy recipe",
+        "Basic nutritional profile"
+      ],
+      "bestFor": [
+        "Budget buyers",
+        "Grain-free starters",
+        "Multi-dog households"
+      ],
       "url": "https://www.amazon.co.uk/dp/B00WAE2MSM",
       "amazonAsin": "B00WAE2MSM",
       "bestValue": true
@@ -133,16 +211,29 @@
       "rating": 4.4,
       "price": 44.99,
       "weight": "6kg",
-      "pricePerKg": 7.50,
+      "pricePerKg": 7.5,
       "protein": "24%",
       "fat": "12%",
       "fibre": "3%",
       "meatContent": "50%",
       "mainIngredient": "Chicken (30% freshly prepared, 20% dried)",
       "summary": "Devon-based family brand making natural dog food since 1971. Grain-free cold-pressed option that's gentle on digestion. Known for excellent palatability and steady energy release.",
-      "pros": ["Cold-pressed for better digestion", "Over 50 years of UK manufacturing", "No synthetic preservatives", "Steady energy release throughout the day"],
-      "cons": ["Cold-pressed kibble different texture — some dogs take time to adjust", "Moderate meat content", "Smaller bag sizes available"],
-      "bestFor": ["Sensitive stomachs", "Tradition seekers", "Devon dog lovers"],
+      "pros": [
+        "Cold-pressed for better digestion",
+        "Over 50 years of UK manufacturing",
+        "No synthetic preservatives",
+        "Steady energy release throughout the day"
+      ],
+      "cons": [
+        "Cold-pressed kibble different texture — some dogs take time to adjust",
+        "Moderate meat content",
+        "Smaller bag sizes available"
+      ],
+      "bestFor": [
+        "Sensitive stomachs",
+        "Tradition seekers",
+        "Devon dog lovers"
+      ],
       "url": "https://www.amazon.co.uk/dp/B07B9TS1VF",
       "amazonAsin": "B07B9TS1VF",
       "bestValue": false
@@ -161,19 +252,772 @@
       "meatContent": "60%",
       "mainIngredient": "Fresh chicken (12%), fresh turkey (4%), chicken meal (12%)",
       "summary": "From the same makers as Orijen but at a more accessible price point. 60% quality poultry ingredients with 40% fruit, vegetables, and botanicals. A solid mid-range option that delivers excellent nutrition.",
-      "pros": ["Same manufacturer as Orijen — trusted quality", "Good balance of quality and price", "Multiple poultry proteins", "Includes wholesome fruits and botanicals"],
-      "cons": ["Not as premium as Orijen sibling", "Contains some legumes (lentils, chickpeas)", "Can be harder to find in shops"],
-      "bestFor": ["Quality on a mid-range budget", "Poultry fans", "Orijen alternative"],
+      "pros": [
+        "Same manufacturer as Orijen — trusted quality",
+        "Good balance of quality and price",
+        "Multiple poultry proteins",
+        "Includes wholesome fruits and botanicals"
+      ],
+      "cons": [
+        "Not as premium as Orijen sibling",
+        "Contains some legumes (lentils, chickpeas)",
+        "Can be harder to find in shops"
+      ],
+      "bestFor": [
+        "Quality on a mid-range budget",
+        "Poultry fans",
+        "Orijen alternative"
+      ],
       "url": "https://www.amazon.co.uk/dp/B01M5ES0TR",
       "amazonAsin": "B01M5ES0TR",
       "bestValue": false
     }
   ],
+  "freshDogFood": [
+    {
+      "name": "Years Fresh Steam-Cooked",
+      "brand": "Years",
+      "slug": "years-fresh-steam-cooked",
+      "rating": 4.9,
+      "type": "Fresh, steam-cooked (shelf-stable)",
+      "priceFrom": "£7 trial",
+      "pricePerDayFrom": "Personalised",
+      "storage": "Cupboard (shelf-stable until opened)",
+      "topPick": true,
+      "bestValue": false,
+      "grainFree": true,
+      "tags": [
+        "Fresh",
+        "Grain-Free",
+        "Shelf-Stable",
+        "UK-Made",
+        "Senior-Friendly"
+      ],
+      "summary": "Gently steam-cooked fresh food that's shelf-stable — no freezer or fridge needed until opened. Every recipe is grain- and legume-free, and it holds the highest-ever AADF rating (96%) for a whole-food meal. The cupboard-storage angle solves the biggest practical drawback of fresh feeding.",
+      "pros": [
+        "Shelf-stable — no freezer space required (rare for fresh food)",
+        "Highest-ever AADF rating (96%) for a whole-food meal",
+        "All recipes grain- and legume-free — ideal for sensitive dogs",
+        "Recipes by veterinary clinical nutrition specialist + ex-luxury chef",
+        "Gentle cooking aids digestibility and palatability for fading appetites"
+      ],
+      "cons": [
+        "Pricing is personalised — must run the plan calculator for an exact figure",
+        "Newer brand with a shorter track record than rivals",
+        "No published affiliate programme yet (discount-code model)"
+      ],
+      "keySpecs": [
+        {
+          "label": "Type",
+          "value": "Fresh, steam-cooked"
+        },
+        {
+          "label": "Storage",
+          "value": "Cupboard / shelf-stable"
+        },
+        {
+          "label": "Grain-free",
+          "value": "Yes — always"
+        },
+        {
+          "label": "Recipes",
+          "value": "5 adult + puppy range + Chef's Collection"
+        },
+        {
+          "label": "AADF rating",
+          "value": "96% (highest for whole-food meals)"
+        },
+        {
+          "label": "Trial price",
+          "value": "From £7"
+        },
+        {
+          "label": "Life stage",
+          "value": "Puppy, Adult, Senior"
+        }
+      ],
+      "bestFor": [
+        "Senior dogs",
+        "Owners with no freezer space",
+        "Grain/wheat-sensitive dogs",
+        "Fussy eaters"
+      ],
+      "affiliateUrl": "#",
+      "ctaText": "See Years Plans"
+    },
+    {
+      "name": "Butternut Box Fresh Cooked",
+      "brand": "Butternut Box",
+      "slug": "butternut-box-fresh-cooked",
+      "rating": 4.8,
+      "type": "Fresh, cooked (frozen)",
+      "priceFrom": "£1.60/day",
+      "pricePerDayFrom": "£1.60-6.00/day",
+      "storage": "Freezer",
+      "topPick": false,
+      "bestValue": false,
+      "grainFree": true,
+      "tags": [
+        "Fresh",
+        "Customisable",
+        "Premium",
+        "UK-Made",
+        "High-Moisture"
+      ],
+      "summary": "The best-known UK fresh food brand — freshly cooked, frozen meals portioned precisely for your dog, with recipes that can be tailored around sensitivities. High moisture and strong palatability make it excellent for dogs who've gone off dry food, though it needs freezer space and is the priciest fresh option.",
+      "pros": [
+        "Precisely portioned meals tailored to your dog's profile",
+        "Recipes customisable around allergies and sensitivities (wheat-free available)",
+        "Excellent palatability and high moisture — great for fussy or older dogs",
+        "Well-established, trusted UK brand with strong reviews",
+        "Generous ambassador/referral programme (£40/referral)"
+      ],
+      "cons": [
+        "Requires dedicated freezer space",
+        "Most expensive option — up to £6/day for large dogs",
+        "Frozen delivery logistics need planning"
+      ],
+      "keySpecs": [
+        {
+          "label": "Type",
+          "value": "Fresh, cooked"
+        },
+        {
+          "label": "Storage",
+          "value": "Freezer"
+        },
+        {
+          "label": "Grain-free",
+          "value": "Customisable"
+        },
+        {
+          "label": "Portioning",
+          "value": "Tailored to dog's weight & needs"
+        },
+        {
+          "label": "Price range",
+          "value": "£1.60-6.00/day"
+        },
+        {
+          "label": "Affiliate",
+          "value": "Ambassador prog (£40/referral)"
+        },
+        {
+          "label": "Life stage",
+          "value": "Puppy, Adult, Senior"
+        }
+      ],
+      "bestFor": [
+        "Fussy eaters",
+        "Dogs off their dry food",
+        "Owners wanting tailored portions",
+        "Premium-quality seekers"
+      ],
+      "affiliateUrl": "#",
+      "ctaText": "See Butternut Box Plans"
+    },
+    {
+      "name": "Pure Pet Food Air-Dried",
+      "brand": "Pure Pet Food",
+      "slug": "pure-pet-food-air-dried",
+      "rating": 4.6,
+      "type": "Air-dried (add warm water)",
+      "priceFrom": "£0.89/day",
+      "pricePerDayFrom": "£0.89/day",
+      "storage": "Cupboard",
+      "topPick": false,
+      "bestValue": true,
+      "grainFree": true,
+      "tags": [
+        "Air-Dried",
+        "Grain-Free",
+        "Best-Value",
+        "Cupboard-Stored",
+        "Senior-Friendly"
+      ],
+      "summary": "Air-dried food you rehydrate with warm water, giving many of the benefits of fresh food — digestibility, palatability, named ingredients — at a lower price and without freezer space. The rehydrated texture is soft, which suits seniors with dental wear or missing teeth. A sensible middle ground between kibble and full fresh.",
+      "pros": [
+        "Cheapest fresh-style option — from £0.89/day for small dogs",
+        "Cupboard-stored, no freezer needed",
+        "Soft rehydrated texture suits seniors with dental issues",
+        "Grain-free recipes available, named whole ingredients",
+        "Lightweight and compact to store and post"
+      ],
+      "cons": [
+        "Not true fresh — air-dried then rehydrated",
+        "Requires preparation (adding water, waiting to rehydrate)",
+        "Texture won't suit every dog"
+      ],
+      "keySpecs": [
+        {
+          "label": "Type",
+          "value": "Air-dried (add water)"
+        },
+        {
+          "label": "Storage",
+          "value": "Cupboard"
+        },
+        {
+          "label": "Grain-free",
+          "value": "Options available"
+        },
+        {
+          "label": "Prep",
+          "value": "Add warm water before serving"
+        },
+        {
+          "label": "Price from",
+          "value": "£0.89/day (small dogs)"
+        },
+        {
+          "label": "Life stage",
+          "value": "Puppy, Adult, Senior"
+        }
+      ],
+      "bestFor": [
+        "Budget-conscious fresh-feeders",
+        "Seniors with dental wear",
+        "No freezer space",
+        "Easy storage"
+      ],
+      "affiliateUrl": "#",
+      "ctaText": "See Pure Pet Food Plans"
+    },
+    {
+      "name": "tails.com Tailored Blend",
+      "brand": "tails.com",
+      "slug": "tails-com-tailored-blend",
+      "rating": 4.4,
+      "type": "Tailored kibble (+ optional wet)",
+      "priceFrom": "~£1/day",
+      "pricePerDayFrom": "From ~£1/day",
+      "storage": "Cupboard",
+      "topPick": false,
+      "bestValue": false,
+      "grainFree": true,
+      "tags": [
+        "Tailored",
+        "Subscription",
+        "Cupboard-Stored",
+        "Convenient"
+      ],
+      "summary": "tails.com builds a kibble (and optional wet food) blend to your dog's profile — life stage, weight goals and sensitivities — and posts it through the door. Grain-free options are available. Cupboard-stored and convenient, with genuinely useful tailoring for seniors whose needs are shifting, though as a Nestlé Purina brand it's more mainstream than the boutique fresh options.",
+      "pros": [
+        "Blend tailored to life stage, weight goal and sensitivities",
+        "Grain-free options available",
+        "Convenient letterbox delivery, cupboard-stored",
+        "Tailoring genuinely useful for changing senior needs",
+        "Easy to adjust the recipe as your dog ages",
+        "Awin affiliate programme (#6074) — straightforward to monetise"
+      ],
+      "cons": [
+        "Kibble, not true fresh food",
+        "Nestlé Purina-owned — more mainstream than boutique brands",
+        "Less of a step-up in quality than the fresh options"
+      ],
+      "keySpecs": [
+        {
+          "label": "Type",
+          "value": "Tailored kibble + optional wet"
+        },
+        {
+          "label": "Storage",
+          "value": "Cupboard"
+        },
+        {
+          "label": "Grain-free",
+          "value": "Options available"
+        },
+        {
+          "label": "Tailoring",
+          "value": "Life stage, weight, sensitivities"
+        },
+        {
+          "label": "Price from",
+          "value": "~£1/day"
+        },
+        {
+          "label": "Affiliate",
+          "value": "Awin (#6074)"
+        },
+        {
+          "label": "Life stage",
+          "value": "Puppy, Adult, Senior"
+        }
+      ],
+      "bestFor": [
+        "Convenience seekers",
+        "Dogs with shifting needs",
+        "Cupboard storage",
+        "Mainstream tailored option"
+      ],
+      "affiliateUrl": "#",
+      "ctaText": "See tails.com Plans"
+    }
+  ],
+  "wetDogFood": [
+    {
+      "name": "Forthglade Complete Grain Free Wet",
+      "brand": "Forthglade",
+      "slug": "forthglade-grain-free-wet",
+      "rating": 4.8,
+      "type": "Complete wet (trays)",
+      "meatContent": "75% single-source",
+      "packSize": "395g trays",
+      "pricePerTray": "£1.26-1.48",
+      "aadf": "77–82%",
+      "storage": "Cupboard",
+      "grainFree": true,
+      "topPick": true,
+      "bestValue": false,
+      "summary": "Devon-made grain-free wet food, gently steamed in trays with 75% single-source protein (salmon, lamb, duck, beef or turkey) and no fillers. Voted Best Wet Food by Your Dog Magazine readers six years running, and rated 77–82% by All About Dog Food depending on recipe (adult 77%, senior 82%, puppy 84%) — among the highest scores for any wet food. Hypoallergenic, all life stages, and gentle on sensitive tummies.",
+      "pros": [
+        "77–82% AADF rating (recipe-dependent) — among the highest for any UK wet food",
+        "75% single-source protein, ideal for elimination diets",
+        "Grain- and gluten-free, hypoallergenic across the range",
+        "Trays for puppy, adult and senior — works for multi-dog homes",
+        "British-made in Devon with no artificial additives"
+      ],
+      "cons": [
+        "Trays cost more per gram than supermarket tins",
+        "Single-protein recipes mean less flavour variety per pack",
+        "Best price needs a larger multi-tray subscription"
+      ],
+      "bestFor": [
+        "Sensitive stomachs",
+        "Single-protein diets",
+        "Seniors",
+        "Multi-dog households"
+      ],
+      "url": "https://forthglade.com/collections/grain-free-wet-dog-food",
+      "ctaText": "Check Forthglade Price"
+    },
+    {
+      "name": "Nature's Menu Country Hunter Cans",
+      "brand": "Nature's Menu",
+      "slug": "natures-menu-country-hunter",
+      "rating": 4.7,
+      "type": "Complete wet (cans)",
+      "meatContent": "80%",
+      "packSize": "400g & 600g cans",
+      "pricePerTray": "£4.49/600g",
+      "aadf": "77-88%",
+      "storage": "Cupboard",
+      "grainFree": true,
+      "topPick": false,
+      "bestValue": false,
+      "summary": "Premium grain-free cans built around 80% real meat, with novel proteins like venison, duck and salmon plus superfood fruit and veg. The venison recipe scores a standout 88% on All About Dog Food. The novel-protein line-up makes it a strong pick for dogs reacting to common meats like chicken and beef.",
+      "pros": [
+        "80% real meat with superfood fruit and veg",
+        "Novel proteins (venison, duck, salmon) for sensitive dogs",
+        "Venison recipe rated 88% by AADF — class-leading",
+        "Grain-free and hypoallergenic, no artificial additives"
+      ],
+      "cons": [
+        "Higher cost per gram than mainstream cans",
+        "Rich novel-protein recipes can be too much for some dogs",
+        "Large 600g cans need fridge storage once opened"
+      ],
+      "bestFor": [
+        "Novel-protein diets",
+        "High-meat feeders",
+        "Fussy eaters",
+        "Larger dogs"
+      ],
+      "url": "https://www.naturesmenu.co.uk/dog/country-hunter/cans",
+      "ctaText": "Check Country Hunter Price"
+    },
+    {
+      "name": "Canagan Country Game Wet",
+      "brand": "Canagan",
+      "slug": "canagan-country-game-wet",
+      "rating": 4.6,
+      "type": "Complete wet (cans)",
+      "meatContent": "65%",
+      "packSize": "400g cans",
+      "pricePerTray": "£3.69-3.99",
+      "aadf": "High",
+      "storage": "Cupboard",
+      "grainFree": true,
+      "topPick": false,
+      "bestValue": false,
+      "summary": "From the well-regarded British grain-free brand, Canagan's wet cans pack 65% freshly prepared meat with sweet potato for slow-release energy, plus green-lipped mussel for joint support and prebiotics for digestion. The Country Game (venison, duck, goose) and Free-Run Chicken recipes mirror Canagan's popular kibble, making them an easy topper or standalone meal.",
+      "pros": [
+        "65% freshly prepared meat with named ingredients",
+        "Added green-lipped mussel (glucosamine) for joints",
+        "Prebiotics support digestion; sweet potato not cereal",
+        "Matches the Canagan kibble range for easy mixed feeding",
+        "100% recyclable packaging"
+      ],
+      "cons": [
+        "Premium price per can",
+        "Lower meat % than the very highest wet foods",
+        "Best availability online or in pet specialists, not supermarkets"
+      ],
+      "bestFor": [
+        "Joint support",
+        "Canagan kibble feeders",
+        "Toppers",
+        "Quality-focused owners"
+      ],
+      "url": "https://canagan.com/uk/dog-food/country-game-wet-dog-food/",
+      "ctaText": "Check Canagan Price"
+    },
+    {
+      "name": "Lily's Kitchen Grain Free Wet",
+      "brand": "Lily's Kitchen",
+      "slug": "lilys-kitchen-grain-free-wet",
+      "rating": 4.5,
+      "type": "Complete wet (tins)",
+      "meatContent": "60%+",
+      "packSize": "400g tins",
+      "pricePerTray": "£2.71/tin",
+      "aadf": "Good",
+      "storage": "Cupboard",
+      "grainFree": true,
+      "topPick": false,
+      "bestValue": false,
+      "summary": "The recognisable British brand's grain-free tins use freshly prepared meat (60%+), vegetables and botanical herbs, steam-cooked with no meat meal, fillers or nasties. B Corp certified and widely stocked in supermarkets and pet shops, Lily's Kitchen is the most convenient way to buy genuinely natural wet food, with proper-food recipes most dogs lap up.",
+      "pros": [
+        "60%+ freshly prepared meat, no meat meal or fillers",
+        "B Corp certified — strong ethical credentials",
+        "Widely available in UK supermarkets and pet shops",
+        "Grain-free recipes with botanical herbs, well-liked by fussy dogs"
+      ],
+      "cons": [
+        "Pricier per kg than specialist trays for the meat content",
+        "AADF scores trail the very top wet foods",
+        "Recipe tweaks over the years have divided some long-term buyers"
+      ],
+      "bestFor": [
+        "Convenience seekers",
+        "Ethical buyers",
+        "Fussy eaters",
+        "Supermarket shoppers"
+      ],
+      "url": "https://www.lilyskitchen.co.uk/for-dogs/wet-food/",
+      "ctaText": "Check Lily's Kitchen Price"
+    },
+    {
+      "name": "Wainwright's Grain Free Wet",
+      "brand": "Wainwright's",
+      "slug": "wainwrights-grain-free-wet",
+      "rating": 4.3,
+      "type": "Complete wet (cans)",
+      "meatContent": "Single-source",
+      "packSize": "395g cans",
+      "pricePerTray": "£1.80/can",
+      "aadf": "Solid",
+      "storage": "Cupboard",
+      "grainFree": true,
+      "topPick": false,
+      "bestValue": true,
+      "summary": "Pets at Home's own-brand wet food is the value pick: single-source protein (turkey, duck or lamb), hypoallergenic with no added wheat, pork, dairy, soya or artificial additives, and made in the UK. At around £1.80 a 395g can it undercuts the boutique brands while still being grain-free and easy to digest — a sensible everyday choice on a budget.",
+      "pros": [
+        "Cheapest grain-free wet on our list — around £1.80/can",
+        "Single-source protein, hypoallergenic recipe",
+        "No added wheat, pork, dairy, soya or artificial additives",
+        "Easy to buy in-store and online at Pets at Home",
+        "UK-made with Easy Repeat discounts available"
+      ],
+      "cons": [
+        "Lower meat content than premium brands",
+        "Own-brand, so less ingredient transparency than boutiques",
+        "Only sold through Pets at Home"
+      ],
+      "bestFor": [
+        "Budget buyers",
+        "Single-protein diets",
+        "Everyday feeding",
+        "Multi-dog households"
+      ],
+      "url": "https://www.petsathome.com/shop/en/pets/dog/dog-food/wet-dog-food",
+      "ctaText": "Check Wainwright's Price"
+    }
+  ],
+  "puppyFood": [
+    {
+      "brand": "Forthglade",
+      "name": "Forthglade Cold Pressed Puppy (Turkey)",
+      "slug": "forthglade-cold-pressed-puppy",
+      "type": "Cold-pressed dry + wet trays",
+      "aadf": "73–75% dry / 77–88% wet",
+      "meatContent": "Single-source named meat",
+      "pricePerDay": "From ~£0.70/day",
+      "packSize": "Dry 1.5–6kg / 90–395g wet trays",
+      "rating": 4.8,
+      "topPick": true,
+      "bestValue": false,
+      "grainFree": true,
+      "storage": "Cupboard",
+      "affiliateUrl": "#",
+      "ctaText": "Check Forthglade Price",
+      "bestFor": [
+        "Most puppies",
+        "All-life-stage feeding",
+        "Sensitive tummies",
+        "Small mouths (small-breed pellet)"
+      ],
+      "pros": [
+        "Cold-pressed dry rated 73–75% by AADF and wet 77–88% — among the highest puppy scores in the UK",
+        "Genuinely all-life-stage: the same recipe works from 8 weeks to senior, so no stressful diet switch as your pup grows",
+        "Grain-, gluten-free and hypoallergenic across the range — gentle on developing digestion",
+        "Turkey Cold Pressed Puppies & Small Dogs uses a smaller pellet ideal for tiny mouths and teething pups",
+        "Affordable Puppy Pack lets you trial dry, wet and treats before committing"
+      ],
+      "cons": [
+        "Cold-pressed kibble is denser than extruded — soak for very young pups",
+        "Premium versus supermarket puppy kibble",
+        "Best per-unit price needs a larger subscription"
+      ],
+      "summary": "Our top all-round puppy pick. Forthglade's cold-pressed dry food (73–75% AADF) and wet trays (77–88% AADF) are among the highest-rated puppy options in the UK, and uniquely they're all-life-stage — the same grain-free recipe carries from weaning right through to senior, sparing you the diet switches most brands force. A smaller-pellet Turkey recipe suits small breeds and teething mouths, and the low-cost Puppy Pack is the easiest way to trial it."
+    },
+    {
+      "brand": "Butternut Box",
+      "name": "Butternut Box Fresh Puppy",
+      "slug": "butternut-box-puppy",
+      "type": "Chilled fresh (subscription)",
+      "aadf": "93–94% (recipe-dependent)",
+      "meatContent": "60% fresh meat",
+      "pricePerDay": "~£2.40/day (growing pup)",
+      "packSize": "Personalised 125–400g pouches",
+      "rating": 4.8,
+      "topPick": false,
+      "bestValue": false,
+      "grainFree": true,
+      "storage": "Fridge / freezer",
+      "affiliateUrl": "#",
+      "ctaText": "See Butternut Box Plans",
+      "bestFor": [
+        "Fussy puppies",
+        "Owners wanting fresh from day one",
+        "Portion-controlled growth",
+        "Sensitive skin & tummies"
+      ],
+      "pros": [
+        "Gently steam-cooked fresh food rated 93–94% by AADF — top-tier nutrition for growth",
+        "60% fresh meat with no grains, soya, sugar or salt — easy on developing tummies and skin",
+        "Portions calculated to your puppy's current weight and growth target, recalculated as they grow",
+        "Pre-portioned pouches make controlled growth simple — overfeeding large-breed pups risks joint problems",
+        "Two-week intro plan to check your pup takes to it before a bigger commitment"
+      ],
+      "cons": [
+        "Premium pricing — roughly £2.40/day for a small growing pup, more for larger breeds",
+        "Needs fridge and freezer space",
+        "Subscription model rather than buy-as-you-go"
+      ],
+      "summary": "The fresh-food choice for puppies. Butternut Box's steam-cooked meals score 93–94% on AADF, use 60% fresh meat and skip grains, soya, sugar and salt — excellent for growth and gentle on sensitive young tummies and skin. The killer feature for puppies is portion control: meals are calculated to your pup's current weight and growth target and recalculated as they grow, which matters because overfeeding a large-breed puppy can cause lasting joint problems. From around £2.40/day for a small pup, with a two-week intro plan."
+    },
+    {
+      "brand": "Pooch & Mutt",
+      "name": "Pooch & Mutt Puppy Complete Chicken & Superfood",
+      "slug": "pooch-and-mutt-puppy",
+      "type": "Grain-free dry",
+      "aadf": "66–77%",
+      "meatContent": "Lean chicken-led",
+      "pricePerDay": "From ~£0.45/day",
+      "packSize": "2kg / 10kg bags",
+      "rating": 4.5,
+      "topPick": false,
+      "bestValue": true,
+      "grainFree": true,
+      "storage": "Cupboard",
+      "affiliateUrl": "#",
+      "ctaText": "Check Pooch & Mutt Price",
+      "bestFor": [
+        "Budget-conscious owners",
+        "Grain-free dry feeders",
+        "Superfood boosters",
+        "Everyday value"
+      ],
+      "pros": [
+        "Cheapest grain-free premium puppy dry food we rate — strong value at 66–77% AADF",
+        "Lean chicken plus pumpkin and salmon oil for fatty acids, antioxidants and a healthy coat",
+        "Simple one-recipe range — no decision paralysis",
+        "Widely stocked and easy to buy in bulk (10kg bag) to bring the per-day cost down"
+      ],
+      "cons": [
+        "AADF score sits below Forthglade and the fresh brands",
+        "Single chicken recipe — no option if your pup reacts to poultry",
+        "Less ingredient variety than premium fresh meals"
+      ],
+      "summary": "The best-value pick. Pooch & Mutt's grain-free Puppy Complete Chicken & Superfood is the cheapest premium grain-free puppy kibble we'd recommend, yet still rates 66–77% on AADF. Lean chicken is boosted with pumpkin and salmon oil for omega fatty acids, antioxidants and coat health. A single, no-fuss recipe that buys well in bulk — the sensible choice if you want quality grain-free nutrition without fresh-food prices."
+    },
+    {
+      "brand": "Years",
+      "name": "Years Fresh Puppy",
+      "slug": "years-puppy",
+      "type": "Fresh, steam-cooked (shelf-stable)",
+      "aadf": "95%",
+      "meatContent": "High named meat",
+      "pricePerDay": "Personalised",
+      "packSize": "Personalised plan",
+      "rating": 4.8,
+      "topPick": false,
+      "bestValue": false,
+      "grainFree": true,
+      "storage": "Cupboard (shelf-stable until opened)",
+      "affiliateUrl": "#",
+      "ctaText": "See Years Plans",
+      "bestFor": [
+        "Owners with no freezer space",
+        "Highest nutrition",
+        "Grain/legume-sensitive pups",
+        "Fresh feeding made simple"
+      ],
+      "pros": [
+        "95% AADF — among the highest-rated puppy meals available anywhere",
+        "Shelf-stable: fresh nutrition without needing freezer space (rare for fresh food)",
+        "Grain- and legume-free across the range — relevant given grain-free DCM concerns hinge on legumes/pulses, not grain alone",
+        "Recipes designed by a veterinary clinical nutrition specialist",
+        "Low-cost trial to test before committing"
+      ],
+      "cons": [
+        "Pricing is personalised — run the plan calculator for an exact figure",
+        "Newer brand with a shorter track record",
+        "Discount-code model, no published affiliate programme yet"
+      ],
+      "summary": "The nutrition leader. Years' steam-cooked fresh meals hold a 95% AADF rating — about as high as puppy food gets — yet are shelf-stable, so you get fresh-grade nutrition without surrendering freezer space. Every recipe is grain- AND legume-free (worth noting, since the grain-free heart-health concern centres on legumes and pulses rather than grain itself), and recipes are formulated by a veterinary clinical nutrition specialist. A low-cost trial makes it easy to test."
+    },
+    {
+      "brand": "Pure Pet Food",
+      "name": "Pure Pet Food Puppy",
+      "slug": "pure-pet-food-puppy",
+      "type": "Air-dried (just add water)",
+      "aadf": "61–74%",
+      "meatContent": "High named meat",
+      "pricePerDay": "From ~£0.89/day",
+      "packSize": "Personalised boxes",
+      "rating": 4.6,
+      "topPick": false,
+      "bestValue": false,
+      "grainFree": true,
+      "storage": "Cupboard",
+      "affiliateUrl": "#",
+      "ctaText": "See Pure Plans",
+      "bestFor": [
+        "Fresh quality without freezer",
+        "Travel & flexibility",
+        "Fussy puppies",
+        "Lightweight storage"
+      ],
+      "pros": [
+        "Air-dried whole ingredients rehydrated at home — fresh-style quality that stores in the cupboard",
+        "Lightweight and long-life — easy for travel and small homes",
+        "Personalised to your puppy's weight and growth, like the fresh subscriptions",
+        "Rehydrated texture is soft and tempting for teething or fussy pups"
+      ],
+      "cons": [
+        "AADF range (61–74%) is solid rather than class-leading",
+        "Needs preparing (add warm water and wait) before each meal",
+        "Costs more than dry kibble per day"
+      ],
+      "summary": "The fresh-without-the-freezer alternative. Pure Pet Food air-dries whole ingredients that you rehydrate at home, giving fresh-style quality (61–74% AADF) that stores in the cupboard and travels well. Like the fresh subscriptions it's personalised to your puppy's weight and growth, and the soft rehydrated texture suits teething and fussy pups. From around £0.89/day — a middle ground between kibble and chilled fresh."
+    }
+  ],
+  "puppyFoodSizeSpecialist": [
+    {
+      "brand": "AVA",
+      "name": "AVA Optimum Health Large Breed Puppy (Chicken)",
+      "slug": "ava-large-breed-puppy",
+      "type": "Large-breed dry kibble",
+      "aadf": "63%",
+      "meatContent": "51% chicken (24.5% meal + 17.5% fresh)",
+      "pricePerDay": "~£1.00–1.50/day (large pup)",
+      "packSize": "2kg & 15kg bags",
+      "rating": 4.0,
+      "topPick": false,
+      "bestValue": false,
+      "grainFree": false,
+      "storage": "Cupboard",
+      "affiliateUrl": "#",
+      "ctaText": "Check AVA Large Breed Puppy Price",
+      "bestFor": [
+        "Large & giant-breed puppies (Lab, GSD, Golden, Dane)",
+        "Controlled, joint-protecting growth",
+        "Owners wanting an affordable size-specific kibble",
+        "Easy high-street availability (Pets at Home)"
+      ],
+      "pros": [
+        "Genuinely large-breed-specific: kibble size, energy density and a controlled calcium level (1.5%) are formulated to slow the rapid growth that drives hip and elbow problems in big pups",
+        "Added glucosamine and chondroitin plus salmon-oil omega-3 for developing joints — a real point of difference from all-breed puppy foods",
+        "51% chicken (24.5% chicken meal + 17.5% fresh) with named single protein, hypoallergenic (no added wheat/wheat gluten, no soya or dairy)",
+        "Prebiotics (FOS/MOS) and beta-glucans support digestion and immunity in a fast-growing pup",
+        "Affordable for the size (15kg ~£46.99) and easy to buy in store or online from Pets at Home"
+      ],
+      "cons": [
+        "Grain-inclusive (brown rice + maize) rather than grain-free — fine for most pups but not the choice for grain-sensitive ones",
+        "Standard extruded kibble, so less gentle than cold-pressed or fresh on very sensitive digestion",
+        "Pets at Home exclusive — you can't price-shop it elsewhere",
+        "Chicken-based, so not ideal if your pup reacts to poultry"
+      ],
+      "summary": "The size-specialist pick for big pups. Where our top picks are all-breed, AVA's Large Breed Puppy is formulated specifically for large and giant breeds — controlled calcium (1.5%) and energy to keep growth steady (rapid growth is what drives joint disease in big dogs), a larger kibble that slows fast eaters, and added glucosamine, chondroitin and omega-3 for developing joints. It's 51% named chicken and hypoallergenic, though grain-inclusive and standard extruded rather than grain-free or cold-pressed. At roughly £46.99 for 15kg and stocked in every Pets at Home, it's the most accessible genuinely large-breed-specific puppy food in the UK.",
+      "sizeClass": "large"
+    },
+    {
+      "brand": "Royal Canin",
+      "name": "Royal Canin X-Small Puppy",
+      "slug": "royal-canin-x-small-puppy",
+      "type": "Toy/extra-small-breed dry kibble",
+      "aadf": "40%",
+      "meatContent": "Named poultry meal (under 30% meat)",
+      "pricePerDay": "~£0.55–0.70/day (toy pup)",
+      "packSize": "500g & 1.5kg bags",
+      "rating": 3.5,
+      "topPick": false,
+      "bestValue": false,
+      "grainFree": false,
+      "storage": "Cupboard",
+      "affiliateUrl": "#",
+      "ctaText": "Check Royal Canin X-Small Puppy Price",
+      "bestFor": [
+        "Toy & extra-small breeds (Chihuahua, Pomeranian, Yorkie, toy Poodle)",
+        "Tiny mouths that struggle with normal kibble",
+        "Fussy toy-breed pups",
+        "Owners who want a vet/breeder-standard size-specific formula"
+      ],
+      "pros": [
+        "Micro-sized kibble engineered for an extra-small jaw (adult weight up to 4kg) — the single biggest reason it suits toy pups others can't physically eat",
+        "Tuned to the breakneck growth and high energy needs of toy breeds, which mature far faster than big dogs (done by ~10 months)",
+        "Enriched with omega-3 DHA for brain development plus prebiotics (FOS/MOS/beet pulp) for a settled tummy",
+        "Vitamins C and E support a developing immune system, and the formula is certified nutritionally complete for growth",
+        "Very widely recommended by breeders and vets, and reliably palatable to famously fussy toy-breed pups"
+      ],
+      "cons": [
+        "Low AADF score (40%) — grain-inclusive, contains maize and some artificial additives, and not high in meat",
+        "Poultry meal rather than a high named-meat percentage; ingredient labelling lacks clarity",
+        "Not hypoallergenic or grain-free — the wrong pick for a sensitive or allergy-prone pup",
+        "Premium price per kilo for the quality on paper — you're partly paying for the size-specific format"
+      ],
+      "summary": "The toy-breed specialist, with eyes open. Most puppy foods — including our top picks — are simply too big for a Chihuahua or Yorkie pup to eat, and toy breeds grow and burn energy very differently to big dogs. Royal Canin X-Small Puppy solves the format problem with a micro kibble built for an extra-small jaw, energy and DHA tuned for fast toy-breed growth, and a recipe that fussy tiny pups reliably eat. Be honest about the trade-off: it scores just 40% on AADF (grain-inclusive, maize, some artificial additives, modest meat), so it wins on size-specific design and palatability rather than ingredient quality. If your toy pup will eat a better food, choose one — but for the many that won't, this is the dependable specialist.",
+      "sizeClass": "toy"
+    }
+  ],
   "categories": [
-    { "name": "Grain-Free Dry Food", "slug": "grain-free-dry-food", "count": 8 },
-    { "name": "Grain-Free Wet Food", "slug": "grain-free-wet-food", "count": 0 },
-    { "name": "Grain-Free Puppy Food", "slug": "grain-free-puppy-food", "count": 0 },
-    { "name": "Grain-Free Senior Food", "slug": "grain-free-senior-food", "count": 0 },
-    { "name": "Grain-Free Treats", "slug": "grain-free-treats", "count": 0 }
+    {
+      "name": "Grain-Free Dry Food",
+      "slug": "grain-free-dry-food",
+      "count": 8
+    },
+    {
+      "name": "Grain-Free Wet Food",
+      "slug": "grain-free-wet-food",
+      "count": 5
+    },
+    {
+      "name": "Grain-Free Puppy Food",
+      "slug": "grain-free-puppy-food",
+      "count": 5
+    },
+    {
+      "name": "Grain-Free Senior Food",
+      "slug": "grain-free-senior-food",
+      "count": 0
+    },
+    {
+      "name": "Grain-Free Treats",
+      "slug": "grain-free-treats",
+      "count": 0
+    }
   ]
 }
