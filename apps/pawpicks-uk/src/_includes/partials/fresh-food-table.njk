@@ -1,0 +1,49 @@
+{#
+  Reusable fresh/subscription dog food comparison table.
+  Single source of truth: src/_data/products/fresh-dog-food.json (products.freshDogFood).
+
+  Usage:
+    {% set tableProducts = products.freshDogFood %}
+    {% include "partials/fresh-food-table.njk" %}
+
+  Optional caller vars (set before include):
+    tableProducts  — array of fresh-food product objects (defaults to products.freshDogFood)
+    tableExtraRows — array of {name, type, grainFree, storage, priceFrom, bestFor} for
+                     non-JSON additions (e.g. a kibble pick on a senior page)
+#}
+{% set rows = tableProducts or products.freshDogFood %}
+<div class="comparison-table-wrapper"><table class="comparison-table">
+  <thead>
+    <tr>
+      <th>Brand</th>
+      <th>Type</th>
+      <th>Grain-Free</th>
+      <th>Storage</th>
+      <th>From</th>
+      <th>Best For</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for product in rows %}
+    <tr>
+      <td><strong>{{ product.brand }}</strong>{% if product.topPick %} <span class="tag tag-top">🏆 Top Pick</span>{% endif %}{% if product.bestValue %} <span class="tag tag-top">💰 Best Value</span>{% endif %}</td>
+      <td>{{ product.type }}</td>
+      <td>{% if product.grainFree %}✅ Yes{% else %}Options available{% endif %}</td>
+      <td>{{ product.storage }}</td>
+      <td>{{ product.priceFrom }}</td>
+      <td>{{ product.bestFor | first }}</td>
+    </tr>
+    {% endfor %}
+    {% for extra in tableExtraRows %}
+    <tr>
+      <td><strong>{{ extra.name }}</strong></td>
+      <td>{{ extra.type }}</td>
+      <td>{{ extra.grainFree }}</td>
+      <td>{{ extra.storage }}</td>
+      <td>{{ extra.priceFrom }}</td>
+      <td>{{ extra.bestFor }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
