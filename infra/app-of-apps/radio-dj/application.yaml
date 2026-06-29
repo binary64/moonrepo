@@ -17,6 +17,19 @@ spec:
     server: https://kubernetes.default.svc
     namespace: radio-dj
 
+  # The scale-to-zero watchdog (and the in-cluster activator) own the
+  # liquidsoap replica count: 0 when nobody is listening, 1 on wake. ArgoCD
+  # selfHeal would otherwise fight them back to replicas:1 within ~3min, so we
+  # explicitly cede /spec/replicas for this one Deployment. Everything else on
+  # the liquidsoap Deployment still self-heals normally.
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      name: liquidsoap
+      namespace: radio-dj
+      jsonPointers:
+        - /spec/replicas
+
   syncPolicy:
     automated:
       prune: true

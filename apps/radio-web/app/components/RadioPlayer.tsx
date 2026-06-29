@@ -357,6 +357,16 @@ const RadioPlayer = ({ currentTrack }: { currentTrack?: string }) => {
       cleanup();
       setState("idle");
     } else {
+      // Cold-start wake: when nobody has listened for 10min the liquidsoap
+      // encoder is scaled to 0, so Icecast has no /stream mount and a naive
+      // fetch would 404. A best-effort HEAD to the stream origin trips the
+      // always-on nginx activator (mirror -> /__wake) which scales it 0->1.
+      // Fire-and-forget: the startStream() retry/buffering loop below rides
+      // through the few seconds of cold start (cold-start muzak covers audio),
+      // so we don't await this and ignore any failure.
+      fetch(STREAM_URL, { method: "HEAD", cache: "no-store" }).catch(() => {
+        // best-effort wake ping; a failure here is harmless (startStream retries)
+      });
       startStream();
     }
   }, [state, cleanup, startStream]);
