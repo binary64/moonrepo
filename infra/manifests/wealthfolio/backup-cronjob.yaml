@@ -1,0 +1,175 @@
+# Nightly quiesce-and-snapshot backup of the wealthfolio /data volume.
+#
+# Why quiesce (scale to 0) rather than an online sqlite .backup:
+#   - The upstream image (alpine + static Rust binary) has NO sqlite3 CLI, so an
+#     in-pod `.backup`/`VACUUM INTO` is impossible.
+#   - local-path is node-local RWO; only one pod can mount the volume at a time.
+#   Scaling the app to 0 closes SQLite cleanly (WAL checkpointed), frees the RWO
+#   mount, and lets a throwaway pod tar BOTH files atomically:
+#     /data/wealthfolio.db  +  /data/secrets.json (encrypted broker creds).
+#   Cost: ~10-30s of dashboard downtime at 03:00. Trivial for a personal tracker.
+#
+# Node placement: local-path PVs carry nodeAffinity, so any pod mounting
+# wealthfolio-data (and wealthfolio-backup) is auto-scheduled to the node that
+# holds the data. No manual nodeSelector needed.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: wealthfolio-backup
+  namespace: wealthfolio
+  labels:
+    app.kubernetes.io/name: wealthfolio
+    app.kubernetes.io/instance: wealthfolio
+    app.kubernetes.io/component: backup
+spec:
+  schedule: "0 3 * * *"
+  timeZone: "Europe/London"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 3600
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 1800
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: wealthfolio
+            app.kubernetes.io/component: backup
+        spec:
+          serviceAccountName: wealthfolio-backup
+          restartPolicy: Never
+          # The controller only talks to the API server; never mounts /data
+          # itself (that's the worker pod's job), so it can run on any node.
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
+          containers:
+            - name: backup
+              image: bitnami/kubectl:1.30
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests:
+                  cpu: 25m
+                  memory: 64Mi
+                limits:
+                  cpu: 200m
+                  memory: 128Mi
+              command:
+                - /bin/bash
+                - -c
+                - |
+                  set -euo pipefail
+                  NS=wealthfolio
+                  DEPLOY=wealthfolio
+                  DATA_PVC=wealthfolio-data
+                  BACKUP_PVC=wealthfolio-backup
+                  TS=$(date -u +%Y%m%dT%H%M%SZ)
+                  WORKER="wf-backup-worker-${TS}"
+                  RETAIN=14
+
+                  cleanup() {
+                    echo "[cleanup] deleting worker pod (if any) and scaling app back up"
+                    kubectl -n "$NS" delete pod "$WORKER" --ignore-not-found --wait=false || true
+                    kubectl -n "$NS" scale deploy/"$DEPLOY" --replicas=1 || true
+                  }
+                  trap cleanup EXIT
+
+                  echo "[1/5] Quiescing app: scaling $DEPLOY to 0"
+                  kubectl -n "$NS" scale deploy/"$DEPLOY" --replicas=0
+                  kubectl -n "$NS" rollout status deploy/"$DEPLOY" --timeout=120s || true
+                  # Wait for app pods to fully terminate so the RWO mount is released.
+                  for i in $(seq 1 60); do
+                    RUNNING=$(kubectl -n "$NS" get pods -l app.kubernetes.io/name=wealthfolio,app.kubernetes.io/instance=wealthfolio -o name 2>/dev/null | wc -l)
+                    [ "$RUNNING" -eq 0 ] && break
+                    echo "  waiting for app pods to terminate ($RUNNING left)..."
+                    sleep 2
+                  done
+
+                  echo "[2/5] Launching worker pod $WORKER to tar /data (read-only)"
+                  cat <<EOF | kubectl -n "$NS" apply -f -
+                  apiVersion: v1
+                  kind: Pod
+                  metadata:
+                    name: ${WORKER}
+                    labels:
+                      app.kubernetes.io/name: wealthfolio
+                      app.kubernetes.io/component: backup-worker
+                  spec:
+                    restartPolicy: Never
+                    securityContext:
+                      runAsNonRoot: true
+                      runAsUser: 1000
+                      runAsGroup: 1000
+                      fsGroup: 1000
+                    containers:
+                      - name: tar
+                        image: alpine:3.19
+                        securityContext:
+                          allowPrivilegeEscalation: false
+                          capabilities:
+                            drop: ["ALL"]
+                        command:
+                          - /bin/sh
+                          - -c
+                          - |
+                            set -eu
+                            TS=${TS}
+                            RETAIN=${RETAIN}
+                            echo "  contents of /data:"; ls -la /data
+                            tar czf /backup/wf-\${TS}.tgz -C /data .
+                            echo "  wrote /backup/wf-\${TS}.tgz ($(du -h /backup/wf-\${TS}.tgz | cut -f1))"
+                            echo "  pruning to newest \${RETAIN} snapshots"
+                            ls -1t /backup/wf-*.tgz | tail -n +\$((RETAIN+1)) | xargs -r rm -f
+                            echo "  current snapshots:"; ls -1t /backup/wf-*.tgz
+                        volumeMounts:
+                          - name: data
+                            mountPath: /data
+                            readOnly: true
+                          - name: backup
+                            mountPath: /backup
+                    volumes:
+                      - name: data
+                        persistentVolumeClaim:
+                          claimName: ${DATA_PVC}
+                          readOnly: true
+                      - name: backup
+                        persistentVolumeClaim:
+                          claimName: ${BACKUP_PVC}
+                  EOF
+
+                  echo "[3/5] Waiting for worker pod to start"
+                  kubectl -n "$NS" wait --for=condition=Ready pod/"$WORKER" --timeout=120s || true
+
+                  echo "[4/5] Streaming worker logs until completion"
+                  kubectl -n "$NS" logs -f pod/"$WORKER" || true
+                  # Determine final phase.
+                  for i in $(seq 1 60); do
+                    PHASE=$(kubectl -n "$NS" get pod "$WORKER" -o jsonpath='{.status.phase}' 2>/dev/null || echo Unknown)
+                    case "$PHASE" in
+                      Succeeded) echo "  worker Succeeded"; break ;;
+                      Failed)    echo "  worker FAILED"; exit 1 ;;
+                      *)         sleep 2 ;;
+                    esac
+                  done
+                  # If the loop exhausted without reaching Succeeded, the worker
+                  # never confirmed a completed backup — fail loudly so the
+                  # CronJob does not record a false success.
+                  if [ "$PHASE" != "Succeeded" ]; then
+                    echo "  worker timed out after 120s in phase: $PHASE" >&2
+                    exit 1
+                  fi
+
+                  echo "[5/5] Backup complete. cleanup() trap will scale app back to 1."
+              volumeMounts:
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            - name: tmp
+              emptyDir: {}

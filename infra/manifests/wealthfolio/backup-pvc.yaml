@@ -1,0 +1,19 @@
+# Dedicated PVC to hold nightly backup tarballs of the wealthfolio /data volume.
+# Sized for ~14 retained snapshots of a tiny SQLite DB + secrets.json (each well
+# under a few MB); 1Gi is ample headroom.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: wealthfolio-backup
+  namespace: wealthfolio
+  labels:
+    app.kubernetes.io/name: wealthfolio
+    app.kubernetes.io/instance: wealthfolio
+    app.kubernetes.io/component: backup
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 1Gi
