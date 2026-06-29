@@ -1,4 +1,13 @@
 layer: application
 language: bash
 
-tasks: {}
+tasks:
+  lint:
+    script: |
+      set -e
+      for f in *.sh; do echo "bash -n $f"; bash -n "$f"; done
+      echo "shellcheck -e SC1091 *.sh"; shellcheck -e SC1091 *.sh
+      for f in *.py; do echo "py_compile $f"; python3 -m py_compile "$f"; done
+    inputs:
+      - '*.sh'
+      - '*.py'

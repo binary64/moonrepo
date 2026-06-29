@@ -255,6 +255,35 @@ def save_state(state):
         json.dump(state, f)
 
 
+def emit_random_fallback(mp3s, state=None):
+    """Pick a random file for any fallback path, but RESPECT the track cooldown
+    and RECORD the pick in state.
+
+    Historically every fallback branch did a bare `random.choice(mp3s)` that
+    (a) ignored recent_tracks — so a song that just played could be re-picked
+    moments later (observed gap=2 repeats in play-history) — and (b) never
+    appended the chosen path to recent_tracks, so the cooldown set never learned
+    about fallback plays, compounding the problem. This centralises both fixes:
+    filter out the last TRACK_COOLDOWN paths, then persist the pick.
+    """
+    if not mp3s:
+        return False
+    if state is None:
+        state = load_state()
+    recent = set(state.get("recent_tracks", [])[-TRACK_COOLDOWN:])
+    fresh = [m for m in mp3s if m not in recent]
+    pool = fresh if fresh else mp3s  # if everything's on cooldown, allow repeats
+    chosen = random.choice(pool)
+    artist = get_artist_from_name(os.path.splitext(os.path.basename(chosen))[0])
+    state["recent_tracks"].append(chosen)
+    state["recent_tracks"] = state["recent_tracks"][-TRACK_COOLDOWN:]
+    state["recent_artists"].append(artist)
+    state["recent_artists"] = state["recent_artists"][-ARTIST_COOLDOWN:]
+    save_state(state)
+    print(chosen)
+    return True
+
+
 def load_queue():
     """Load the LLM-generated track queue."""
     try:
@@ -489,6 +518,9 @@ def fallback_walk(graph, state, count=15):
             continue
 
         random.shuffle(candidates)
+        # Artist of the track we're branching FROM — used to block the most
+        # audible violation (back-to-back same artist) in the relaxed fallback.
+        prev_artist = get_artist_from_name(tracks.get(str(current), {}).get("n", ""))
         picked = False
         for cid in candidates:
             cid_str = str(cid)
@@ -512,10 +544,33 @@ def fallback_walk(graph, state, count=15):
             break
 
         if not picked:
-            # Accept any non-recent candidate
+            # Relaxed fallback: the strict artist-cooldown set was too tight to
+            # fill from this neighbourhood. Still refuse the worst case — playing
+            # the SAME artist back-to-back — and keep artist_counts honest so the
+            # 2+-in-queue guard isn't silently bypassed. Only fully relax (any
+            # non-recent track) if every candidate would repeat prev_artist.
+            for cid in candidates:
+                if cid in recent_ids or cid in result:
+                    continue
+                artist = get_artist_from_name(tracks.get(str(cid), {}).get("n", ""))
+                if artist == prev_artist:
+                    continue
+                if artist_counts.get(artist, 0) >= 2:
+                    continue
+                result.append(cid)
+                artist_counts[artist] = artist_counts.get(artist, 0) + 1
+                current = cid
+                picked = True
+                break
+
+        if not picked:
+            # Last resort: any non-recent candidate (even same artist) so the
+            # queue still fills; record the artist so counts stay consistent.
             for cid in candidates:
                 if cid not in recent_ids and cid not in result:
+                    artist = get_artist_from_name(tracks.get(str(cid), {}).get("n", ""))
                     result.append(cid)
+                    artist_counts[artist] = artist_counts.get(artist, 0) + 1
                     current = cid
                     picked = True
                     break
@@ -628,8 +683,7 @@ def main():
         # Fallback: random from music dir
         print("No graph available, falling back to random", file=sys.stderr)
         mp3s = glob.glob(os.path.join(MUSIC_DIR, "*.mp3"))
-        if mp3s:
-            print(random.choice(mp3s))
+        emit_random_fallback(mp3s)
         return
 
     state = load_state()
@@ -660,14 +714,12 @@ def main():
         elif not queue:
             # Total fallback: random file
             mp3s = glob.glob(os.path.join(MUSIC_DIR, "*.mp3"))
-            if mp3s:
-                print(random.choice(mp3s))
+            emit_random_fallback(mp3s, state)
             return
 
     if not queue:
         mp3s = glob.glob(os.path.join(MUSIC_DIR, "*.mp3"))
-        if mp3s:
-            print(random.choice(mp3s))
+        emit_random_fallback(mp3s, state)
         return
 
     # Pop next track from queue, skipping blacklisted/cooldown tracks AND recent artists
@@ -700,8 +752,7 @@ def main():
     if track_id is None:
         mp3s = [m for m in glob.glob(os.path.join(MUSIC_DIR, "*.mp3"))
                 if is_track_allowed(os.path.splitext(os.path.basename(m))[0], tiers)]
-        if mp3s:
-            print(random.choice(mp3s))
+        emit_random_fallback(mp3s, state)
         return
 
     track_id_str = str(track_id)
@@ -724,8 +775,7 @@ def main():
         else:
             save_queue(queue)
             mp3s = glob.glob(os.path.join(MUSIC_DIR, "*.mp3"))
-            if mp3s:
-                print(random.choice(mp3s))
+            emit_random_fallback(mp3s, state)
             return
 
     # Update state

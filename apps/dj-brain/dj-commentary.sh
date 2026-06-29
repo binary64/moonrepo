@@ -3,6 +3,7 @@ set -euo pipefail
 
 # Environment (with defaults)
 DJ_NAME="${1:-arthur}"
+# shellcheck disable=SC2034  # CLIP_TYPE documents positional arg $2 (callers pass it positionally)
 CLIP_TYPE="${2:-api-call}"
 TEXT="${3:-}"
 # 4th positional arg: music duck depth under this clip (1.0=full music,
