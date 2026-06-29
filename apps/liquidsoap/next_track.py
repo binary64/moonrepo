@@ -518,6 +518,9 @@ def fallback_walk(graph, state, count=15):
             continue
 
         random.shuffle(candidates)
+        # Artist of the track we're branching FROM — used to block the most
+        # audible violation (back-to-back same artist) in the relaxed fallback.
+        prev_artist = get_artist_from_name(tracks.get(str(current), {}).get("n", ""))
         picked = False
         for cid in candidates:
             cid_str = str(cid)
@@ -541,10 +544,33 @@ def fallback_walk(graph, state, count=15):
             break
 
         if not picked:
-            # Accept any non-recent candidate
+            # Relaxed fallback: the strict artist-cooldown set was too tight to
+            # fill from this neighbourhood. Still refuse the worst case — playing
+            # the SAME artist back-to-back — and keep artist_counts honest so the
+            # 2+-in-queue guard isn't silently bypassed. Only fully relax (any
+            # non-recent track) if every candidate would repeat prev_artist.
+            for cid in candidates:
+                if cid in recent_ids or cid in result:
+                    continue
+                artist = get_artist_from_name(tracks.get(str(cid), {}).get("n", ""))
+                if artist == prev_artist:
+                    continue
+                if artist_counts.get(artist, 0) >= 2:
+                    continue
+                result.append(cid)
+                artist_counts[artist] = artist_counts.get(artist, 0) + 1
+                current = cid
+                picked = True
+                break
+
+        if not picked:
+            # Last resort: any non-recent candidate (even same artist) so the
+            # queue still fills; record the artist so counts stay consistent.
             for cid in candidates:
                 if cid not in recent_ids and cid not in result:
+                    artist = get_artist_from_name(tracks.get(str(cid), {}).get("n", ""))
                     result.append(cid)
+                    artist_counts[artist] = artist_counts.get(artist, 0) + 1
                     current = cid
                     picked = True
                     break
