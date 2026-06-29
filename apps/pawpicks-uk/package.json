@@ -5,7 +5,9 @@
   "scripts": {
     "build": "eleventy",
     "serve": "eleventy --serve",
-    "clean": "rm -rf _site"
+    "clean": "rm -rf _site",
+    "audit": "python3 scripts/site-audit.py",
+    "build:ci": "eleventy && python3 scripts/site-audit.py"
   },
   "dependencies": {
     "@11ty/eleventy": "^3.0.0",
