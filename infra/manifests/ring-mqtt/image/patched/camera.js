@@ -843,6 +843,14 @@ export default class Camera extends RingPolledDevice {
         let maxSeconds = 30
         try {
             const trimmed = (message || '').trim()
+            // HA 'button' components publish a default 'PRESS' payload on click.
+            // The speak entity is registered as a button (only buttons/switches
+            // get a command_topic in base-ring-device.js), but it actually needs
+            // an audio URL/path, so a bare press carries no source — ignore it.
+            if (trimmed === '' || trimmed.toUpperCase() === 'PRESS') {
+                this.debug('Speak: received a bare button PRESS with no audio source — ignoring. Publish a URL/path (or JSON {audioUrl}) to the speak command topic.')
+                return
+            }
             if (trimmed.startsWith('{')) {
                 const parsed = JSON.parse(trimmed)
                 audioUrl = (parsed.audioUrl || parsed.url || '').trim()

@@ -1,5 +1,5 @@
---- a/devices/camera.js	2026-06-29 17:08:35.032518907 +0100
-+++ b/devices/camera.js	2026-06-29 17:10:01.864607112 +0100
+--- a/devices/camera.js	2026-03-09 03:47:22.000000000 +0000
++++ b/devices/camera.js	2026-06-29 18:11:45.423324652 +0100
 @@ -206,6 +206,14 @@
                  component: 'button',
                  icon: 'mdi:camera'
@@ -15,7 +15,7 @@
              motion_detection: {
                  component: 'switch',
                  category: 'config'
-@@ -824,6 +832,63 @@
+@@ -824,6 +832,71 @@
          }
      }
  
@@ -30,6 +30,14 @@
 +        let maxSeconds = 30
 +        try {
 +            const trimmed = (message || '').trim()
++            // HA 'button' components publish a default 'PRESS' payload on click.
++            // The speak entity is registered as a button (only buttons/switches
++            // get a command_topic in base-ring-device.js), but it actually needs
++            // an audio URL/path, so a bare press carries no source — ignore it.
++            if (trimmed === '' || trimmed.toUpperCase() === 'PRESS') {
++                this.debug('Speak: received a bare button PRESS with no audio source — ignoring. Publish a URL/path (or JSON {audioUrl}) to the speak command topic.')
++                return
++            }
 +            if (trimmed.startsWith('{')) {
 +                const parsed = JSON.parse(trimmed)
 +                audioUrl = (parsed.audioUrl || parsed.url || '').trim()
@@ -79,7 +87,7 @@
      async startEventStream(rtspPublishUrl) {
          const eventSelect = this.data.event_select.state.split(' ')
          const eventType = eventSelect[0].toLowerCase().replace('-', '_')
-@@ -1114,6 +1179,10 @@
+@@ -1114,6 +1187,10 @@
              case 'take_snapshot/command':
                  this.takeSnapshot(message)
                  break;

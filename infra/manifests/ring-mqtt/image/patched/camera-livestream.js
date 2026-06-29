@@ -1,6 +1,11 @@
 import { parentPort, workerData } from 'worker_threads'
 import { WebrtcConnection } from '../lib/streaming/webrtc-connection.js'
 import { StreamingSession } from '../lib/streaming/streaming-session.js'
+// two-way-audio patch (Arthur): used to stage remote audio to a local temp file
+// before handing it to ffmpeg (see speak() below).
+import { writeFile, unlink } from 'fs/promises'
+import { tmpdir } from 'os'
+import { join } from 'path'
 
 const deviceName = workerData.deviceName
 const doorbotId = workerData.doorbotId
@@ -127,13 +132,39 @@ async function speak(streamData) {
     parentPort.postMessage({type: 'log_info', data: `Speak: worker received speak command (${streamData.audioUrl})`})
     let speakSession = false
     let settled = false
+    let tempFile = null
     const cameraData = { name: deviceName, id: doorbotId }
     const maxMs = Math.min(Math.max((streamData.maxSeconds || 30), 1), 60) * 1000
+
+    // transcodeReturnAudio's ffmpeg runs with -protocol_whitelist
+    // 'pipe,udp,rtp,file,crypto' — it will NOT read http(s)/tcp/tls sources.
+    // So for a remote URL we fetch the bytes here and stage them to a local
+    // temp file, then feed ffmpeg the file path (which IS whitelisted).
+    let localSource = streamData.audioUrl
+    if (/^https?:\/\//i.test(streamData.audioUrl)) {
+        try {
+            const controller = new AbortController()
+            const fetchGuard = setTimeout(() => controller.abort(), 15000)
+            const res = await fetch(streamData.audioUrl, { signal: controller.signal })
+            clearTimeout(fetchGuard)
+            if (!res.ok) { throw new Error(`HTTP ${res.status}`) }
+            const buf = Buffer.from(await res.arrayBuffer())
+            tempFile = join(tmpdir(), `ring-speak-${doorbotId}-${Date.now()}`)
+            await writeFile(tempFile, buf)
+            localSource = tempFile
+            parentPort.postMessage({type: 'log_info', data: `Speak: staged remote audio (${buf.length} bytes) to ${tempFile}`})
+        } catch (error) {
+            parentPort.postMessage({type: 'log_error', data: `Speak: failed to fetch remote audio: ${error}`})
+            if (tempFile) { try { await unlink(tempFile) } catch (e) { /* noop */ } }
+            return
+        }
+    }
 
     const finish = (reason) => {
         if (settled) { return }
         settled = true
         try { if (speakSession) { speakSession.stop() } } catch (e) { /* noop */ }
+        if (tempFile) { unlink(tempFile).catch(() => { /* noop */ }) }
         parentPort.postMessage({type: 'log_info', data: `Speak: session ended (${reason})`})
         parentPort.postMessage({type: 'speak_state', data: 'done'})
     }
@@ -152,7 +183,8 @@ async function speak(streamData) {
                 speakSession.activateCameraSpeaker()
                 // transcodeReturnAudio spawns ffmpeg (-re) reading the source and
                 // streaming Opus RTP to the speaker; ffmpeg exit ends the call.
-                await speakSession.transcodeReturnAudio({ input: [streamData.audioUrl] })
+                // localSource is always a local path/file URL here.
+                await speakSession.transcodeReturnAudio({ input: [localSource] })
             } else if (state === 'failed') {
                 parentPort.postMessage({type: 'log_error', data: 'Speak: WebRTC connection failed'})
                 clearTimeout(guard)

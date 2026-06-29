@@ -16,7 +16,7 @@
 #   upstream files, re-apply the changes marked "two-way-audio patch (Arthur)",
 #   regenerate ./patches, and bump the image tag. The node --check below fails
 #   the build loudly if either file is syntactically broken.
-FROM tsightler/ring-mqtt:5.9.3
+FROM tsightler/ring-mqtt:5.9.3@sha256:4a4e0db460d7023aa5851ff25491401fd23b2fd153b7269af481f0953cd6f00a
 
 COPY patched/camera.js /app/ring-mqtt/devices/camera.js
 COPY patched/camera-livestream.js /app/ring-mqtt/devices/camera-livestream.js

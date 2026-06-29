@@ -18,6 +18,11 @@ Payload is either:
 - a bare URL or file path (e.g. `https://…/clip.wav`), or
 - JSON: `{"audioUrl": "https://…/clip.wav", "maxSeconds": 20}`
 
+> The entity is an HA `button` (only `button`/`switch`/etc. components get a
+> command topic in `base-ring-device.js`). A bare button *press* publishes the
+> default `PRESS` payload, which carries no audio source — those are ignored. To
+> actually speak, publish a URL/path (or JSON) to the command topic directly.
+
 `camera.js` acquires a fresh WebRTC signalling ticket (same endpoint as live
 streaming) and dispatches a `speak` message to the livestream worker, which
 opens its **own** short-lived session, activates the speaker, transcodes the
@@ -25,10 +30,18 @@ source to Opus RTP, plays it, and tears down. It runs independently of the
 live/event viewer stream, with a hard ceiling (default 30s, max 60s) so a
 stalled session can never wedge the worker.
 
+> **`http(s)` sources are staged to a temp file first.** The library's
+> `transcodeReturnAudio()` runs ffmpeg with `-protocol_whitelist
+> pipe,udp,rtp,file,crypto` — it cannot read `http(s)`/`tcp`/`tls` directly.
+> The worker therefore fetches a remote URL to a local temp file (15s timeout)
+> and feeds ffmpeg the file path, cleaning the temp file up on teardown. Local
+> paths / `file://` sources pass straight through.
+
 ## Files
 
-- `Dockerfile` — `FROM tsightler/ring-mqtt:5.9.3`, COPYs the two patched files
-  over the originals, runs `node --check` on both (build fails loudly if broken).
+- `Dockerfile` — `FROM tsightler/ring-mqtt:5.9.3` pinned by digest, COPYs the
+  two patched files over the originals, runs `node --check` on both (build fails
+  loudly if broken).
 - `patched/camera.js`, `patched/camera-livestream.js` — full patched files
   (COPYed by the Dockerfile). All changes marked `two-way-audio patch (Arthur)`.
 - `patches/*.patch` — unified diffs vs upstream 5.9.3, for review.
@@ -37,7 +50,7 @@ stalled session can never wedge the worker.
 
 ```bash
 cd infra/manifests/ring-mqtt/image
-TAG=ghcr.io/binary64/ring-mqtt:5.9.3-twoway-audio-1
+TAG=ghcr.io/binary64/ring-mqtt:5.9.3-twoway-audio-2
 docker build -t "$TAG" .
 echo "$(gh auth token)" | docker login ghcr.io -u binary64 --password-stdin
 docker push "$TAG"
