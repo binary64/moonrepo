@@ -1,0 +1,176 @@
+---
+layout: layouts/review.njk
+title: "Best Food for Cockapoo Puppies UK (2026) — Curly Coat, Ears & Unpredictable Tummies"
+description: "Cockapoo puppies inherit a Cocker's ear and food-sensitivity risk and a Poodle's curly coat and dental tendency — and as a crossbreed, you can't predict which parent's traits will dominate. We compare the best puppy foods for Cockapoos in the UK for 2026, built around a simple, single-protein start and omega-rich, coat-feeding nutrition."
+category: "Puppy Food"
+lastUpdated: "2026-06-29"
+readTime: "12"
+tags: ["roundup", "puppy", "breed"]
+priority: 9
+permalink: "/best-food-for-cockapoo-puppies/"
+faqs:
+  - q: "What is the best food for a Cockapoo puppy?"
+    a: "The right answer for a Cockapoo is a clean, single named-protein, grain-free recipe to start with — because as a crossbreed you don't yet know which parent's sensitivities your pup inherited, so you keep the ingredient list simple and watch how they react. Forthglade is our all-round pick: its cold-pressed dry food (73–75% AADF) and wet trays (77–88%) are grain-free and gentle, the small-breed pellet suits a Cockapoo's smaller jaw, and being all-life-stage there's no diet switch as your pup matures. For fresh, whole-food nutrition with portions matched to your pup's weight, Butternut Box (93–94% AADF) and Years (95%) are excellent — and their omega-rich recipes feed that Poodle-inherited curly coat. Favour turkey or fish over chicken if your pup shows any itching, since chicken is a common Cocker-side trigger. Pooch & Mutt is the best-value grain-free kibble, though it's a chicken recipe, so check tolerance first."
+  - q: "Why do Cockapoo puppies need special feeding?"
+    a: "Because a Cockapoo is a mix of two breeds with very different food briefs, and the dice land differently in every litter. From the Cocker Spaniel side comes a real risk of food-linked ear infections and ingredient sensitivities (grains, chicken, beef and dairy are common triggers). From the Poodle side comes a curly, continuously-growing coat that needs omega-3 and good fats to stay in condition, plus a tendency to dental crowding in a smaller mouth. The crossbreed catch is unpredictability — you can't know in advance which traits dominate, so the safe play is to start on a simple, limited-ingredient, single-protein diet and add complexity only if your pup tolerates it well."
+  - q: "Should a Cockapoo puppy eat small-breed or medium-breed puppy food?"
+    a: "Cockapoos sit in between — most are small to small-medium (roughly 5–11kg as adults, depending on whether they're a toy, miniature or standard cross), so a standard or small-breed puppy formula, or an all-life-stage food, fits best. What matters more than the size label is kibble size (a smaller mouth manages a smaller pellet or soft food better), a clean single protein, and grain-free if there's any sign of ear or skin trouble. Avoid very calorie-dense small-breed formulas if your pup tends to gain weight, and weigh portions rather than free-feeding."
+  - q: "How much should I feed my Cockapoo puppy?"
+    a: "Follow the pack's feeding guide for your pup's age and expected adult weight (most Cockapoos finish around 5–11kg), split across more meals than an adult: roughly four meals a day to about 4 months, three to around 6 months, then two from there. Weigh portions on a kitchen scale — the Cocker side can gain weight easily, so you should always be able to feel the ribs. Toy and miniature Cockapoos are small enough that little-and-often matters for steady energy. Fresh subscriptions like Butternut Box and Years portion automatically to your pup's weight, which removes the guesswork."
+  - q: "What food keeps a Cockapoo's curly coat healthy?"
+    a: "That signature curly, low-shedding coat is the Poodle inheritance, and it's fed from the inside by omega-3 fatty acids (from oily fish or salmon oil) and good-quality named proteins. Gently-cooked foods — cold-pressed Forthglade, steam-cooked Butternut Box and Years — preserve more coat-supporting nutrients than high-heat extruded kibble. A well-fed coat tangles and mats less, which is a genuine practical win for a breed that needs regular grooming. If the coat looks dull or dry despite grooming, review the fat and omega content of the food."
+  - q: "Are Cockapoo puppies prone to ear infections?"
+    a: "Yes — it's one of the traits most likely to come through from the Cocker Spaniel side. Long, pendulous, hairy ears trap moisture, and food allergy is a leading driver of the inflammation that blocks and infects those ear canals. The most protective dietary move is a grain-free, single novel-protein recipe that avoids common triggers (grains, chicken, beef, dairy). If your pup starts head-shaking, scratching at its ears or you notice a smell, food is one of the first things to review — alongside keeping the ears clean, dry and the inner hair managed by your groomer."
+  - q: "Is grain-free food good for Cockapoo puppies?"
+    a: "For an ear- and skin-prone crossbreed like the Cockapoo, grain-free is often a sensible default, since grains are a common trigger for the inflammation behind ear and skin trouble. The nuance worth knowing: the dilated cardiomyopathy (DCM) heart concern raised in recent years was linked to some grain-free recipes leaning heavily on peas, lentils and other pulses — so it's the legume load and recipe quality under scrutiny, not the absence of grain itself. Choose a well-formulated brand. Years, for instance, is both grain- and legume-free, sidestepping the issue entirely."
+  - q: "When should I switch my Cockapoo puppy to adult food?"
+    a: "Most Cockapoos are small to medium and finish growing earlier than big breeds, so adult food around 12 months is typical (a little later for larger standard Cockapoos). The simplest route is an all-life-stage food like Forthglade, or a fresh brand that adjusts portions automatically, so there's no abrupt switch at all. When you do change, transition gradually over 7–10 days to protect a potentially sensitive Cockapoo tummy."
+---
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "{{ title }}",
+  "description": "{{ description }}",
+  "numberOfItems": {{ products.puppyFood | length }},
+  "itemListElement": [
+    {% for product in products.puppyFood %}
+    {
+      "@type": "ListItem",
+      "position": {{ loop.index }},
+      "item": {
+        "@type": "Product",
+        "name": "{{ product.name }}",
+        "brand": { "@type": "Brand", "name": "{{ product.brand }}" },
+        "description": "{{ product.summary }}",
+        "review": {
+          "@type": "Review",
+          "reviewRating": { "@type": "Rating", "ratingValue": "{{ product.rating }}", "bestRating": "5" },
+          "author": { "@type": "Organization", "name": "{{ site.name }}", "url": "{{ site.url }}/how-we-test/" }
+        }
+      }
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
+
+<p>The Cockapoo is one of Britain's most popular dogs — and one of its trickiest feeding briefs, precisely because it's a <strong>crossbreed</strong>. A Cockapoo is part Cocker Spaniel, part Poodle, and which parent's traits dominate varies from litter to litter, even pup to pup. From the Cocker side you may inherit a real risk of food-linked ear infections and ingredient sensitivities. From the Poodle side comes a curly, continuously-growing coat that needs feeding from the inside, and a smaller, more crowded mouth. The one thing you can't do is predict the mix in advance — so the smart play is to <strong>start simple and watch closely</strong>.</p>
+
+<p>This guide is written from experience. Our own dog <strong>Milo is a 12-year-old Labrador/Lurcher rescue</strong> who's wheat-sensitive — we've lived the daily reality of feeding around a food sensitivity, which is exactly the game a Cockapoo owner ends up playing when they don't yet know what their crossbreed pup reacts to. Below are the UK puppy foods we'd point a Cockapoo owner towards for 2026, ranked and explained, with the coat-ears-tummy science that makes a Cockapoo pup different from a purebred.</p>
+
+<h2>Best Cockapoo Puppy Food at a Glance</h2>
+
+<div class="comparison-table-wrapper"><table class="comparison-table">
+  <thead>
+    <tr>
+      <th>Brand</th>
+      <th>Format</th>
+      <th>AADF</th>
+      <th>Price/Day</th>
+      <th>Why It Suits a Cockapoo Pup</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for product in products.puppyFood %}
+    <tr>
+      <td><strong>{{ product.brand }}</strong>{% if product.topPick %} <span class="tag tag-top">🏆 Top Pick</span>{% endif %}{% if product.bestValue %} <span class="tag tag-top">💰 Best Value</span>{% endif %}</td>
+      <td>{{ product.type }}</td>
+      <td>{{ product.aadf }}</td>
+      <td>{{ product.pricePerDay }}</td>
+      <td>{{ product.bestFor | first }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<p class="meta"><em>Price/day figures are starting points — a growing Cockapoo eats less than a big-breed pup, so a small-medium breed's per-day cost typically sits at the lower end. Larger bags and subscriptions usually lower the per-unit price.</em></p>
+
+<h2>Why a Cockapoo Puppy Is Different</h2>
+
+<p>Most puppy-feeding advice assumes a generic, predictable dog. A Cockapoo is the opposite — a blend of two breeds whose traits you can't fully forecast. Three pressure points shape the brief:</p>
+
+<ul>
+  <li><strong>Start simple, because you can't predict the mix.</strong> This is the single most important Cockapoo rule. A purebred Cocker owner knows the breed's common triggers; a Cockapoo owner is rolling dice on which sensitivities (if any) came through. The safe foundation is a <strong>limited-ingredient, single named-protein, grain-free recipe</strong> — keep the variables few, so that if a reaction appears you can actually identify the culprit. Add complexity only once your pup has proven it tolerates the basics.</li>
+  <li><strong>Ears and skin (the Cocker inheritance).</strong> Many Cockapoos inherit the long, hairy, moisture-trapping ears and the food-sensitivity tendency of the Cocker side. Food allergy is a leading driver of the inflammation that blocks and infects those ear canals, so a grain-free, single-protein recipe avoiding common triggers (grains, chicken, beef, dairy) is the protective default. Watch for head-shaking, ear-scratching or a smell.</li>
+  <li><strong>The curly coat (the Poodle inheritance) and small mouths.</strong> That low-shedding, continuously-growing curly coat is genuinely high-maintenance and is fed from the inside by omega-3 and good fats — a well-nourished coat mats and tangles less. The smaller, often crowded mouth also means kibble size and soft formats matter for a comfortable eat and for dental health. Gently-cooked foods preserve more coat-supporting nutrients than high-heat kibble.</li>
+</ul>
+
+<p>Everything below is judged against that brief: complete, growth-appropriate nutrition built on a clean single named protein, grain-free where ears and skin are a worry, omega-rich for the coat, and in a format a smaller mouth can manage.</p>
+
+<h2>Our Top Picks for Cockapoo Puppies</h2>
+
+<h3>🏆 Best All-Rounder: Forthglade Cold-Pressed Puppy</h3>
+<p>Forthglade is where we'd send most Cockapoo owners first, because it answers the crossbreed's core need: a clean, limited, grain-free recipe to start from. The cold-pressed dry food (73–75% AADF) and wet trays (77–88%) are grain-free and hypoallergenic — exactly what an ear- and skin-prone Cockapoo wants — and being <strong>all-life-stage</strong>, the same recipe carries from weaning to senior with no stressful diet switch. The smaller-breed pellet suits a Cockapoo's mouth, cold-pressing is gentler than high-heat kibble, and the lower-fat profile is a sensible default for a breed that can take after a weight-prone Cocker. The low-cost Puppy Pack is the easiest way to trial it and see how your individual pup reacts.</p>
+
+<h3>🥇 Best for Fresh, Portion-Controlled Feeding: Butternut Box Fresh Puppy</h3>
+<p>Butternut Box's steam-cooked fresh meals score 93–94% on AADF, use 60% fresh meat and skip grains, soya, sugar and salt — clean, allergy-friendly nutrition that suits a Cockapoo's potentially sensitive skin and ears, with a choice of single proteins so you can steer clear of chicken if needed. Two features make it a strong Cockapoo pick: the whole-food, <strong>omega-rich recipes that feed the curly coat</strong>, and <strong>automatic portion control</strong> — every meal is calculated to your pup's current weight and growth target. For a crossbreed where the Cocker side can gain weight readily, handing the portioning to a system that keeps growth lean is genuinely useful. It needs fridge/freezer space and runs from around £2.40/day for a small pup, but for hands-off, weight-managed fresh feeding it's our standout. There's a two-week intro plan to test tolerance.</p>
+
+<h3>💎 Highest Nutrition (No Freezer Needed): Years Fresh Puppy</h3>
+<p>Years holds a <strong>95% AADF rating</strong> — about as high as puppy food gets — yet is shelf-stable, so you get fresh-grade nutrition without surrendering freezer space. Crucially for an ear-prone Cockapoo, every recipe is grain- AND legume-free (worth noting given the grain-free heart-health concern centres on legumes rather than grain itself), recipes are formulated by a veterinary clinical nutrition specialist, and like the other subscriptions it portions to your pup's weight and growth. For a Cockapoo owner who wants top-tier, allergy-conscious nutrition and a coat-feeding omega profile but no freezer commitment, this is the pick.</p>
+
+<h3>💰 Best Value: Pooch &amp; Mutt Puppy Complete</h3>
+<p>Pooch &amp; Mutt's grain-free Puppy Complete Chicken &amp; Superfood is the cheapest premium grain-free kibble we'd recommend, still rating 66–77% on AADF, with pumpkin and salmon oil covering omega fatty acids and coat health — handy for a curly-coated breed. The one caveat for Cockapoos is the protein: it's a single chicken recipe, and <strong>chicken is one of the Cocker side's most common allergy triggers</strong>. Given you can't predict a crossbreed's sensitivities, treat this as the budget option <em>once</em> your pup has shown it tolerates chicken — if there's any sign of ear trouble or itching, pick a turkey or fish-based alternative instead. For a Cockapoo with no known chicken sensitivity on a budget, it delivers quality grain-free nutrition without fresh-food prices.</p>
+
+<h3>🌿 Fresh Quality Without the Freezer: Pure Pet Food Puppy</h3>
+<p>Pure air-dries whole ingredients that you rehydrate at home — fresh-style quality (61–74% AADF) that stores in the cupboard and travels well, personalised to your puppy's weight and growth. The soft rehydrated texture suits teething Cockapoo pups and a smaller mouth, the whole-food ingredients carry coat-supporting nutrition, and from around £0.89/day it's a sensible middle ground between kibble and full fresh feeding. Choose a non-chicken recipe if your pup is ear- or skin-reactive.</p>
+
+<h2>How to Choose for Your Cockapoo Puppy</h2>
+
+<p>There's no single winner — it depends on your priorities, budget and kitchen:</p>
+
+<ul>
+  <li><strong>Not sure what your crossbreed reacts to yet?</strong> Start simplest: a grain-free, single novel-protein, gently-cooked recipe — <a href="#forthglade-cold-pressed-puppy">Forthglade</a>, <a href="#years-puppy">Years</a> and <a href="#butternut-box-puppy">Butternut Box</a> all qualify (avoid chicken-only recipes until tolerance is proven).</li>
+  <li><strong>Recurrent ear trouble or itching?</strong> Lean grain-free and single-protein, and review the diet first — the Cocker-side ear risk is the most common Cockapoo food issue.</li>
+  <li><strong>Focused on that curly coat?</strong> Fresh, whole-food recipes — <a href="#butternut-box-puppy">Butternut Box</a> and <a href="#years-puppy">Years</a> — carry the omega-3 a Cockapoo's coat thrives on.</li>
+  <li><strong>Worried about weight?</strong> <a href="#butternut-box-puppy">Butternut Box</a> and <a href="#years-puppy">Years</a> pre-portion to lean growth automatically.</li>
+  <li><strong>Want one food from puppy to senior?</strong> <a href="#forthglade-cold-pressed-puppy">Forthglade</a> is all-life-stage with a small-breed pellet that suits a smaller mouth.</li>
+  <li><strong>After the highest nutrition?</strong> <a href="#years-puppy">Years</a> (95% AADF) and <a href="#butternut-box-puppy">Butternut Box</a> (93–94%) lead the field.</li>
+  <li><strong>On a budget?</strong> <a href="#pooch-and-mutt-puppy">Pooch &amp; Mutt</a> is the value grain-free kibble pick — but check the chicken protein against your pup's tolerance.</li>
+  <li><strong>No freezer space?</strong> <a href="#years-puppy">Years</a> (shelf-stable) and <a href="#pure-pet-food-puppy">Pure Pet Food</a> (air-dried) both store in the cupboard.</li>
+</ul>
+
+<h2>Feeding a Cockapoo Puppy Through the First Year</h2>
+
+<div class="comparison-table-wrapper"><table class="comparison-table">
+  <thead>
+    <tr>
+      <th>Age</th>
+      <th>Meals/Day</th>
+      <th>Focus</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>8 weeks – 4 months</td>
+      <td>4</td>
+      <td>Little and often; weigh portions against expected 5–11kg adult weight. Keep the ingredient list simple so reactions are easy to spot. Toy/miniature pups especially need steady, frequent small meals.</td>
+    </tr>
+    <tr>
+      <td>4 – 6 months</td>
+      <td>3</td>
+      <td>Main growth phase — keep lean, feel for ribs, and start watching the ears for any sign of food-linked irritation as adult ear hair grows in.</td>
+    </tr>
+    <tr>
+      <td>6 – 12 months</td>
+      <td>2</td>
+      <td>Growth slows; stay on a growth/all-life-stage food. Keep omega-3 up for the maturing curly coat and watch the waistline.</td>
+    </tr>
+    <tr>
+      <td>From ~12 months</td>
+      <td>2</td>
+      <td>Growth largely finished for a small-medium breed; switch to adult food around 12 months (a little later for larger standard Cockapoos), over 7–10 days.</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<p>Across all of it, three rules matter most for a Cockapoo: <strong>start simple and watch</strong> — a limited, single-protein, grain-free base so any reaction points to a clear cause; <strong>protect the ears</strong> by leaning grain-free and clean-protein, and keeping them dry and groomed; and <strong>feed the coat</strong> with omega-3 so that curly coat stays glossy and mat-resistant. If ear trouble, itching, weight, coat condition or toileting changes noticeably and doesn't settle, book a vet check.</p>
+
+<h2>Where This Sits in Your Cockapoo's Life</h2>
+
+<p>This page covers the first year. For the breed picture across all life stages, see our <a href="/best-dog-food-for-cockapoos/">best dog food for Cockapoos guide</a>; for the general puppy field across breeds and formats, our <a href="/best-puppy-food-uk/">best puppy food UK guide</a> goes deeper. Because the Cockapoo's defining food challenge is unpredictable, Cocker-side sensitivity, our <a href="/best-dog-food-sensitive-stomach-uk/">best dog food for sensitive stomachs &amp; skin guide</a> is a useful companion read — as is our <a href="/how-to-switch-dog-food/">how to switch dog food guide</a> if you need to run an elimination trial. To dial in portions for your pup's exact weight, try our <a href="/dog-food-calculator/?breed=cockapoos">dog food portion calculator</a>.</p>
+
+<p class="meta" style="margin-top:2rem;"><em>About our testing: recommendations on this page are informed by raising and feeding our own dog, Milo (12, Labrador/Lurcher, wheat-sensitive), and by living with a food sensitivity day to day, alongside published nutritional data and independent All About Dog Food (AADF) ratings. We update this guide as products and pricing change. Some links are affiliate links — see our disclosure above.</em></p>
