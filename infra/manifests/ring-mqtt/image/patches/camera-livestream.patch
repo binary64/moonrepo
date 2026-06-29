@@ -1,0 +1,71 @@
+--- a/devices/camera-livestream.js	2026-06-29 17:08:35.295516143 +0100
++++ b/devices/camera-livestream.js	2026-06-29 17:09:12.014130379 +0100
+@@ -26,6 +26,15 @@
+                 stopLiveStream()
+             }
+             break;
++        // --- two-way-audio patch (Arthur) ---------------------------------
++        // Open a short-lived WebRTC session, activate the camera speaker and
++        // transcode a single audio source (URL or file path) out the doorbell
++        // speaker, then tear the session down.  Independent of the live/event
++        // streaming worker state above so it never collides with a viewer.
++        case 'speak':
++            speak(streamData)
++            break;
++        // ------------------------------------------------------------------
+     }
+ })
+ 
+@@ -109,4 +118,50 @@
+         } while (liveStream && stopTimeout)
+         streamStopping = false
+     }
+-}
+\ No newline at end of file
++}
++
++// --- two-way-audio patch (Arthur) -------------------------------------------
++// Play a single audio source out the camera speaker over its own WebRTC
++// session.  streamData = { ticket, audioUrl, maxSeconds }.
++async function speak(streamData) {
++    parentPort.postMessage({type: 'log_info', data: `Speak: worker received speak command (${streamData.audioUrl})`})
++    let speakSession = false
++    let settled = false
++    const cameraData = { name: deviceName, id: doorbotId }
++    const maxMs = Math.min(Math.max((streamData.maxSeconds || 30), 1), 60) * 1000
++
++    const finish = (reason) => {
++        if (settled) { return }
++        settled = true
++        try { if (speakSession) { speakSession.stop() } } catch (e) { /* noop */ }
++        parentPort.postMessage({type: 'log_info', data: `Speak: session ended (${reason})`})
++        parentPort.postMessage({type: 'speak_state', data: 'done'})
++    }
++
++    try {
++        const speakConnection = new WebrtcConnection(streamData.ticket, cameraData)
++        speakSession = new StreamingSession(cameraData, speakConnection)
++
++        // Hard ceiling so a stalled session can never wedge the worker.
++        const guard = setTimeout(() => finish('timeout'), maxMs)
++        speakSession.onCallEnded.subscribe(() => { clearTimeout(guard); finish('callEnded') })
++
++        speakConnection.pc.onConnectionState.subscribe(async (state) => {
++            if (state === 'connected') {
++                parentPort.postMessage({type: 'log_info', data: 'Speak: WebRTC connected, activating speaker'})
++                speakSession.activateCameraSpeaker()
++                // transcodeReturnAudio spawns ffmpeg (-re) reading the source and
++                // streaming Opus RTP to the speaker; ffmpeg exit ends the call.
++                await speakSession.transcodeReturnAudio({ input: [streamData.audioUrl] })
++            } else if (state === 'failed') {
++                parentPort.postMessage({type: 'log_error', data: 'Speak: WebRTC connection failed'})
++                clearTimeout(guard)
++                finish('failed')
++            }
++        })
++    } catch (error) {
++        parentPort.postMessage({type: 'log_error', data: `Speak: ${error}`})
++        finish('error')
++    }
++}
++// ----------------------------------------------------------------------------
