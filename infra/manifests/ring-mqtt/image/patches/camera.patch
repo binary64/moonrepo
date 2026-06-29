@@ -1,0 +1,100 @@
+--- a/devices/camera.js	2026-03-09 03:47:22.000000000 +0000
++++ b/devices/camera.js	2026-06-29 18:11:45.423324652 +0100
+@@ -206,6 +206,14 @@
+                 component: 'button',
+                 icon: 'mdi:camera'
+             },
++            // two-way-audio patch (Arthur): command topic to speak out the
++            // doorbell speaker. Payload is an audio URL/path (or JSON
++            // {audioUrl, maxSeconds}). Subscribed because 'button' components
++            // get a command_topic in base-ring-device.js.
++            speak: {
++                component: 'button',
++                icon: 'mdi:account-voice'
++            },
+             motion_detection: {
+                 component: 'switch',
+                 category: 'config'
+@@ -824,6 +832,71 @@
+         }
+     }
+ 
++    // --- two-way-audio patch (Arthur) ---------------------------------------
++    // Speak a single audio source out the doorbell speaker.  The MQTT payload
++    // is either a bare URL/path string or JSON {audioUrl, maxSeconds}.  A fresh
++    // WebRTC signalling ticket is acquired (same endpoint as live streaming)
++    // and handed to the worker, which opens its own short-lived session — so a
++    // 'speak' never collides with an active viewer stream.
++    async speak(message) {
++        let audioUrl = ''
++        let maxSeconds = 30
++        try {
++            const trimmed = (message || '').trim()
++            // HA 'button' components publish a default 'PRESS' payload on click.
++            // The speak entity is registered as a button (only buttons/switches
++            // get a command_topic in base-ring-device.js), but it actually needs
++            // an audio URL/path, so a bare press carries no source — ignore it.
++            if (trimmed === '' || trimmed.toUpperCase() === 'PRESS') {
++                this.debug('Speak: received a bare button PRESS with no audio source — ignoring. Publish a URL/path (or JSON {audioUrl}) to the speak command topic.')
++                return
++            }
++            if (trimmed.startsWith('{')) {
++                const parsed = JSON.parse(trimmed)
++                audioUrl = (parsed.audioUrl || parsed.url || '').trim()
++                if (parsed.maxSeconds) { maxSeconds = parseInt(parsed.maxSeconds, 10) || 30 }
++            } else {
++                audioUrl = trimmed
++            }
++        } catch (e) {
++            this.debug(`Speak: could not parse command payload: ${e}`)
++            return
++        }
++
++        if (!audioUrl) {
++            this.debug('Speak: empty audio URL/path, ignoring command')
++            return
++        }
++
++        this.debug(`Speak: requesting a WebRTC signalling ticket to play ${audioUrl}`)
++        let ticket = null
++        try {
++            const response = await this.device.restClient.request({
++                method: 'POST',
++                url: 'https://app.ring.com/api/v1/clap/ticket/request/signalsocket'
++            })
++            ticket = response.ticket
++        } catch (error) {
++            if (error?.response?.statusCode === 403) {
++                this.debug('Speak: camera returned 403 — speaking may be blocked by current Modes settings.')
++            } else {
++                this.debug(`Speak: failed to acquire signalling ticket: ${error}`)
++            }
++            return
++        }
++
++        if (ticket) {
++            this.debug('Speak: ticket acquired, dispatching speak command to worker')
++            this.data.stream.live.worker.postMessage({
++                command: 'speak',
++                streamData: { ticket, audioUrl, maxSeconds }
++            })
++        } else {
++            this.debug('Speak: failed to initialise WebRTC signalling session')
++        }
++    }
++    // ------------------------------------------------------------------------
++
+     async startEventStream(rtspPublishUrl) {
+         const eventSelect = this.data.event_select.state.split(' ')
+         const eventType = eventSelect[0].toLowerCase().replace('-', '_')
+@@ -1114,6 +1187,10 @@
+             case 'take_snapshot/command':
+                 this.takeSnapshot(message)
+                 break;
++            // two-way-audio patch (Arthur)
++            case 'speak/command':
++                this.speak(message)
++                break;
+             case 'stream/command':
+                 this.setLiveStreamState(message)
+                 break;

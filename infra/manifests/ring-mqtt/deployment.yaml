@@ -29,7 +29,11 @@ spec:
       dnsPolicy: ClusterFirst
       containers:
         - name: ring-mqtt
-          image: tsightler/ring-mqtt:5.9.3
+          # Two-way-audio fork of tsightler/ring-mqtt:5.9.3 — adds a `speak`
+          # MQTT command (activateCameraSpeaker + transcodeReturnAudio).
+          # Source: infra/manifests/ring-mqtt/image/ (Dockerfile + patches).
+          # Pinned by digest for immutability; tag = 5.9.3-twoway-audio-2.
+          image: ghcr.io/binary64/ring-mqtt:5.9.3-twoway-audio-2@sha256:4f7fe47394c066d0bef3065ccf63285870e9b6d1d2d0211a32ae4e360ff864c5
           env:
             # Mosquitto broker (cluster service IP)
             - name: MQTTHOST
