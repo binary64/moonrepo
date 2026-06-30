@@ -5,12 +5,14 @@ description: "Browse our breed-by-breed dog food guides for the UK. Find the bes
 permalink: "/best-dog-food-by-breed/"
 ---
 
+{# Each display group can absorb one or more sizeCategory values, so a thinly-populated
+   value (e.g. the single small-medium crossbreed) folds into the nearest brief rather than
+   rendering a lonely one-breed group. Data stays accurate per breed; only the display merges. #}
 {% set sizeGroups = [
-  { key: "small", title: "Toy &amp; Small Breeds", blurb: "Small mouths, fast metabolisms and a tendency to put on weight — portion control and the right kibble size matter most here." },
-  { key: "small-medium", title: "Small-Medium Breeds", blurb: "Crossbreeds and in-betweeners that sit between the small and medium feeding briefs." },
-  { key: "medium", title: "Medium Breeds", blurb: "The biggest group of UK favourites — active, varied, and each with its own dietary quirks." },
-  { key: "large", title: "Large Breeds", blurb: "Joint protection and lean growth are the headline concerns; some carry heart-health risks too." },
-  { key: "giant", title: "Giant Breeds", blurb: "Controlled, slow growth and careful calcium balance protect developing joints — and appetites are huge." }
+  { keys: ["small", "small-medium"], title: "Toy, Small &amp; Small-Medium Breeds", blurb: "Small mouths, fast metabolisms and a tendency to put on weight — portion control and the right kibble size matter most here. Small-medium crossbreeds sit at the upper end of this brief." },
+  { keys: ["medium"], title: "Medium Breeds", blurb: "The biggest group of UK favourites — active, varied, and each with its own dietary quirks." },
+  { keys: ["large"], title: "Large Breeds", blurb: "Joint protection and lean growth are the headline concerns; some carry heart-health risks too." },
+  { keys: ["giant"], title: "Giant Breeds", blurb: "Controlled, slow growth and careful calcium balance protect developing joints — and appetites are huge." }
 ] %}
 
 <h1>Best Dog Food by Breed</h1>
@@ -21,10 +23,10 @@ permalink: "/best-dog-food-by-breed/"
 {% for group in sizeGroups %}
   {% set groupBreeds = [] %}
   {% for breed in breeds %}
-    {% if breed.sizeCategory == group.key %}{% set groupBreeds = (groupBreeds.push(breed), groupBreeds) %}{% endif %}
+    {% if breed.sizeCategory in group.keys %}{% set groupBreeds = (groupBreeds.push(breed), groupBreeds) %}{% endif %}
   {% endfor %}
   {% if groupBreeds.length > 0 %}
-<h2 id="{{ group.key }}">{{ group.title | safe }}</h2>
+<h2 id="{{ group.keys[0] }}">{{ group.title | safe }}</h2>
 <p>{{ group.blurb | safe }}</p>
 <div class="article-list">
   {% for breed in groupBreeds %}
