@@ -27,6 +27,15 @@ tasks:
       - 'biome.json'
       - '/biome.json'
 
+  # Drift guard: assert the deployed quick-commands configMap matches the
+  # { skill, action } schema server.ts expects (prevents the stale 7-cmd
+  # { session, message } regression that PR #354 fixed).
+  validate-registry:
+    script: 'node validate-registry.mjs'
+    inputs:
+      - 'validate-registry.mjs'
+      - '/infra/manifests/ptt-server/quick-commands-configmap.yaml'
+
   start:
     command: npm start
     options:

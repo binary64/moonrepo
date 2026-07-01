@@ -4,15 +4,44 @@ metadata:
   name: ptt-quick-commands
   namespace: ptt-server
 data:
+  # Canonical source: ~/clawd/projects/quick-commands/registry.json
+  # Schema matches apps/ptt-server/server.ts QuickCommand interface ({ skill, action }).
+  # server.ts only uses the `commands` keys to fast-path (LLM-bypass) recognised
+  # phrases to the main agent session; skill/action are logged for traceability.
+  # Keep this manifest in sync with the canonical registry — it is the deployed source of truth.
   registry.json: |
     {
       "commands": {
-        "lights on": { "session": "agent:main:main", "message": "lights on" },
-        "lights off": { "session": "agent:main:main", "message": "lights off" },
-        "radio on": { "session": "agent:main:main", "message": "radio on" },
-        "radio off": { "session": "agent:main:main", "message": "radio off" },
-        "tv on": { "session": "agent:main:main", "message": "tv on" },
-        "tv off": { "session": "agent:main:main", "message": "tv off" },
-        "play music": { "session": "agent:main:main", "message": "play music" }
+        "tv on": { "skill": "chromecast", "action": "tv_on" },
+        "tv off": { "skill": "chromecast", "action": "tv_off" },
+        "turn on the tv": { "skill": "chromecast", "action": "tv_on" },
+        "turn off the tv": { "skill": "chromecast", "action": "tv_off" },
+        "television on": { "skill": "chromecast", "action": "tv_on" },
+        "television off": { "skill": "chromecast", "action": "tv_off" },
+        "radio on": { "skill": "arthur-radio", "action": "start" },
+        "radio off": { "skill": "arthur-radio", "action": "stop" },
+        "turn on the radio": { "skill": "arthur-radio", "action": "start" },
+        "turn off the radio": { "skill": "arthur-radio", "action": "stop" },
+        "next track": { "skill": "arthur-radio", "action": "skip" },
+        "skip": { "skill": "arthur-radio", "action": "skip" },
+        "skip track": { "skill": "arthur-radio", "action": "skip" },
+        "pause": { "skill": "arthur-radio", "action": "pause" },
+        "pause the music": { "skill": "arthur-radio", "action": "pause" },
+        "play": { "skill": "arthur-radio", "action": "resume" },
+        "resume": { "skill": "arthur-radio", "action": "resume" },
+        "lights on": { "skill": "home-assistant", "action": "lights_on" },
+        "lights off": { "skill": "home-assistant", "action": "lights_off" },
+        "turn on the lights": { "skill": "home-assistant", "action": "lights_on" },
+        "turn off the lights": { "skill": "home-assistant", "action": "lights_off" },
+        "all lights on": { "skill": "home-assistant", "action": "lights_on" },
+        "all lights off": { "skill": "home-assistant", "action": "lights_off" },
+        "nest on": { "skill": "voice-mode", "action": "nest_on" },
+        "nest off": { "skill": "voice-mode", "action": "nest_off" },
+        "turn on nest": { "skill": "voice-mode", "action": "nest_on" },
+        "turn off nest": { "skill": "voice-mode", "action": "nest_off" },
+        "night mode": { "skill": "home-assistant", "action": "night_mode" },
+        "morning mode": { "skill": "home-assistant", "action": "morning_mode" },
+        "mute": { "skill": "arthur-radio", "action": "mute" },
+        "mute the music": { "skill": "arthur-radio", "action": "mute" }
       }
     }
