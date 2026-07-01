@@ -19,6 +19,19 @@ jobs:
       - name: Validate plugin TOML schemas
         run: bash scripts/validate-proto-plugins.sh
 
+  quick-commands-guard:
+    name: Quick-Commands Schema Guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validate ptt-server quick-commands configMap schema
+        # Self-contained node script (no toolchain needed) — guards against the
+        # stale { session, message } drift that PR #354 fixed. See
+        # apps/ptt-server/validate-registry.mjs.
+        run: node apps/ptt-server/validate-registry.mjs
+
   lint:
     name: Lint & Format
     runs-on: ubuntu-latest
