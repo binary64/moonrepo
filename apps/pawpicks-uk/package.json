@@ -7,6 +7,7 @@
     "serve": "eleventy --serve",
     "clean": "rm -rf _site",
     "audit": "python3 scripts/site-audit.py",
+    "audit:launch": "python3 scripts/site-audit.py --strict-cta",
     "build:ci": "eleventy && python3 scripts/site-audit.py"
   },
   "dependencies": {

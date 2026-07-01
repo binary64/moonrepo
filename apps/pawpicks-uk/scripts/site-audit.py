@@ -14,14 +14,25 @@ Checks (OBSERVE/HARDEN rung):
   4. Affiliate/commercial hygiene: every outbound CTA to a known commercial
      domain (amazon, forthglade, canagan, lilyskitchen, naturesmenu, petsathome)
      carries rel="nofollow sponsored" and target="_blank".
+  5. Dead/placeholder affiliate CTAs (LAUNCH-READINESS): any button-styled CTA
+     (class contains "cta"/"affiliate-btn") whose href is a placeholder ("#",
+     empty, or javascript:void) is a monetisation footgun — it renders as a
+     visible "Check Price" button that goes NOWHERE, silently losing the
+     affiliate click. These are intentional pre-launch (product affiliateUrl
+     is still "#"), so by DEFAULT this is REPORTED but does NOT fail the build.
+     Pass --strict-cta (e.g. in the go-live gate) to make dead CTAs fail-closed.
 
 Exit code 0 = clean, 1 = problems found. Pure stdlib, no deps.
+Usage: site-audit.py [--strict-cta]
 """
 import json
 import os
 import re
 import sys
 from html.parser import HTMLParser
+
+# Hrefs that make a CTA button visually present but functionally dead.
+PLACEHOLDER_HREFS = ("#", "", "#!")
 
 SITE = os.path.join(os.path.dirname(__file__), "..", "_site")
 SITE = os.path.abspath(SITE)
@@ -38,20 +49,28 @@ NON_AFFILIATE_PATHS = ("/privacy", "/privacypolicy")
 class LinkParser(HTMLParser):
     def __init__(self):
         super().__init__()
-        self.anchors = []  # list of (attrs dict)
+        self.anchors = []  # list of attrs dict (with injected "_text" of anchor body)
         self.ldjson = []   # list of script bodies
         self._in_ld = False
         self._ld_buf = []
+        self._cur_anchor = None
+        self._a_text = []
 
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
         if tag == "a":
             self.anchors.append(a)
+            self._cur_anchor = a
+            self._a_text = []
         if tag == "script" and a.get("type") == "application/ld+json":
             self._in_ld = True
             self._ld_buf = []
 
     def handle_endtag(self, tag):
+        if tag == "a" and self._cur_anchor is not None:
+            self._cur_anchor["_text"] = "".join(self._a_text).strip()
+            self._cur_anchor = None
+            self._a_text = []
         if tag == "script" and self._in_ld:
             self.ldjson.append("".join(self._ld_buf))
             self._in_ld = False
@@ -59,6 +78,8 @@ class LinkParser(HTMLParser):
     def handle_data(self, data):
         if self._in_ld:
             self._ld_buf.append(data)
+        if self._cur_anchor is not None:
+            self._a_text.append(data)
 
 
 def built_targets():
@@ -173,7 +194,7 @@ def validate_ld_node(node, page_rel, schema_issues):
             validate_ld_node(v, page_rel, schema_issues)
 
 
-def main():
+def main(strict_cta=False):
     if not os.path.isdir(SITE):
         print(f"ERROR: {SITE} not found — run `npx @11ty/eleventy` first.")
         return 1
@@ -191,6 +212,7 @@ def main():
     ld_invalid = []      # (page, error)
     schema_issues = []   # (page, reason) — required-field shape problems
     rel_issues = []      # (page, href, reason)
+    dead_ctas = []       # (page, cta_text) — button-styled CTA with placeholder href
 
     for page in pages:
         with open(page, encoding="utf-8") as fh:
@@ -201,6 +223,12 @@ def main():
 
         for a in p.anchors:
             href = a.get("href", "")
+            cls = (a.get("class") or "").lower()
+            is_cta_button = "cta" in cls or "affiliate-btn" in cls or "buy-btn" in cls
+            # Dead/placeholder CTA: a button-styled anchor whose href goes nowhere.
+            if is_cta_button and href.split("?")[0].strip() in PLACEHOLDER_HREFS:
+                label = (a.get("_text") or "").strip() or "(no text)"
+                dead_ctas.append((page_rel, label))
             if not href:
                 continue
             if href.startswith("/"):
@@ -263,9 +291,24 @@ def main():
     report("Commercial links missing rel/target hygiene", rel_issues,
            lambda x: f"{x[0]} -> {x[1]} ({x[2]})")
 
+    # Dead/placeholder CTAs — informational by default, fail-closed under --strict-cta.
+    if dead_ctas:
+        # de-dupe identical (page,label) noise but keep the count meaningful
+        marker = "✗" if strict_cta else "⚠"
+        print(f"{marker} Dead/placeholder affiliate CTAs (href goes nowhere): "
+              f"{len(dead_ctas)}"
+              + ("" if strict_cta else "  [informational — pre-launch; "
+                 "use --strict-cta to gate]"))
+        for it in dead_ctas[:30]:
+            print(f"   {it[0]} -> button \"{it[1]}\"")
+        if strict_cta:
+            ok = False
+    else:
+        print("✓ Dead/placeholder affiliate CTAs: none")
+
     print("\n" + ("ALL CLEAN ✓" if ok else "PROBLEMS FOUND ✗"))
     return 0 if ok else 1
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main("--strict-cta" in sys.argv))
