@@ -1,0 +1,136 @@
+---
+layout: layouts/review.njk
+title: "Best Fresh Dog Food UK (2026) — Subscriptions Compared & Reviewed"
+description: "Fresh dog food is more digestible, palatable and better hydrated than kibble — but which brand is best? We compare the top UK fresh dog food subscriptions for 2026 (Years, Butternut Box, Pure Pet Food, tails.com) on price, storage and quality, tested alongside our own dog Milo."
+category: "Fresh Food"
+lastUpdated: "2026-06-01"
+readTime: "13"
+tags: ["roundup", "fresh"]
+priority: 10
+permalink: "/best-fresh-dog-food-uk/"
+faqs:
+  - q: "Is fresh dog food actually better than kibble?"
+    a: "For most dogs, gently-cooked fresh food is more digestible, more palatable and better hydrated than dry kibble, and it uses whole named ingredients rather than highly-processed meal. Independent ratings (like All About Dog Food) consistently score fresh brands above mainstream kibble. The trade-offs are cost and — for frozen brands — freezer space. A high-quality kibble is still a perfectly good choice on a budget, but if you can afford it, fresh is a genuine upgrade for digestion, coat condition and appetite."
+  - q: "How much does fresh dog food cost in the UK?"
+    a: "It varies enormously with your dog's size and the brand. Air-dried options like Pure Pet Food start from around £0.89/day for a small dog. Tailored kibble blends like tails.com start around £1/day. Premium frozen fresh food like Butternut Box ranges from about £1.60/day for a small dog up to £6/day for a large one. Shelf-stable fresh food like Years uses personalised pricing, so it's worth running each brand's plan calculator with your dog's exact weight before committing."
+  - q: "Do I need a freezer for fresh dog food?"
+    a: "Only for the frozen brands. Butternut Box is delivered frozen and needs dedicated freezer space. But two of our picks avoid this entirely: Years is steam-cooked and shelf-stable (cupboard-stored until opened), and Pure Pet Food is air-dried and stored in the cupboard. If freezer space is your limiting factor, those are the fresh-feeding routes to look at first."
+  - q: "Is fresh food good for senior dogs?"
+    a: "Yes — fresh and air-dried foods are often ideal for seniors. The higher moisture and stronger aroma tempt fading appetites, the softer texture suits dogs with dental wear, and the gentle cooking is easier on ageing digestion. Our own senior Lurcher, Milo (12), does well on grain-free gently-cooked food. See our dedicated guide to the best senior dog food for more."
+  - q: "Are fresh dog food subscriptions worth the money?"
+    a: "It depends on your priorities. The subscription model means the food arrives automatically portioned for your dog, which removes guesswork and reduces overfeeding — a real benefit for weight control. You're paying a premium over supermarket kibble, but you're getting better ingredients, better digestibility and convenience. Most brands offer a discounted trial box so you can see how your dog responds before committing. Cancel-anytime terms are now standard, so the lock-in risk is low."
+  - q: "How do I switch my dog to fresh food?"
+    a: "Transition gradually over 7-10 days, mixing an increasing proportion of the new fresh food into the old food each day. Fresh food is richer and more digestible, so a sudden switch can cause loose stools. Go slower if you see any digestive upset. Most fresh brands include transition guidance with the first delivery, and their trial boxes are sized to cover the switch-over period."
+  - q: "Which fresh dog food is the best value?"
+    a: "For genuine fresh-style feeding on a budget, Pure Pet Food is our best-value pick — air-dried, cupboard-stored and from around £0.89/day for small dogs, with a soft rehydrated texture that suits seniors. If you want the convenience of a tailored subscription at low cost, tails.com starts around £1/day. The premium frozen and shelf-stable options (Butternut Box, Years) cost more but offer the highest quality."
+---
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "{{ title }}",
+  "description": "{{ description }}",
+  "numberOfItems": {{ products.freshDogFood | length }},
+  "itemListElement": [
+    {% for product in products.freshDogFood %}
+    {
+      "@type": "ListItem",
+      "position": {{ loop.index }},
+      "item": {
+        "@type": "Product",
+        "name": "{{ product.name }}",
+        "brand": { "@type": "Brand", "name": "{{ product.brand }}" },
+        "description": "{{ product.summary }}",
+        "review": {
+          "@type": "Review",
+          "reviewRating": { "@type": "Rating", "ratingValue": "{{ product.rating }}", "bestRating": "5" },
+          "author": { "@type": "Organization", "name": "{{ site.name }}" }
+        }
+      }
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
+
+<p>Fresh dog food has gone from a niche luxury to one of the fastest-growing categories in UK pet care — and for good reason. Gently-cooked, whole-ingredient meals are more digestible, more palatable and better hydrated than traditional kibble, and the subscription model means food arrives portioned precisely for your dog. But the brands differ enormously on price, storage and how "fresh" they really are.</p>
+
+<p>This guide cuts through the marketing. Our recommendations are informed by feeding our own dog — <strong>Milo, a 12-year-old Labrador/Lurcher rescue who's wheat-sensitive</strong> — alongside published nutritional data and independent All About Dog Food (AADF) ratings. Below are the fresh and fresh-style dog food subscriptions we rate most highly in the UK for 2026, ranked, compared and explained.</p>
+
+<h2>Fresh Dog Food at a Glance</h2>
+
+{# Single source of truth: products.freshDogFood (folded into _data/products.json). #}
+{% set tableProducts = products.freshDogFood %}
+{% include "partials/fresh-food-table.njk" %}
+
+<p class="meta"><em>Prices are starting points and vary with your dog's weight — always run the brand's plan calculator for an exact figure.</em></p>
+
+<h2>What Makes a Good Fresh Dog Food</h2>
+
+<ul>
+  <li><strong>Whole, named ingredients</strong> — Look for real, named meat and vegetables rather than "meat meal" or "derivatives". The best fresh foods read like a recipe, not a chemistry set.</li>
+  <li><strong>Gentle cooking</strong> — Steam-cooking or low-temperature cooking preserves nutrients and digestibility far better than the high-heat extrusion used to make kibble.</li>
+  <li><strong>Appropriate moisture</strong> — Higher moisture aids hydration and kidney function and makes food more tempting, especially for fussy or older dogs.</li>
+  <li><strong>Tailored portioning</strong> — A good subscription portions meals to your dog's weight and goals, which is one of the simplest ways to prevent the overfeeding that drives canine obesity.</li>
+  <li><strong>Storage that fits your life</strong> — Frozen food needs freezer space; shelf-stable and air-dried options don't. The "best" food is one you can actually store and serve consistently.</li>
+  <li><strong>Independent validation</strong> — AADF ratings are a useful sense-check on a brand's own claims. The brands below score well above mainstream kibble.</li>
+</ul>
+
+<h2>Our Top Picks for Fresh Dog Food</h2>
+
+<div class="product-grid">
+  {% for product in products.freshDogFood %}
+  <div class="product-card" id="{{ product.slug }}">
+    {% if product.topPick %}<span class="badge badge--top">🏆 Top Pick</span>{% endif %}
+    {% if product.bestValue %}<span class="badge badge--value">💰 Best Value</span>{% endif %}
+    <h3>{{ product.name }}</h3>
+    <div class="rating">{{ product.rating | stars }} ({{ product.rating }}/5)</div>
+    <p class="meta">{{ product.brand }} · {{ product.type }} · {{ product.storage }} · From {{ product.priceFrom }}</p>
+    <p>{{ product.summary }}</p>
+    <div class="pros-cons">
+      <ul class="pros">
+        {% for pro in product.pros %}
+        <li>{{ pro }}</li>
+        {% endfor %}
+      </ul>
+      <ul class="cons">
+        {% for con in product.cons %}
+        <li>{{ con }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    <p><strong>Best for:</strong> {{ product.bestFor | join(", ") }}</p>
+    <a href="{{ product.affiliateUrl }}" class="cta" rel="nofollow sponsored" target="_blank">{{ product.ctaText }} →</a>
+  </div>
+  {% endfor %}
+</div>
+
+<h2>How to Choose the Right Fresh Food for Your Dog</h2>
+
+<p>There's no single winner — the best choice depends on your dog, your budget and your kitchen:</p>
+
+<ul>
+  <li><strong>No freezer space?</strong> Start with <a href="#years-fresh-steam-cooked">Years</a> (shelf-stable fresh) or <a href="#pure-pet-food-air-dried">Pure Pet Food</a> (air-dried). Both store in the cupboard.</li>
+  <li><strong>Want the most premium fresh meal?</strong> <a href="#butternut-box-fresh-cooked">Butternut Box</a> is the gold-standard frozen fresh food, with the strongest palatability for fussy dogs — if you can spare the freezer space. Torn between the two top picks? See our <a href="/years-vs-butternut-box/">Years vs Butternut Box comparison</a>.</li>
+  <li><strong>On a tight budget?</strong> <a href="#pure-pet-food-air-dried">Pure Pet Food</a> from £0.89/day gives you fresh-style benefits at the lowest cost, with <a href="#tails-com-tailored-blend">tails.com</a> a convenient tailored-kibble alternative from around £1/day. <strong>Got a big dog?</strong> Fresh food is priced by weight, so it scales up fast for large and giant breeds — see our <a href="/fresh-vs-kibble-cost-large-dogs/">fresh vs kibble cost guide for large &amp; giant dogs</a> for the real monthly maths and the money-saving hybrid.</li>
+  <li><strong>Sensitive stomach or grain allergy?</strong> Years is grain- and legume-free across the whole range — the route we take with wheat-sensitive Milo.</li>
+  <li><strong>Senior dog?</strong> Higher moisture and gentle cooking help fading appetites and dental wear — see our <a href="/best-senior-dog-food-uk/">best senior dog food guide</a> for the full breakdown.</li>
+</ul>
+
+<h2>Fresh vs Frozen vs Air-Dried: What's the Difference?</h2>
+
+<p>"Fresh" is used loosely in marketing, so it helps to know what you're actually buying:</p>
+
+<ul>
+  <li><strong>Frozen fresh</strong> (Butternut Box) — genuinely fresh food, cooked and then frozen for delivery. Highest moisture and palatability, but needs freezer space and planning.</li>
+  <li><strong>Shelf-stable fresh</strong> (Years) — gently steam-cooked then packaged to be cupboard-stable until opened. The convenience of ambient storage with most of the benefits of fresh.</li>
+  <li><strong>Air-dried</strong> (Pure Pet Food) — moisture gently removed, then rehydrated with warm water at home. Not strictly fresh, but close on digestibility and ingredients, at a lower price and with cupboard storage.</li>
+  <li><strong>Tailored kibble</strong> (tails.com) — not fresh at all, but a convenient, customised dry-food subscription that's a useful step up from generic supermarket bags.</li>
+</ul>
+
+<h2>Transitioning to Fresh Food</h2>
+
+<p>Fresh food is richer and more digestible than kibble, so switch over <strong>7-10 days</strong>, mixing increasing amounts of the new food into the old. If you see loose stools, slow the transition. Most brands' trial boxes are sized to cover this changeover, and they include feeding guidance for your dog's weight. As always, if your dog's appetite, weight or toileting changes noticeably and doesn't settle, book a vet check. For the full step-by-step method — including what to do if the stools go loose — see our <a href="/how-to-switch-dog-food/">guide to switching dog food without an upset stomach</a>.</p>
+
+<p class="meta" style="margin-top:2rem;"><em>About our testing: recommendations on this page are informed by feeding our own dog, Milo (12, Labrador/Lurcher, wheat-sensitive), alongside published nutritional data and independent AADF ratings. We update this guide as products and pricing change. Some links are affiliate links — see our disclosure above.</em></p>

@@ -13,6 +13,16 @@ tasks:
       - 'package.json'
     outputs:
       - '_site'
+  # Post-build gate: validates internal links, orphans, JSON-LD shape and
+  # affiliate rel/target hygiene against the built _site/. Depends on build so
+  # `moon run pawpicks-uk:audit` always audits a fresh build. Pure-stdlib python3.
+  audit:
+    command: 'bun run audit'
+    deps:
+      - '~:build'
+    inputs:
+      - 'scripts/site-audit.py'
+      - '_site/**/*'
   dev:
     command: 'bun run serve'
     preset: 'server'

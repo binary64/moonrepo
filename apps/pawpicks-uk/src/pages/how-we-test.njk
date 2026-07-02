@@ -1,0 +1,101 @@
+---
+layout: layouts/base.njk
+title: "How We Test — Our Dog-Food Review Methodology (Tested by Milo)"
+description: "How PawPicks UK reviews dog food: ingredient analysis, real cost-per-kilo maths, independent AADF data, and real-world feeding trials with our own senior dog, Milo. No sponsored rankings, ever."
+permalink: "/how-we-test/"
+lastUpdated: "2026-06-02"
+readTime: "8"
+ogType: "article"
+---
+
+<article class="article-content">
+  <h1>How We Test Dog Food</h1>
+
+  <p class="meta"><em>Last updated 2 June 2026 · Written by the PawPicks team · Every recommendation is informed by feeding our own dog, Milo.</em></p>
+
+  <p>Most "best dog food" lists are written by people who have never opened the bag. They rephrase the manufacturer's marketing, slap affiliate links on top, and rank whatever pays the most commission. We built PawPicks to be the opposite of that.</p>
+
+  <p>This page explains exactly how we research, score and rank the products we recommend — so you can judge whether to trust us. If we ever fall short of the standard below, <a href="/about/">tell us</a>.</p>
+
+  <h2>Meet Milo — Our Chief Taste Tester</h2>
+
+  <div class="tester-profile">
+    <p><strong>Milo</strong> is a 12-year-old Labrador/Lurcher rescue who has lived with us since he was five months old. He is the reason this site exists. For years, mealtimes were a guessing game — loose stools, wind, a dull coat and a dog who tolerated his food rather than enjoyed it.</p>
+
+    <p>After our vet ruled out parasites and infections and suggested trying grain-free, the change within three weeks was unmistakable: firmer stools, a glossier coat and genuine enthusiasm at the bowl. That single switch sent us down a rabbit hole of ingredient lists, meat-content maths and cost-per-kilo spreadsheets that became PawPicks.</p>
+
+    <p>Milo is now a wheat-sensitive senior, which makes him a demanding (and honest) reviewer. Food that upsets his stomach doesn't make our recommendations — no matter how good it looks on paper. He can't read an ingredients label, but his digestion is the most reliable lab instrument we own.</p>
+  </div>
+
+  <h2>The Five Things We Actually Check</h2>
+
+  <p>Every product we cover is assessed against the same five criteria. We weight them in roughly this order, because this is the order that matters to a dog's health and your wallet.</p>
+
+  <ol>
+    <li><strong>Ingredient quality</strong> — We read the full ingredients list, not the front of the bag. We look for <em>named</em> meat sources ("chicken", "salmon") over vague ones ("meat and animal derivatives"), calculate the real meat percentage, identify the carbohydrate sources, and flag fillers, "derivatives" and unnamed "natural flavourings".</li>
+
+    <li><strong>Nutritional profile</strong> — Protein, fat, fibre and caloric density, compared on a like-for-like basis (including dry-matter comparisons where moisture content differs, so we're not fooled by water weight in wet and fresh foods).</li>
+
+    <li><strong>Real cost per kilogram</strong> — We ignore the headline bag price and calculate the actual cost per kg using the largest standard pack, or cost-per-day for subscription fresh foods. Cheap-looking bags are often expensive per feed, and vice versa.</li>
+
+    <li><strong>Independent data &amp; vet consensus</strong> — Where independent ratings exist (we lean on <a href="https://www.allaboutdogfood.co.uk" rel="nofollow noopener" target="_blank">All About Dog Food</a>'s ingredient-based scores) and where peer-reviewed research or veterinary consensus is available, we cite it honestly — including when the evidence is inconclusive or when a popular idea (like "senior dogs need less protein") is actually a myth.</li>
+
+    <li><strong>Real-world feeding &amp; owner reports</strong> — We feed products to Milo on a proper 7–10 day transition and watch the things that matter: palatability, stool quality, energy, coat and any digestive upset. We also read what UK owners report in forums and reviews to catch issues a single dog can't surface, like batch consistency or delivery problems.</li>
+  </ol>
+
+  <h2>What "Tested by Milo" Means — and What It Doesn't</h2>
+
+  <p>We want to be straight with you about the limits of one dog. Milo is a sample size of one: a senior, wheat-sensitive, medium-large mixed breed. His experience tells us a lot about palatability, digestibility and tolerance — but it can't tell us how a recipe suits a tiny puppy, a giant breed, or a dog with completely different sensitivities.</p>
+
+  <p>So "tested by Milo" means we have <strong>physically fed and observed a food in a real home</strong>, not that one Labrador's opinion is the final word. For breadth, we combine his real-world results with hard data (ingredients, nutrition, independent ratings) and the collective experience of thousands of UK owners. When a recommendation rests mainly on data rather than direct feeding, we say so.</p>
+
+  <h2>Our Honesty Rules</h2>
+
+  <ul>
+    <li><strong>We never take payment for positive reviews.</strong> Rankings are based on what's best for your dog, full stop.</li>
+    <li><strong>We never let commission rates change the order.</strong> If the best-value pick earns us less than the premium option, it still goes first when it deserves to.</li>
+    <li><strong>We don't accept free products in exchange for coverage.</strong> If a brand sends a bag for Milo to try, we'll write about it honestly — good or bad — and tell you it was a sample.</li>
+    <li><strong>We use affiliate links to keep the lights on.</strong> They cost you nothing extra. Our full <a href="/affiliate-disclosure/">affiliate disclosure</a> explains exactly how this works.</li>
+    <li><strong>We're not vets.</strong> We're well-researched dog owners. For medical concerns, diagnosed conditions or major diet changes, talk to your vet — and we'll always point you there when it matters.</li>
+  </ul>
+
+  <h2>How Often We Update</h2>
+
+  <p>Dog food changes — recipes get reformulated, prices rise, brands launch and disappear. We re-check our recommendations and refresh pricing on our main guides at least every few months, and immediately when we learn of a significant recipe change or recall. Each page carries a "last updated" date so you can see how current the advice is.</p>
+
+  <h2>Found Something We Got Wrong?</h2>
+
+  <p>We're a small operation and we read everything. If a price is out of date, an ingredient analysis is off, or you've fed a product yourself and disagree with us, we genuinely want to know. Email <strong>hello@pawpicks.co.uk</strong> and we'll look into it.</p>
+
+  <p>— The PawPicks Team (and Milo)</p>
+
+  {# ProfilePage + Person schema for EEAT — establishes the named, experienced reviewer behind the content #}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    "name": "How We Test Dog Food — PawPicks UK Methodology",
+    "url": "{{ site.url }}{{ page.url }}",
+    "description": "{{ description }}",
+    "lastReviewed": "2026-06-02",
+    "publisher": {
+      "@type": "Organization",
+      "name": "{{ site.name }}",
+      "url": "{{ site.url }}"
+    },
+    "mainEntity": {
+      "@type": "Organization",
+      "name": "PawPicks UK",
+      "url": "{{ site.url }}",
+      "description": "Independent UK dog-food reviews based on ingredient analysis, cost-per-kilo maths, independent data and real-world feeding trials.",
+      "knowsAbout": [
+        "Grain-free dog food",
+        "Fresh dog food",
+        "Senior dog nutrition",
+        "Dog food ingredient analysis",
+        "UK dog food brands"
+      ]
+    }
+  }
+  </script>
+</article>
